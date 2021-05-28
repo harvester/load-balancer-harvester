@@ -19,7 +19,8 @@ limitations under the License.
 package fake
 
 import (
-	networkv1alpha1 "github.com/harvester/harvester-conveyor/pkg/apis/network.harvesterhci.io/v1alpha1"
+	loadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
+	discoveryv1beta1 "k8s.io/api/discovery/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,9 +30,10 @@ import (
 
 var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
-var parameterCodec = runtime.NewParameterCodec(scheme)
+
 var localSchemeBuilder = runtime.SchemeBuilder{
-	networkv1alpha1.AddToScheme,
+	discoveryv1beta1.AddToScheme,
+	loadbalancerv1alpha1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

@@ -19,9 +19,11 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/harvester/harvester-conveyor/pkg/generated/clientset/versioned"
-	networkv1alpha1 "github.com/harvester/harvester-conveyor/pkg/generated/clientset/versioned/typed/network.harvesterhci.io/v1alpha1"
-	fakenetworkv1alpha1 "github.com/harvester/harvester-conveyor/pkg/generated/clientset/versioned/typed/network.harvesterhci.io/v1alpha1/fake"
+	clientset "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned"
+	discoveryv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1beta1"
+	fakediscoveryv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1beta1/fake"
+	loadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1"
+	fakeloadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -76,7 +78,12 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// NetworkV1alpha1 retrieves the NetworkV1alpha1Client
-func (c *Clientset) NetworkV1alpha1() networkv1alpha1.NetworkV1alpha1Interface {
-	return &fakenetworkv1alpha1.FakeNetworkV1alpha1{Fake: &c.Fake}
+// DiscoveryV1beta1 retrieves the DiscoveryV1beta1Client
+func (c *Clientset) DiscoveryV1beta1() discoveryv1beta1.DiscoveryV1beta1Interface {
+	return &fakediscoveryv1beta1.FakeDiscoveryV1beta1{Fake: &c.Fake}
+}
+
+// LoadbalancerV1alpha1 retrieves the LoadbalancerV1alpha1Client
+func (c *Clientset) LoadbalancerV1alpha1() loadbalancerv1alpha1.LoadbalancerV1alpha1Interface {
+	return &fakeloadbalancerv1alpha1.FakeLoadbalancerV1alpha1{Fake: &c.Fake}
 }

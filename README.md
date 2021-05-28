@@ -1,11 +1,11 @@
-Harvester Conveyor
+Harvester Load Balancer
 ==========================
 
-Harvester Conveyor is a load balancing controller. Combined with other components like Kube-vip and Harvester CCM, it makes Harvester a cloud provider.
-Users can deploy Harvester Conveyor in any other Kubernetes clusters without dependency on Harvester.
+Harvester Load Balancer is a load balancing controller. Combined with other components like Kube-vip and Harvester CCM, it makes Harvester a cloud provider.
+Users can deploy Harvester Load Balancer in any other Kubernetes clusters without dependency on Harvester.
 
 ## Manifests and Deploying
-The ./manifests folder contains useful YAML manifests to use for deploying and developing the Harvester Conveyor. This simply YAML creates a Deployment using the rancher/harvester-conveyor container.
+The ./manifests folder contains useful YAML manifests to use for deploying and developing the Harvester Load Balancer. This simply YAML creates a Deployment using the rancher/harvester-load-balancer container.
 
 ## Current status
 This is in the pre-alpha stage of the development.

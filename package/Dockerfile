@@ -1,3 +1,3 @@
 FROM alpine:3.9
-COPY bin/harvester-conveyor /usr/bin/
-CMD ["harvester-conveyor"]
+COPY bin/harvester-load-balancer /usr/bin/
+CMD ["harvester-load-balancer"]

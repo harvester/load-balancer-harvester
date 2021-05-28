@@ -1,0 +1,20 @@
+apiVersion: loadbalancer.harvesterhci.io/v1alpha1
+kind: LoadBalancer
+metadata:
+  name: cw-lb-2
+  namespace: default
+spec:
+  backendServers:
+  - 172.16.0.119
+  description: Test by cw
+  healthCheck:
+    interval: 0
+    port: 0
+    thresholdÒ: 0
+    timeout: 0
+  listeners:
+  - backendPort: 31410
+    name: ""
+    port: 80
+    protocol: TCP
+  type: internal

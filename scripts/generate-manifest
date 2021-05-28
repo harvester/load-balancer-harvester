@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# The root of the harvester-conveyor directory
+# The root of the harvester-load-balancer directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 out_dir="${ROOT_DIR}/manifests/crds"
