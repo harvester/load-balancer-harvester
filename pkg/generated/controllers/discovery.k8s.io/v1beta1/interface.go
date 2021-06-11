@@ -44,5 +44,5 @@ type version struct {
 }
 
 func (c *version) EndpointSlice() EndpointSliceController {
-	return NewEndpointSliceController(schema.GroupVersionKind{Group: "", Version: "v1beta1", Kind: "EndpointSlice"}, "endpointslices", true, c.controllerFactory)
+	return NewEndpointSliceController(schema.GroupVersionKind{Group: "discovery.k8s.io", Version: "v1beta1", Kind: "EndpointSlice"}, "endpointslices", true, c.controllerFactory)
 }

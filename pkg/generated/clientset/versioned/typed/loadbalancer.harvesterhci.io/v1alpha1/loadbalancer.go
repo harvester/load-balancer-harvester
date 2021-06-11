@@ -22,8 +22,8 @@ import (
 	"context"
 	"time"
 
-	v1alpha1 "github.com/harvester/harvester-conveyor/pkg/apis/network.harvesterhci.io/v1alpha1"
-	scheme "github.com/harvester/harvester-conveyor/pkg/generated/clientset/versioned/scheme"
+	v1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
+	scheme "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -57,7 +57,7 @@ type loadBalancers struct {
 }
 
 // newLoadBalancers returns a LoadBalancers
-func newLoadBalancers(c *NetworkV1alpha1Client, namespace string) *loadBalancers {
+func newLoadBalancers(c *LoadbalancerV1alpha1Client, namespace string) *loadBalancers {
 	return &loadBalancers{
 		client: c.RESTClient(),
 		ns:     namespace,
