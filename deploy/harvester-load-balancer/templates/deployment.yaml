@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "harvester-load-balancer.labels" . | nindent 4 }}
+  name: {{ include "harvester-load-balancer.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount}}
+  selector:
+    matchLabels:
+  {{- include "harvester-load-balancer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+    {{- include "harvester-load-balancer.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "harvester-load-balancer.name" . }}
+      containers:
+        - name: {{ include "harvester-load-balancer.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - harvester-load-balancer
+          resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
