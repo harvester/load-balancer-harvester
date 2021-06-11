@@ -16,9 +16,9 @@ if echo $TAG | grep -q dirty; then
 fi
 
 mkdir -p dist/artifacts
-cp bin/harvester-conveyor dist/artifacts/harvester-conveyor${SUFFIX}
+cp bin/harvester-load-balancer dist/artifacts/harvester-load-balancer${SUFFIX}
 
-IMAGE=${REPO}/harvester-conveyor:${TAG}
+IMAGE=${REPO}/harvester-load-balancer:${TAG}
 DOCKERFILE=package/Dockerfile
 if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE=${DOCKERFILE}.${ARCH}
