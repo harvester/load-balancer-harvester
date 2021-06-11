@@ -21,7 +21,8 @@ package versioned
 import (
 	"fmt"
 
-	networkv1alpha1 "github.com/harvester/harvester-conveyor/pkg/generated/clientset/versioned/typed/network.harvesterhci.io/v1alpha1"
+	discoveryv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1beta1"
+	loadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -29,19 +30,26 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	NetworkV1alpha1() networkv1alpha1.NetworkV1alpha1Interface
+	DiscoveryV1beta1() discoveryv1beta1.DiscoveryV1beta1Interface
+	LoadbalancerV1alpha1() loadbalancerv1alpha1.LoadbalancerV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	networkV1alpha1 *networkv1alpha1.NetworkV1alpha1Client
+	discoveryV1beta1     *discoveryv1beta1.DiscoveryV1beta1Client
+	loadbalancerV1alpha1 *loadbalancerv1alpha1.LoadbalancerV1alpha1Client
 }
 
-// NetworkV1alpha1 retrieves the NetworkV1alpha1Client
-func (c *Clientset) NetworkV1alpha1() networkv1alpha1.NetworkV1alpha1Interface {
-	return c.networkV1alpha1
+// DiscoveryV1beta1 retrieves the DiscoveryV1beta1Client
+func (c *Clientset) DiscoveryV1beta1() discoveryv1beta1.DiscoveryV1beta1Interface {
+	return c.discoveryV1beta1
+}
+
+// LoadbalancerV1alpha1 retrieves the LoadbalancerV1alpha1Client
+func (c *Clientset) LoadbalancerV1alpha1() loadbalancerv1alpha1.LoadbalancerV1alpha1Interface {
+	return c.loadbalancerV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -65,7 +73,11 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.networkV1alpha1, err = networkv1alpha1.NewForConfig(&configShallowCopy)
+	cs.discoveryV1beta1, err = discoveryv1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.loadbalancerV1alpha1, err = loadbalancerv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +93,8 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.networkV1alpha1 = networkv1alpha1.NewForConfigOrDie(c)
+	cs.discoveryV1beta1 = discoveryv1beta1.NewForConfigOrDie(c)
+	cs.loadbalancerV1alpha1 = loadbalancerv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -90,7 +103,8 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.networkV1alpha1 = networkv1alpha1.New(c)
+	cs.discoveryV1beta1 = discoveryv1beta1.New(c)
+	cs.loadbalancerV1alpha1 = loadbalancerv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	v1alpha1 "github.com/harvester/harvester-conveyor/pkg/apis/network.harvesterhci.io/v1alpha1"
+	v1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -32,13 +32,13 @@ import (
 
 // FakeLoadBalancers implements LoadBalancerInterface
 type FakeLoadBalancers struct {
-	Fake *FakeNetworkV1alpha1
+	Fake *FakeLoadbalancerV1alpha1
 	ns   string
 }
 
-var loadbalancersResource = schema.GroupVersionResource{Group: "network.harvesterhci.io", Version: "v1alpha1", Resource: "loadbalancers"}
+var loadbalancersResource = schema.GroupVersionResource{Group: "loadbalancer.harvesterhci.io", Version: "v1alpha1", Resource: "loadbalancers"}
 
-var loadbalancersKind = schema.GroupVersionKind{Group: "network.harvesterhci.io", Version: "v1alpha1", Kind: "LoadBalancer"}
+var loadbalancersKind = schema.GroupVersionKind{Group: "loadbalancer.harvesterhci.io", Version: "v1alpha1", Kind: "LoadBalancer"}
 
 // Get takes name of the loadBalancer, and returns the corresponding loadBalancer object, and an error if there is any.
 func (c *FakeLoadBalancers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.LoadBalancer, err error) {
