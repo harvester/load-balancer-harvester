@@ -11,8 +11,8 @@ import (
 // +kubebuilder:resource:shortName=lb;lbs,scope=Namespaced
 // +kubebuilder:printcolumn:name="DESCRIPTION",type=string,JSONPath=`.spec.description`
 // +kubebuilder:printcolumn:name="TYPE",type=string,JSONPath=`.spec.type`
-// +kubebuilder:printcolumn:name="INTERNALADDR",type=string,JSONPath=`.status.internalAddress`
-// +kubebuilder:printcolumn:name="EXTERNALADDR",type=string,JSONPath=`.status.externalAddress`
+// +kubebuilder:printcolumn:name="INTERNAL-ADDRESS",type=string,JSONPath=`.status.internalAddress`
+// +kubebuilder:printcolumn:name="EXTERNAL-ADDRESS",type=string,JSONPath=`.status.externalAddress`
 
 type LoadBalancer struct {
 	metav1.TypeMeta   `json:",inline"`
