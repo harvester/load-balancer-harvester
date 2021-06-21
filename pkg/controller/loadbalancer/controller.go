@@ -3,15 +3,15 @@ package loadbalancer
 import (
 	"context"
 
-	ctlCore "github.com/rancher/wrangler/pkg/generated/controllers/core"
-	ctlCorev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	ctlcore "github.com/rancher/wrangler/pkg/generated/controllers/core"
+	ctlcorev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"k8s.io/klog/v2"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
-	ctlDiscovery "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io"
-	ctlDiscoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io/v1beta1"
-	ctlLB "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
-	ctlLBv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1alpha1"
+	ctldiscovery "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io"
+	ctldiscoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io/v1beta1"
+	ctllb "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
+	ctllbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1alpha1"
 	"github.com/harvester/harvester-load-balancer/pkg/lb"
 	"github.com/harvester/harvester-load-balancer/pkg/lb/servicelb"
 )
@@ -19,13 +19,15 @@ import (
 const controllerName = "harvester-lb-controller"
 
 type Handler struct {
-	lbClient            ctlLBv1.LoadBalancerClient
-	serviceClient       ctlCorev1.ServiceClient
-	endpointSliceClient ctlDiscoveryv1.EndpointSliceClient
+	lbClient            ctllbv1.LoadBalancerClient
+	serviceClient       ctlcorev1.ServiceClient
+	serviceCache        ctlcorev1.ServiceCache
+	endpointSliceClient ctldiscoveryv1.EndpointSliceClient
+	endpointSliceCache  ctldiscoveryv1.EndpointSliceCache
 	lbManager           lb.Manager
 }
 
-func Register(ctx context.Context, lbFactory *ctlLB.Factory, coreFactory *ctlCore.Factory, discoveryFactory *ctlDiscovery.Factory) error {
+func Register(ctx context.Context, lbFactory *ctllb.Factory, coreFactory *ctlcore.Factory, discoveryFactory *ctldiscovery.Factory) error {
 	lbs := lbFactory.Loadbalancer().V1alpha1().LoadBalancer()
 	services := coreFactory.Core().V1().Service()
 	endpointSlices := discoveryFactory.Discovery().V1beta1().EndpointSlice()
@@ -33,10 +35,12 @@ func Register(ctx context.Context, lbFactory *ctlLB.Factory, coreFactory *ctlCor
 	handler := &Handler{
 		lbClient:            lbs,
 		serviceClient:       services,
+		serviceCache:        services.Cache(),
 		endpointSliceClient: endpointSlices,
+		endpointSliceCache:  endpointSlices.Cache(),
 	}
 
-	handler.lbManager = servicelb.NewManager(ctx, &handler.serviceClient, &handler.endpointSliceClient)
+	handler.lbManager = servicelb.NewManager(ctx, handler.serviceClient, handler.serviceCache, handler.endpointSliceClient, handler.endpointSliceCache)
 
 	lbs.OnChange(ctx, controllerName, handler.OnChange)
 	lbs.OnRemove(ctx, controllerName, handler.OnRemove)
@@ -52,11 +56,13 @@ func (h *Handler) OnChange(key string, lb *lbv1.LoadBalancer) (*lbv1.LoadBalance
 
 	lbCopy := lb.DeepCopy()
 	if err := h.lbManager.EnsureLoadBalancer(lb); err != nil {
-		lbv1.LoadBalancerReady.SetError(lbCopy, "", err)
+		lbv1.LoadBalancerReady.False(lbCopy)
+		lbv1.LoadBalancerReady.Message(lbCopy, err.Error())
 		return h.lbClient.Update(lbCopy)
 	}
 
 	lbv1.LoadBalancerReady.True(lbCopy)
+	lbv1.LoadBalancerReady.Message(lbCopy, "")
 	return h.lbClient.Update(lbCopy)
 }
 

@@ -4,24 +4,24 @@ import (
 	"context"
 	"fmt"
 
-	ctlCore "github.com/rancher/wrangler/pkg/generated/controllers/core"
-	coreV1 "k8s.io/api/core/v1"
+	ctlcore "github.com/rancher/wrangler/pkg/generated/controllers/core"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
-	ctlLB "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
-	ctlLBv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1alpha1"
+	ctllb "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
+	ctllbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1alpha1"
 	"github.com/harvester/harvester-load-balancer/pkg/lb/servicelb"
 )
 
 const controllerName = "harvester-service-controller"
 
 type Handler struct {
-	lbClient ctlLBv1.LoadBalancerClient
+	lbClient ctllbv1.LoadBalancerClient
 }
 
-func Register(ctx context.Context, lbFactory *ctlLB.Factory, coreFactory *ctlCore.Factory) error {
+func Register(ctx context.Context, lbFactory *ctllb.Factory, coreFactory *ctlcore.Factory) error {
 	services := coreFactory.Core().V1().Service()
 	lbs := lbFactory.Loadbalancer().V1alpha1().LoadBalancer()
 
@@ -34,7 +34,7 @@ func Register(ctx context.Context, lbFactory *ctlLB.Factory, coreFactory *ctlCor
 	return nil
 }
 
-func (h Handler) OnChange(key string, service *coreV1.Service) (*coreV1.Service, error) {
+func (h Handler) OnChange(key string, service *corev1.Service) (*corev1.Service, error) {
 	if service == nil || service.DeletionTimestamp != nil {
 		return nil, nil
 	}

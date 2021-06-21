@@ -34,13 +34,13 @@ type Manager struct {
 	*prober.Manager
 }
 
-func NewManager(ctx context.Context, serviceClient *ctlCorev1.ServiceClient, serviceCache *ctlCorev1.ServiceCache,
-	endpointSliceClient *ctlDiscoveryv1.EndpointSliceClient, endpointSliceCache *ctlDiscoveryv1.EndpointSliceCache) *Manager {
+func NewManager(ctx context.Context, serviceClient ctlCorev1.ServiceClient, serviceCache ctlCorev1.ServiceCache,
+	endpointSliceClient ctlDiscoveryv1.EndpointSliceClient, endpointSliceCache ctlDiscoveryv1.EndpointSliceCache) *Manager {
 	m := &Manager{
-		serviceClient:       *serviceClient,
-		serviceCache: *serviceCache,
-		endpointSliceClient: *endpointSliceClient,
-		endpointSliceCache: *endpointSliceCache,
+		serviceClient:       serviceClient,
+		serviceCache:        serviceCache,
+		endpointSliceClient: endpointSliceClient,
+		endpointSliceCache:  endpointSliceCache,
 	}
 	m.Manager = prober.NewManager(ctx, m.updateHealthCondition)
 
@@ -107,27 +107,16 @@ func (m *Manager) ensureProber(lb *lbv1.LoadBalancer) error {
 		return err
 	}
 
-	existingEpUIDs := map[string]bool{}
-
 	for _, ep := range eps.Endpoints {
 		if len(ep.Addresses) != 1 {
 			return fmt.Errorf("the length of addresses is not 1, endpoint: %+v", ep)
 		}
 		option.Address = ep.Addresses[0] + ":" + strconv.Itoa(lb.Spec.HeathCheck.Port)
 		uid := marshalUID(lb.Namespace, lb.Name, ep.Addresses[0])
-		existingEpUIDs[uid] = true
 		if ep.Conditions.Ready != nil {
 			option.InitialCondition = *ep.Conditions.Ready
 		}
 		m.AddWorker(uid, option)
-	}
-
-	// remove the outdated workers
-	workerMap := m.ListWorkers()
-	for uid := range workerMap {
-		if !existingEpUIDs[uid] {
-			m.RemoveWorker(uid)
-		}
 	}
 
 	return nil
