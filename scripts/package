@@ -23,6 +23,5 @@ DOCKERFILE=package/Dockerfile
 if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE=${DOCKERFILE}.${ARCH}
 fi
-
-docker build -f ${DOCKERFILE} -t ${IMAGE} .
+DOCKER_BUILDKIT=0 docker build -f ${DOCKERFILE} -t ${IMAGE} .
 echo Built ${IMAGE}
