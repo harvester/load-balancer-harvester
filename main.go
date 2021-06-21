@@ -8,7 +8,7 @@ import (
 	"context"
 	"flag"
 
-	ctlCore "github.com/rancher/wrangler/pkg/generated/controllers/core"
+	ctlcore "github.com/rancher/wrangler/pkg/generated/controllers/core"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/leader"
 	"github.com/rancher/wrangler/pkg/signals"
@@ -19,8 +19,8 @@ import (
 
 	"github.com/harvester/harvester-load-balancer/pkg/controller/loadbalancer"
 	"github.com/harvester/harvester-load-balancer/pkg/controller/service"
-	ctlDiscovery "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io"
-	ctlLB "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
+	ctldiscovery "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io"
+	ctllb "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
 )
 
 var (
@@ -42,25 +42,25 @@ func main() {
 	// This will load the kubeconfig file in a style the same as kubectl
 	cfg, err := kubeconfig.GetNonInteractiveClientConfig(kubeconfigFile).ClientConfig()
 	if err != nil {
-		logrus.Fatalf("Error building kubeconfig: %s", err.Error())
+		logrus.Fatalf("error building kubeconfig: %s", err.Error())
 	}
 
 	// Generated lb controller
-	lbFactory := ctlLB.NewFactoryFromConfigOrDie(cfg)
-	coreFactory := ctlCore.NewFactoryFromConfigOrDie(cfg)
-	discoveryFactory := ctlDiscovery.NewFactoryFromConfigOrDie(cfg)
+	lbFactory := ctllb.NewFactoryFromConfigOrDie(cfg)
+	coreFactory := ctlcore.NewFactoryFromConfigOrDie(cfg)
+	discoveryFactory := ctldiscovery.NewFactoryFromConfigOrDie(cfg)
 	client := kubernetes.NewForConfigOrDie(cfg)
 
 	leader.RunOrDie(ctx, "kube-system", "harvester-load-balancer", client, func(ctx context.Context) {
 		if err := loadbalancer.Register(ctx, lbFactory, coreFactory, discoveryFactory); err != nil {
-			logrus.Fatalf("Error register loadBalancer controller: %s", err.Error())
+			logrus.Fatalf("error register loadBalancer controller: %s", err.Error())
 		}
 		if err := service.Register(ctx, lbFactory, coreFactory); err != nil {
-			logrus.Fatalf("Error register service controller: %s", err.Error())
+			logrus.Fatalf("error register service controller: %s", err.Error())
 		}
 		// Start all the controllers
-		if err := start.All(ctx, 2, lbFactory, coreFactory); err != nil {
-			logrus.Fatalf("Error starting: %s", err.Error())
+		if err := start.All(ctx, 2, lbFactory, coreFactory, discoveryFactory); err != nil {
+			logrus.Fatalf("error starting: %s", err.Error())
 		}
 	})
 

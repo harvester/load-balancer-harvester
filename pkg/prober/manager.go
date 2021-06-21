@@ -58,7 +58,7 @@ func (m *Manager) AddWorker(uid string, option HealthOption) {
 		}
 	}
 
-	klog.V(4).Infof("add worker, option: %+v", option)
+	klog.V(4).Infof("add worker, uid: %s, option: %+v", uid, option)
 	w = newWorker(uid, m.tcpProber, option, m.conditionChan)
 	m.workerLock.Lock()
 	defer m.workerLock.Unlock()
