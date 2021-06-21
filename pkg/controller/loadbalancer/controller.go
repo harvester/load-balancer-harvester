@@ -12,6 +12,7 @@ import (
 	ctlDiscoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io/v1beta1"
 	ctlLB "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
 	ctlLBv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1alpha1"
+	"github.com/harvester/harvester-load-balancer/pkg/lb"
 	"github.com/harvester/harvester-load-balancer/pkg/lb/servicelb"
 )
 
@@ -21,7 +22,7 @@ type Handler struct {
 	lbClient            ctlLBv1.LoadBalancerClient
 	serviceClient       ctlCorev1.ServiceClient
 	endpointSliceClient ctlDiscoveryv1.EndpointSliceClient
-	serviceLBManager    *servicelb.Manager
+	lbManager           lb.Manager
 }
 
 func Register(ctx context.Context, lbFactory *ctlLB.Factory, coreFactory *ctlCore.Factory, discoveryFactory *ctlDiscovery.Factory) error {
@@ -35,7 +36,7 @@ func Register(ctx context.Context, lbFactory *ctlLB.Factory, coreFactory *ctlCor
 		endpointSliceClient: endpointSlices,
 	}
 
-	handler.serviceLBManager = servicelb.NewManager(ctx, &handler.serviceClient, &handler.endpointSliceClient)
+	handler.lbManager = servicelb.NewManager(ctx, &handler.serviceClient, &handler.endpointSliceClient)
 
 	lbs.OnChange(ctx, controllerName, handler.OnChange)
 	lbs.OnRemove(ctx, controllerName, handler.OnRemove)
@@ -50,7 +51,7 @@ func (h *Handler) OnChange(key string, lb *lbv1.LoadBalancer) (*lbv1.LoadBalance
 	klog.V(4).Infof("load balancer configuration %s has been changed, spec: %+v", lb.Name, lb.Spec)
 
 	lbCopy := lb.DeepCopy()
-	if err := h.serviceLBManager.EnsureLoadBalancer(lb); err != nil {
+	if err := h.lbManager.EnsureLoadBalancer(lb); err != nil {
 		lbv1.LoadBalancerReady.SetError(lbCopy, "", err)
 		return h.lbClient.Update(lbCopy)
 	}
@@ -66,7 +67,7 @@ func (h *Handler) OnRemove(key string, lb *lbv1.LoadBalancer) (*lbv1.LoadBalance
 
 	klog.V(4).Infof("load balancer configuration %s has been deleted", lb.Name)
 
-	h.serviceLBManager.DeleteLoadBalancer(lb)
+	h.lbManager.DeleteLoadBalancer(lb)
 
 	return lb, nil
 }

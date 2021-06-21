@@ -28,14 +28,19 @@ const (
 
 type Manager struct {
 	serviceClient       ctlCorev1.ServiceClient
+	serviceCache        ctlCorev1.ServiceCache
 	endpointSliceClient ctlDiscoveryv1.EndpointSliceClient
+	endpointSliceCache  ctlDiscoveryv1.EndpointSliceCache
 	*prober.Manager
 }
 
-func NewManager(ctx context.Context, serviceClient *ctlCorev1.ServiceClient, endpointSliceClient *ctlDiscoveryv1.EndpointSliceClient) *Manager {
+func NewManager(ctx context.Context, serviceClient *ctlCorev1.ServiceClient, serviceCache *ctlCorev1.ServiceCache,
+	endpointSliceClient *ctlDiscoveryv1.EndpointSliceClient, endpointSliceCache *ctlDiscoveryv1.EndpointSliceCache) *Manager {
 	m := &Manager{
 		serviceClient:       *serviceClient,
+		serviceCache: *serviceCache,
 		endpointSliceClient: *endpointSliceClient,
+		endpointSliceCache: *endpointSliceCache,
 	}
 	m.Manager = prober.NewManager(ctx, m.updateHealthCondition)
 
@@ -151,7 +156,7 @@ func marshalUID(ns, name, server string) (uid string) {
 }
 
 func (m *Manager) ensureService(lb *lbv1.LoadBalancer) error {
-	svc, err := m.serviceClient.Get(lb.Namespace, lb.Name, metav1.GetOptions{})
+	svc, err := m.serviceCache.Get(lb.Namespace, lb.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if err == nil {
@@ -209,7 +214,7 @@ func constructService(cur *corev1.Service, lb *lbv1.LoadBalancer) *corev1.Servic
 }
 
 func (m *Manager) ensureEndpointSlice(lb *lbv1.LoadBalancer) error {
-	eps, err := m.endpointSliceClient.Get(lb.Namespace, lb.Name, metav1.GetOptions{})
+	eps, err := m.endpointSliceCache.Get(lb.Namespace, lb.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if err == nil {
