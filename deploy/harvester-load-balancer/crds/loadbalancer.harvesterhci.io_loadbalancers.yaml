@@ -27,10 +27,10 @@ spec:
       name: TYPE
       type: string
     - jsonPath: .status.internalAddress
-      name: INTERNALADDR
+      name: INTERNAL-ADDRESS
       type: string
     - jsonPath: .status.externalAddress
-      name: EXTERNALADDR
+      name: EXTERNAL-ADDRESS
       type: string
     name: v1alpha1
     schema:
