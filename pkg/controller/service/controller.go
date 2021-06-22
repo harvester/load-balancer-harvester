@@ -14,7 +14,7 @@ import (
 	"github.com/harvester/harvester-load-balancer/pkg/lb/servicelb"
 )
 
-const controllerName = "harvester-service-controller"
+const controllerName = "harvester-lb-service-controller"
 
 type Handler struct {
 	lbClient ctllbv1.LoadBalancerClient
