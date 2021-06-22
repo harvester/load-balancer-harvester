@@ -54,7 +54,7 @@ func (m *Manager) updateHealthCondition(uid string, isHealthy bool) error {
 		return err
 	}
 
-	eps, err := m.endpointSliceClient.Get(ns, name, metav1.GetOptions{})
+	eps, err := m.endpointSliceCache.Get(ns, name)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (m *Manager) ensureProber(lb *lbv1.LoadBalancer) error {
 		InitialCondition: true,
 	}
 
-	eps, err := m.endpointSliceClient.Get(lb.Namespace, lb.Name, metav1.GetOptions{})
+	eps, err := m.endpointSliceCache.Get(lb.Namespace, lb.Name)
 	if err != nil {
 		return err
 	}
