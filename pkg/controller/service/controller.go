@@ -6,7 +6,6 @@ import (
 
 	ctlcore "github.com/rancher/wrangler/pkg/generated/controllers/core"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
@@ -19,6 +18,7 @@ const controllerName = "harvester-service-controller"
 
 type Handler struct {
 	lbClient ctllbv1.LoadBalancerClient
+	lbCache  ctllbv1.LoadBalancerCache
 }
 
 func Register(ctx context.Context, lbFactory *ctllb.Factory, coreFactory *ctlcore.Factory) error {
@@ -27,6 +27,7 @@ func Register(ctx context.Context, lbFactory *ctllb.Factory, coreFactory *ctlcor
 
 	handler := &Handler{
 		lbClient: lbs,
+		lbCache:  lbs.Cache(),
 	}
 
 	services.OnChange(ctx, controllerName, handler.OnChange)
@@ -44,7 +45,7 @@ func (h Handler) OnChange(key string, service *corev1.Service) (*corev1.Service,
 	}
 	klog.V(4).Infof("service configuration %s has been changed, spec: %+v", service.Name, service.Spec)
 
-	lb, err := h.lbClient.Get(service.Namespace, service.Name, metav1.GetOptions{})
+	lb, err := h.lbCache.Get(service.Namespace, service.Name)
 	if err != nil {
 		return nil, fmt.Errorf("get loadbalancer %s failed, error: %w", service.Name, err)
 	}
