@@ -8,8 +8,17 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "v0.3.5"
 
-interface: "eth0"
-address: "192.168.100.100"
+env:
+  - vip_arp: "true"
+  - port: "6443"
+  - vip_cidr: "32"
+  - cp_enable: "true"
+  - svc_enable: "true"
+  - vip_startleader: "false"
+  - vip_addpeerstolb: "true"
+
+interface: ""
+address: ""
 
 imagePullSecrets: [ ]
 nameOverride: ""
@@ -41,9 +50,9 @@ resources: { }
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
 # requests:
 #   cpu: 100m
 #   memory: 128Mi
