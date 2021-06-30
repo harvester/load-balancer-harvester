@@ -1,5 +1,6 @@
 Harvester Load Balancer
 ==========================
+[![Build Status](https://drone-publish.rancher.io/api/badges/harvester/load-balancer-harvester/status.svg)](https://drone-publish.rancher.io/harvester/load-balancer-harvester)
 
 Harvester Load Balancer is a load balancing controller. Combined with other components like Kube-vip and Harvester CCM, it makes Harvester a cloud provider.
 Users can deploy Harvester Load Balancer in any other Kubernetes clusters without dependency on Harvester.
