@@ -1,8 +1,10 @@
 Harvester Load Balancer
 ==========================
 [![Build Status](https://drone-publish.rancher.io/api/badges/harvester/load-balancer-harvester/status.svg)](https://drone-publish.rancher.io/harvester/load-balancer-harvester)
+[![Go Report Card](https://goreportcard.com/badge/github.com/harvester/load-balancer-harvester)](https://goreportcard.com/report/github.com/harvester/load-balancer-harvester)
+[![Releases](https://img.shields.io/github/release/harvester/load-balancer-harvester/all.svg)](https://github.com/harvester/load-balancer-harvester/releases)
 
-Harvester Load Balancer is a load balancing controller. Combined with other components like Kube-vip and Harvester CCM, it makes Harvester a cloud provider.
+Harvester Load Balancer is a load balancing controller. Combined with other components like [kube-vip](https://github.com/kube-vip/kube-vip) and [Harvester CCM](https://github.com/harvester/cloud-provider-harvester), it makes Harvester a cloud provider.
 Users can deploy Harvester Load Balancer in any other Kubernetes clusters without dependency on Harvester.
 
 ## Deploying
@@ -10,9 +12,6 @@ Users can deploy Harvester Load Balancer in any other Kubernetes clusters withou
 # helm v3
 helm install harvester-load-balancer deploy/harvester-load-balancer -n harvester-system --set kube-vip.interface=<interface name> --set kube-vip.address=<IP address>
 ```
-
-## Current status
-This is in the pre-alpha stage of the development.
 
 ## License
 Copyright (c) 2020 Rancher Labs, Inc.
