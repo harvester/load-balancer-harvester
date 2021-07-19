@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 
-	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
 	ctllb "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
 	ctllbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1alpha1"
 	"github.com/harvester/harvester-load-balancer/pkg/lb/servicelb"
@@ -51,11 +50,8 @@ func (h Handler) OnChange(key string, service *corev1.Service) (*corev1.Service,
 	}
 	lbCopy := lb.DeepCopy()
 
-	lbCopy.Status.InternalAddress = service.Spec.ClusterIP
-	if lb.Spec.Type == lbv1.External {
-		if len(service.Status.LoadBalancer.Ingress) > 0 {
-			lbCopy.Status.ExternalAddress = service.Status.LoadBalancer.Ingress[0].IP
-		}
+	if len(service.Status.LoadBalancer.Ingress) > 0 {
+		lbCopy.Status.Address = service.Status.LoadBalancer.Ingress[0].IP
 	}
 
 	if _, err := h.lbClient.Update(lbCopy); err != nil {

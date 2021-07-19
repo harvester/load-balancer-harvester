@@ -175,12 +175,10 @@ func constructService(cur *corev1.Service, lb *lbv1.LoadBalancer) *corev1.Servic
 		svc.Labels = map[string]string{
 			KeyLabel: "true",
 		}
+		svc.Spec.Type = corev1.ServiceTypeLoadBalancer
 	}
 
-	if lb.Spec.Type == lbv1.Internal {
-		svc.Spec.Type = corev1.ServiceTypeClusterIP
-	} else {
-		svc.Spec.Type = corev1.ServiceTypeLoadBalancer
+	if lb.Spec.IPAM == lbv1.DHCP {
 		if len(svc.Status.LoadBalancer.Ingress) == 0 {
 			// Kube-vip gets external IP for service of type LoadBalancer by DHCP if LoadBalancerIP is set as "0.0.0.0"
 			svc.Spec.LoadBalancerIP = Address4AskDHCP
