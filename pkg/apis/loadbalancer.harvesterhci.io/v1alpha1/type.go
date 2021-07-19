@@ -10,9 +10,8 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:shortName=lb;lbs,scope=Namespaced
 // +kubebuilder:printcolumn:name="DESCRIPTION",type=string,JSONPath=`.spec.description`
-// +kubebuilder:printcolumn:name="TYPE",type=string,JSONPath=`.spec.type`
-// +kubebuilder:printcolumn:name="INTERNAL-ADDRESS",type=string,JSONPath=`.status.internalAddress`
-// +kubebuilder:printcolumn:name="EXTERNAL-ADDRESS",type=string,JSONPath=`.status.externalAddress`
+// +kubebuilder:printcolumn:name="IPAM",type=string,JSONPath=`.spec.ipam`
+// +kubebuilder:printcolumn:name="ADDRESS",type=string,JSONPath=`.status.address`
 
 type LoadBalancer struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -24,7 +23,7 @@ type LoadBalancer struct {
 type LoadBalancerSpec struct {
 	// +optional
 	Description string `json:"description,omitempty"`
-	Type        LBType `json:"type"`
+	IPAM        IPAM   `json:"ipam"`
 	// +optional
 	Listeners []*Listener `json:"listeners,omitempty"`
 	// The LB for Harvester is different from common lb because all listeners have the same backend servers.
@@ -36,9 +35,7 @@ type LoadBalancerSpec struct {
 
 type LoadBalancerStatus struct {
 	// +optional
-	InternalAddress string `json:"internalAddress,omitempty"`
-	// +optional
-	ExternalAddress string `json:"externalAddress,omitempty"`
+	Address string `json:"address,omitempty"`
 	// +optional
 	Conditions []Condition `json:"conditions,omitempty"`
 }
@@ -78,10 +75,10 @@ var (
 	LoadBalancerReady condition.Cond = "Ready"
 )
 
-// +kubebuilder:validation:Enum=internal;external
-type LBType string
+// +kubebuilder:validation:Enum=pool;DHCP
+type IPAM string
 
 var (
-	Internal LBType = "internal"
-	External LBType = "external"
+	Pool IPAM = "pool"
+	DHCP IPAM = "DHCP"
 )
