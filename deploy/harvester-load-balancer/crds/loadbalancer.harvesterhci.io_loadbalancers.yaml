@@ -23,14 +23,11 @@ spec:
     - jsonPath: .spec.description
       name: DESCRIPTION
       type: string
-    - jsonPath: .spec.type
-      name: TYPE
+    - jsonPath: .spec.ipam
+      name: IPAM
       type: string
-    - jsonPath: .status.internalAddress
-      name: INTERNAL-ADDRESS
-      type: string
-    - jsonPath: .status.externalAddress
-      name: EXTERNAL-ADDRESS
+    - jsonPath: .status.address
+      name: ADDRESS
       type: string
     name: v1alpha1
     schema:
@@ -72,6 +69,11 @@ spec:
                 - successThreshold
                 - timeoutSeconds
                 type: object
+              ipam:
+                enum:
+                - pool
+                - DHCP
+                type: string
               listeners:
                 items:
                   properties:
@@ -92,16 +94,13 @@ spec:
                   - protocol
                   type: object
                 type: array
-              type:
-                enum:
-                - internal
-                - external
-                type: string
             required:
-            - type
+            - ipam
             type: object
           status:
             properties:
+              address:
+                type: string
               conditions:
                 items:
                   properties:
@@ -128,10 +127,6 @@ spec:
                   - type
                   type: object
                 type: array
-              externalAddress:
-                type: string
-              internalAddress:
-                type: string
             type: object
         type: object
     served: true
