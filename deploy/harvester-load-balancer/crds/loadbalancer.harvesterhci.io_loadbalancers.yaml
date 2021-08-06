@@ -72,7 +72,7 @@ spec:
               ipam:
                 enum:
                 - pool
-                - DHCP
+                - dhcp
                 type: string
               listeners:
                 items:
