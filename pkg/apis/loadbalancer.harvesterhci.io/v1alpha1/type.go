@@ -75,10 +75,10 @@ var (
 	LoadBalancerReady condition.Cond = "Ready"
 )
 
-// +kubebuilder:validation:Enum=pool;DHCP
+// +kubebuilder:validation:Enum=pool;dhcp
 type IPAM string
 
 var (
 	Pool IPAM = "pool"
-	DHCP IPAM = "DHCP"
+	DHCP IPAM = "dhcp"
 )
