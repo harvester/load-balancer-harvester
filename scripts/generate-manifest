@@ -4,7 +4,7 @@ set -e
 # The root of the harvester-load-balancer directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
-out_dir="${ROOT_DIR}/deploy/harvester-load-balancer/crds"
+out_dir="${ROOT_DIR}/crds"
 mkdir -p "${out_dir}"
 
 # Clean up stable CRD manifest YAMLs
