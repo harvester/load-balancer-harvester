@@ -10,7 +10,12 @@ Users can deploy Harvester Load Balancer in any other Kubernetes clusters withou
 ## Deploying
 ```
 # helm v3
-helm install harvester-load-balancer deploy/harvester-load-balancer -n harvester-system --set kube-vip.interface=<interface name> --set kube-vip.address=<IP address>
+$ helm repo add harvester https://charts.harvesterhci.io
+$ helm repo add kube-vip https://kube-vip.io/helm-charts
+$ helm repo update
+$ helm install harvester-load-balancer harvester/harvester-load-balancer -n harvester-system
+$ helm install kube-vip kube-vip/kube-vip --set config.vip_interface=<network interface> -n harvester-system 
+$ helm install kube-vip/kube-vip-cloud-provider 
 ```
 
 ## License
