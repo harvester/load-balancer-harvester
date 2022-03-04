@@ -1,3 +1,3 @@
-FROM alpine:3.14
+FROM registry.suse.com/bci/bci-minimal:15.3
 COPY bin/harvester-load-balancer /usr/bin/
 CMD ["harvester-load-balancer"]
