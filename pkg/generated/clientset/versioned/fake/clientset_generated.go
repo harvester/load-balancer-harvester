@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned"
-	discoveryv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1beta1"
-	fakediscoveryv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1beta1/fake"
+	discoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1"
+	fakediscoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1/fake"
 	loadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1"
 	fakeloadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -76,11 +76,14 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
-// DiscoveryV1beta1 retrieves the DiscoveryV1beta1Client
-func (c *Clientset) DiscoveryV1beta1() discoveryv1beta1.DiscoveryV1beta1Interface {
-	return &fakediscoveryv1beta1.FakeDiscoveryV1beta1{Fake: &c.Fake}
+// DiscoveryV1 retrieves the DiscoveryV1Client
+func (c *Clientset) DiscoveryV1() discoveryv1.DiscoveryV1Interface {
+	return &fakediscoveryv1.FakeDiscoveryV1{Fake: &c.Fake}
 }
 
 // LoadbalancerV1alpha1 retrieves the LoadbalancerV1alpha1Client

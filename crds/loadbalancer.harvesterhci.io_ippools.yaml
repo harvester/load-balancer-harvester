@@ -5,31 +5,28 @@ metadata:
   annotations:
     {}
   creationTimestamp: null
-  name: loadbalancers.loadbalancer.harvesterhci.io
+  name: ippools.loadbalancer.harvesterhci.io
 spec:
   group: loadbalancer.harvesterhci.io
   names:
-    kind: LoadBalancer
-    listKind: LoadBalancerList
-    plural: loadbalancers
+    kind: IPPool
+    listKind: IPPoolList
+    plural: ippools
     shortNames:
-    - lb
-    - lbs
-    singular: loadbalancer
-  scope: Namespaced
+    - pool
+    - pools
+    singular: ippool
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.description
       name: DESCRIPTION
       type: string
-    - jsonPath: .spec.workloadType
-      name: WORKLOADTYPE
+    - jsonPath: .spec.ranges
+      name: RANGES
       type: string
-    - jsonPath: .spec.ipam
-      name: IPAM
-      type: string
-    - jsonPath: .status.address
-      name: ADDRESS
+    - jsonPath: .spec.selector.priority
+      name: Priority
       type: string
     name: v1alpha1
     schema:
@@ -49,73 +46,59 @@ spec:
             type: object
           spec:
             properties:
-              backendServerSelector:
-                additionalProperties:
-                  type: string
-                type: object
               description:
                 type: string
-              healthCheck:
-                properties:
-                  failureThreshold:
-                    type: integer
-                  periodSeconds:
-                    type: integer
-                  port:
-                    type: integer
-                  successThreshold:
-                    type: integer
-                  timeoutSeconds:
-                    type: integer
-                type: object
-              ipPool:
-                type: string
-              ipam:
-                enum:
-                - pool
-                - dhcp
-                type: string
-              listeners:
+              ranges:
                 items:
+                  description: Refer to github.com/containernetworking/plugins/plugins/ipam/host-local/backend/allocator.Range
                   properties:
-                    backendPort:
-                      format: int32
-                      type: integer
-                    name:
+                    gateway:
                       type: string
-                    port:
-                      format: int32
-                      type: integer
-                    protocol:
-                      default: TCP
+                    rangeEnd:
+                      type: string
+                    rangeStart:
+                      type: string
+                    subnet:
                       type: string
                   required:
-                  - backendPort
-                  - port
-                  - protocol
+                  - subnet
                   type: object
                 type: array
-              workloadType:
-                enum:
-                - vm
-                - cluster
-                type: string
+              selector:
+                properties:
+                  network:
+                    type: string
+                  priority:
+                    type: integer
+                  scope:
+                    items:
+                      properties:
+                        guestCluster:
+                          type: string
+                        namespace:
+                          type: string
+                        project:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+            required:
+            - ranges
+            - selector
             type: object
           status:
             properties:
-              address:
-                type: string
-              allocatedAddress:
-                properties:
-                  gateway:
-                    type: string
-                  ip:
-                    type: string
-                  ipPool:
-                    type: string
-                  mask:
-                    type: string
+              allocated:
+                additionalProperties:
+                  type: string
                 type: object
+              allocatedHistory:
+                additionalProperties:
+                  type: string
+                type: object
+              available:
+                format: int64
+                type: integer
               conditions:
                 items:
                   properties:
@@ -144,6 +127,15 @@ spec:
                   - type
                   type: object
                 type: array
+              lastAllocated:
+                type: string
+              total:
+                format: int64
+                type: integer
+            required:
+            - available
+            - lastAllocated
+            - total
             type: object
         type: object
     served: true

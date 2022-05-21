@@ -28,6 +28,7 @@ import (
 )
 
 var (
+	IPPoolResourceName       = "ippools"
 	LoadBalancerResourceName = "loadbalancers"
 )
 
@@ -52,6 +53,8 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
+		&IPPool{},
+		&IPPoolList{},
 		&LoadBalancer{},
 		&LoadBalancerList{},
 	)

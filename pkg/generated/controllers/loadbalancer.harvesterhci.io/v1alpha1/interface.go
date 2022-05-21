@@ -30,6 +30,7 @@ func init() {
 }
 
 type Interface interface {
+	IPPool() IPPoolController
 	LoadBalancer() LoadBalancerController
 }
 
@@ -43,6 +44,9 @@ type version struct {
 	controllerFactory controller.SharedControllerFactory
 }
 
+func (c *version) IPPool() IPPoolController {
+	return NewIPPoolController(schema.GroupVersionKind{Group: "loadbalancer.harvesterhci.io", Version: "v1alpha1", Kind: "IPPool"}, "ippools", false, c.controllerFactory)
+}
 func (c *version) LoadBalancer() LoadBalancerController {
 	return NewLoadBalancerController(schema.GroupVersionKind{Group: "loadbalancer.harvesterhci.io", Version: "v1alpha1", Kind: "LoadBalancer"}, "loadbalancers", true, c.controllerFactory)
 }

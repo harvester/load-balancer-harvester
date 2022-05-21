@@ -28,6 +28,10 @@ type FakeLoadbalancerV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeLoadbalancerV1alpha1) IPPools() v1alpha1.IPPoolInterface {
+	return &FakeIPPools{c}
+}
+
 func (c *FakeLoadbalancerV1alpha1) LoadBalancers(namespace string) v1alpha1.LoadBalancerInterface {
 	return &FakeLoadBalancers{c, namespace}
 }
