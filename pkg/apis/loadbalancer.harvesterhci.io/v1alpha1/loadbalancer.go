@@ -10,6 +10,7 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:shortName=lb;lbs,scope=Namespaced
 // +kubebuilder:printcolumn:name="DESCRIPTION",type=string,JSONPath=`.spec.description`
+// +kubebuilder:printcolumn:name="WORKLOADTYPE",type=string,JSONPath=`.spec.workloadType`
 // +kubebuilder:printcolumn:name="IPAM",type=string,JSONPath=`.spec.ipam`
 // +kubebuilder:printcolumn:name="ADDRESS",type=string,JSONPath=`.status.address`
 
@@ -23,37 +24,54 @@ type LoadBalancer struct {
 type LoadBalancerSpec struct {
 	// +optional
 	Description string `json:"description,omitempty"`
-	IPAM        IPAM   `json:"ipam"`
 	// +optional
-	Listeners []*Listener `json:"listeners,omitempty"`
-	// The LB for Harvester is different from common lb because all listeners have the same backend servers.
+	WorkloadType WorkloadType `json:"workloadType,omitempty"`
 	// +optional
-	BackendServers []string `json:"backendServers,omitempty"`
+	IPAM IPAM `json:"ipam,omitempty"`
 	// +optional
-	HeathCheck *HeathCheck `json:"healthCheck,omitempty"`
+	IPPool string `json:"ipPool,omitempty"`
+	// +optional
+	Listeners []Listener `json:"listeners,omitempty"`
+	// +optional
+	BackendServerSelector map[string]string `json:"backendServerSelector,omitempty"`
+	// +optional
+	HealthCheck *HealthCheck `json:"healthCheck,omitempty"`
 }
 
 type LoadBalancerStatus struct {
+	// +optional
+	AllocatedAddress AllocatedAddress `json:"allocatedAddress,omitempty"`
 	// +optional
 	Address string `json:"address,omitempty"`
 	// +optional
 	Conditions []Condition `json:"conditions,omitempty"`
 }
 
-type Listener struct {
-	Name     string          `json:"name"`
-	Port     int32           `json:"port"`
-	Protocol corev1.Protocol `json:"protocol"`
-	// +optional
-	BackendPort int32 `json:"backendPort"`
+type AllocatedAddress struct {
+	IPPool  string `json:"ipPool,omitempty"`
+	IP      string `json:"ip,omitempty"`
+	Mask    string `json:"mask,omitempty"`
+	Gateway string `json:"gateway,omitempty"`
 }
 
-type HeathCheck struct {
-	Port             int `json:"port"`
-	SuccessThreshold int `json:"successThreshold"`
-	FailureThreshold int `json:"failureThreshold"`
-	PeriodSeconds    int `json:"PeriodSeconds"`
-	TimeoutSeconds   int `json:"timeoutSeconds"`
+type Listener struct {
+	// +optional
+	Name        string          `json:"name"`
+	Port        int32           `json:"port"`
+	Protocol    corev1.Protocol `json:"protocol"`
+	BackendPort int32           `json:"backendPort"`
+}
+
+type HealthCheck struct {
+	Port uint `json:"port,omitempty"`
+	// +optional
+	SuccessThreshold uint `json:"successThreshold,omitempty"`
+	// +optional
+	FailureThreshold uint `json:"failureThreshold,omitempty"`
+	// +optional
+	PeriodSeconds uint `json:"periodSeconds,omitempty"`
+	// +optional
+	TimeoutSeconds uint `json:"timeoutSeconds,omitempty"`
 }
 
 type Condition struct {
@@ -73,6 +91,14 @@ type Condition struct {
 
 var (
 	LoadBalancerReady condition.Cond = "Ready"
+)
+
+// +kubebuilder:validation:Enum=vm;cluster
+type WorkloadType string
+
+var (
+	VM      WorkloadType = "vm"
+	Cluster WorkloadType = "cluster"
 )
 
 // +kubebuilder:validation:Enum=pool;dhcp

@@ -3,17 +3,17 @@ package prober
 import (
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 type Worker struct {
 	tcpProber        Prober
 	uid              string
 	address          string
-	successThreshold int
-	successCounter   int
-	failureThreshold int
-	failureCounter   int
+	successThreshold uint
+	successCounter   uint
+	failureThreshold uint
+	failureCounter   uint
 	timeout          time.Duration
 	Period           time.Duration
 	condition        bool
@@ -63,11 +63,11 @@ func (w *Worker) probe() error {
 
 func (w *Worker) doProbe() {
 	if err := w.probe(); err != nil {
-		klog.V(4).Infof("probe error, %s, address: %s, timeout: %v", err.Error(), w.address, w.timeout)
+		logrus.Infof("probe error, %s, address: %s, timeout: %v", err.Error(), w.address, w.timeout)
 		w.successCounter = 0
 		w.failureCounter++
 	} else {
-		klog.V(4).Infof("probe successful, address: %s, timeout: %v", w.address, w.timeout)
+		logrus.Infof("probe successful, address: %s, timeout: %v", w.address, w.timeout)
 		w.failureCounter = 0
 		w.successCounter++
 	}
