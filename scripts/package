@@ -17,11 +17,17 @@ fi
 
 mkdir -p dist/artifacts
 cp bin/harvester-load-balancer dist/artifacts/harvester-load-balancer${SUFFIX}
+cp bin/harvester-load-balancer-webhook dist/artifacts/harvester-load-balancer-webhook${SUFFIX}
 
 IMAGE=${REPO}/harvester-load-balancer:${TAG}
+IMAGE_WEBHOOK=${REPO}/harvester-load-balancer-webhook:${TAG}
 DOCKERFILE=package/Dockerfile
+DOCKERFILE_WEBHOOK=package/Dockerfile.webhook
 if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE=${DOCKERFILE}.${ARCH}
+    DOCKERFILE_WEBHOOK=${DOCKERFILE_WEBHOOK}.${ARCH}
 fi
 DOCKER_BUILDKIT=0 docker build -f ${DOCKERFILE} -t ${IMAGE} .
 echo Built ${IMAGE}
+DOCKER_BUILDKIT=0 docker build -f ${DOCKERFILE_WEBHOOK} -t ${IMAGE_WEBHOOK} .
+echo Built ${IMAGE_WEBHOOK}

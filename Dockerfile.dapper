@@ -1,4 +1,4 @@
-ARG GOLANG_VERSION=1.16.10
+ARG GOLANG_VERSION=1.18.0
 ARG ALPINE_VERSION=3.14
 FROM library/golang:${GOLANG_VERSION}-alpine${ALPINE_VERSION}
 
@@ -7,9 +7,6 @@ ENV ARCH $DAPPER_HOST_ARCH
 
 RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates
 RUN rm -rf /go/src /go/pkg
-RUN if [ "${ARCH}" == "amd64" ]; then \
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.1; \
-    fi
 
 ENV GO111MODULE off
 ENV DAPPER_ENV REPO TAG DRONE_TAG

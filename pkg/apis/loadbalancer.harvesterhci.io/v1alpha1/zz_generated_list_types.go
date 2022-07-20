@@ -40,3 +40,20 @@ func NewLoadBalancer(namespace, name string, obj LoadBalancer) *LoadBalancer {
 	obj.Namespace = namespace
 	return &obj
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// IPPoolList is a list of IPPool resources
+type IPPoolList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []IPPool `json:"items"`
+}
+
+func NewIPPool(namespace, name string, obj IPPool) *IPPool {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("IPPool").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}

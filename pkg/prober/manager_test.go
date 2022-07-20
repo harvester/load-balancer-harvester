@@ -12,7 +12,7 @@ const (
 	healthyCase   = "healthy case"
 	unhealthyCase = "unhealthy case"
 
-	healthyAddress   = "rancher.com:80"
+	healthyAddress   = "baidu.com:80"
 	unhealthyAddress = "xxxxxxxxxx:80"
 )
 
