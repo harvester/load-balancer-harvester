@@ -1,0 +1,59 @@
+apiVersion: loadbalancer.harvesterhci.io/v1alpha1
+kind: LoadBalancer
+metadata:
+  annotations:
+    cloudprovider.harvesterhci.io/service-uuid: c50e0b4b-4074-4c73-aba3-b00517c6b1ee
+  labels:
+    cloudprovider.harvesterhci.io/cluster: kubernetes
+  name: lb1
+  namespace: default
+spec:
+  backendServers:
+    - 172.19.105.96
+    - 172.19.105.122
+  ipam: pool
+  listeners:
+    - backendPort: 30131
+      name: a
+      port: 80
+      protocol: TCP
+status:
+  address: 192.168.0.100
+  conditions:
+    - lastUpdateTime: '2023-03-20T12:26:45Z'
+      status: 'True'
+      type: Ready
+---
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: LoadBalancer
+metadata:
+  annotations:
+    cloudprovider.harvesterhci.io/service-uuid: c50e0b4b-4074-4c73-aba3-b00517c6b1ee
+  labels:
+    cloudprovider.harvesterhci.io/cluster: kubernetes
+  name: lb1
+  namespace: default
+spec:
+  ipam: pool
+  ipPool: default
+  listeners:
+    - backendPort: 30131
+      name: a
+      port: 80
+      protocol: TCP
+  backendServerSelector:
+    harvesterhci.io/vmName:
+      - vm1
+      - vm2
+status:
+  backendServers:
+    - 172.19.105.96
+    - 172.19.105.122
+  allocatedAddress:
+    ip: 192.168.0.100
+    ipPool: default
+  address: 192.168.0.100
+  conditions:
+    - lastUpdateTime: '2023-03-20T12:26:45Z'
+      status: 'True'
+      type: Ready
