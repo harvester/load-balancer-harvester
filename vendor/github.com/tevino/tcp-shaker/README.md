@@ -84,11 +84,12 @@ default:
 
 ## TODO
 
-- [ ] IPv6 support (Test environment needed, PRs are welcome)
+- [x] IPv6 support (Test environment needed, PRs are welcome)
 
 ## Special thanks to contributors
 
 - @lujjjh Added zero linger support for non-Linux platform
 - @jakubgs Fixed compatibility on Android
+- @kirk91 Added support for IPv6
 
 [tcp-handshake]: https://en.wikipedia.org/wiki/Handshaking#TCP_three-way_handshake
