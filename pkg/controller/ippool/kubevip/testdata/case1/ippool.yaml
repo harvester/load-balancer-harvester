@@ -1,0 +1,55 @@
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: default
+spec:
+  ranges:
+    - subnet: 192.168.10.0/24
+  selector:
+    scope:
+      - namespace: default
+        project: "*"
+        guestCluster: "*"
+status:
+  allocated:
+    192.168.10.73: default/svc1
+---
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: ns1
+spec:
+  ranges:
+    - subnet: 192.168.20.0/24
+    - subnet: 192.168.30.0/24
+  selector:
+    scope:
+      - namespace: ns1
+        project: "*"
+        guestCluster: "*"
+status:
+    allocated:
+      192.168.20.73: ns1/svc2
+      192.168.30.2: ns1/svc3
+---
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: ns-2
+spec:
+  ranges:
+    - rangeStart: 192.168.40.1
+      rangeEnd: 192.168.40.10
+      subnet: 192.168.40.0/28
+    - rangeStart: 192.168.50.10
+      rangeEnd: 192.168.50.20
+      subnet: 192.168.50.0/27
+  selector:
+    scope:
+      - namespace: ns-2
+        project: "*"
+        guestCluster: "*"
+status:
+  allocated:
+    192.168.40.7: ns-2/svc4
+    192.168.50.15: ns-2/svc5

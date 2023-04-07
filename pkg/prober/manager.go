@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"k8s.io/klog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 type updateCondition func(workerKey string, isHealthy bool) error
@@ -27,7 +27,7 @@ func NewManager(ctx context.Context, handler updateCondition) *Manager {
 	go func() {
 		for cond := range m.conditionChan {
 			if err := handler(cond.workerUID, cond.isHealth); err != nil {
-				klog.Errorf("update status failed, key: %s, condition: %t", cond.workerUID, cond.isHealth)
+				logrus.Errorf("update status failed, key: %s, condition: %t", cond.workerUID, cond.isHealth)
 			}
 		}
 	}()
@@ -58,7 +58,7 @@ func (m *Manager) AddWorker(uid string, option HealthOption) {
 		}
 	}
 
-	klog.V(4).Infof("add worker, uid: %s, option: %+v", uid, option)
+	logrus.Infof("add worker, uid: %s, option: %+v", uid, option)
 	w = newWorker(uid, m.tcpProber, option, m.conditionChan)
 	m.workerLock.Lock()
 	defer m.workerLock.Unlock()
@@ -71,7 +71,7 @@ func (m *Manager) RemoveWorker(uid string) {
 	if !existed {
 		return
 	}
-	klog.V(4).Infof("remove worker, uid: %s", uid)
+	logrus.Infof("remove worker, uid: %s", uid)
 	w.stop()
 	m.workerLock.Lock()
 	defer m.workerLock.Unlock()

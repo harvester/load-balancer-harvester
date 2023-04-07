@@ -1,0 +1,27 @@
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: global
+spec:
+  ranges:
+    - subnet: 192.168.0.0/24
+status:
+  allocated:
+    192.168.0.162: default/lb1
+---
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: default
+spec:
+  ranges:
+    - subnet: 192.168.10.0/24
+  selector:
+    scope:
+      - namespace: default
+        project: "*"
+        guestCluster: "*"
+status:
+  allocated:
+    192.168.10.73: default/lb2
+
