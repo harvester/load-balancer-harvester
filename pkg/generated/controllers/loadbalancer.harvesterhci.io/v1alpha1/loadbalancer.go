@@ -360,6 +360,10 @@ func (a *loadBalancerGeneratingHandler) Remove(key string, obj *v1alpha1.LoadBal
 }
 
 func (a *loadBalancerGeneratingHandler) Handle(obj *v1alpha1.LoadBalancer, status v1alpha1.LoadBalancerStatus) (v1alpha1.LoadBalancerStatus, error) {
+	if !obj.DeletionTimestamp.IsZero() {
+		return status, nil
+	}
+
 	objs, newStatus, err := a.LoadBalancerGeneratingHandler(obj, status)
 	if err != nil {
 		return newStatus, err
