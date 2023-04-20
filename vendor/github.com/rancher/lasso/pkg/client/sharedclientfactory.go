@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -41,6 +40,7 @@ type sharedClientFactory struct {
 	clients    map[schema.GroupVersionResource]*Client
 	timeout    time.Duration
 	rest       rest.Interface
+	config     *rest.Config
 
 	Mapper meta.RESTMapper
 	Scheme *runtime.Scheme
@@ -62,7 +62,7 @@ func NewSharedClientFactory(config *rest.Config, opts *SharedClientFactoryOption
 		return nil, err
 	}
 
-	k8s, err := kubernetes.NewForConfig(config)
+	discovery, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,8 @@ func NewSharedClientFactory(config *rest.Config, opts *SharedClientFactoryOption
 		Scheme:    opts.Scheme,
 		Mapper:    opts.Mapper,
 		rest:      rest,
-		discovery: k8s.Discovery(),
+		config:    config,
+		discovery: discovery,
 	}, nil
 }
 
@@ -189,7 +190,9 @@ func (s *sharedClientFactory) ForResourceKind(gvr schema.GroupVersionResource, k
 	}
 
 	client = NewClient(gvr, kind, namespaced, s.rest, s.timeout)
-
+	if s.config != nil {
+		client.Config = *s.config
+	}
 	s.clients[gvr] = client
 	return client
 }
