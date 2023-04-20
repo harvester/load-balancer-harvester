@@ -117,7 +117,7 @@ func (c *FakeLoadBalancers) UpdateStatus(ctx context.Context, loadBalancer *v1al
 // Delete takes name of the loadBalancer and deletes it. Returns an error if one occurs.
 func (c *FakeLoadBalancers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(loadbalancersResource, c.ns, name), &v1alpha1.LoadBalancer{})
+		Invokes(testing.NewDeleteActionWithOptions(loadbalancersResource, c.ns, name, opts), &v1alpha1.LoadBalancer{})
 
 	return err
 }
