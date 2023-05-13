@@ -1,0 +1,20 @@
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: default
+spec:
+  ranges:
+    - subnet: 192.168.0.0/24
+  selector:
+    scope:
+      - namespace: default
+status:
+  allocated:
+    192.168.0.100: default/lb1
+  available: 252
+  conditions:
+    - lastUpdateTime: "2023-03-30T09:36:01Z"
+      status: "True"
+      type: Ready
+  lastAllocated: 192.168.0.100
+  total: 253

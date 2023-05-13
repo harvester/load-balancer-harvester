@@ -1,0 +1,20 @@
+apiVersion: v1
+data:
+  cidr-default: 192.168.10.0/24
+  cidr-global: 192.168.0.0/24
+kind: ConfigMap
+metadata:
+  annotations:
+    provider: kubevip
+  name: kubevip
+  namespace: kube-system
+---
+apiVersion: v1
+data:
+  kubevip-services: '{"services":[{"vip":"192.168.0.162","port":80,"type":"TCP","uid":"40b98b62-9a56-4268-828f-19a7011cbce0","serviceName":"lb1"},{"vip":"192.168.10.73","port":80,"type":"TCP","uid":"130a414e-fff0-4c1f-8d42-dd84d4730ffe","serviceName":"lb2"}]}'
+kind: ConfigMap
+metadata:
+  annotations:
+    provider: kubevip
+  name: kubevip
+  namespace: default

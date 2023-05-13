@@ -1,0 +1,42 @@
+apiVersion: v1
+data:
+  cidr-default: 192.168.10.0/24
+  cidr-ns1: 192.168.20.0/24,192.168.30.0/24
+  range-ns-2: 192.168.40.1-192.168.40.10,192.168.50.10-192.168.50.20
+kind: ConfigMap
+metadata:
+  annotations:
+    provider: kubevip
+  name: kubevip
+  namespace: kube-system
+---
+apiVersion: v1
+data:
+  kubevip-services: '{"services":[{"vip":"192.168.10.73","port":80,"type":"TCP","uid":"130a414e-fff0-4c1f-8d42-dd84d4730ffe","serviceName":"svc1"}]}'
+kind: ConfigMap
+metadata:
+  annotations:
+    provider: kubevip
+  name: kubevip
+  namespace: default
+---
+apiVersion: v1
+data:
+  kubevip-services: '{"services":[{"vip":"192.168.20.73","port":80,"type":"TCP","uid":"230a414e-aaf0-4c1f-8d42-dd84d4730ffe","serviceName":"svc2"},{"vip":"192.168.30.2","port":80,"type":"TCP","uid":"330a414e-bbf0-4c1f-8d42-dd84d4730ffe","serviceName":"svc3"}]}'
+kind: ConfigMap
+metadata:
+  annotations:
+    provider: kubevip
+  name: kubevip
+  namespace: ns1
+---
+apiVersion: v1
+data:
+  kubevip-services: '{"services":[{"vip":"192.168.40.7","port":80,"type":"TCP","uid":"990a414e-aaf0-4c1f-8d42-dd84d4730ffe","serviceName":"svc4"},{"vip":"192.168.50.15","port":80,"type":"TCP","uid":"880a414e-bbf0-4c1f-8d42-dd84d4730ffe","serviceName":"svc5"}]}'
+kind: ConfigMap
+metadata:
+  annotations:
+    provider: kubevip
+  name: kubevip
+  namespace: ns-2
+

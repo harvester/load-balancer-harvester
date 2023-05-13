@@ -8,6 +8,7 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:deprecatedversion
 // +kubebuilder:resource:shortName=lb;lbs,scope=Namespaced
 // +kubebuilder:printcolumn:name="DESCRIPTION",type=string,JSONPath=`.spec.description`
 // +kubebuilder:printcolumn:name="IPAM",type=string,JSONPath=`.spec.ipam`
@@ -52,8 +53,9 @@ type HeathCheck struct {
 	Port             int `json:"port"`
 	SuccessThreshold int `json:"successThreshold"`
 	FailureThreshold int `json:"failureThreshold"`
-	PeriodSeconds    int `json:"PeriodSeconds"`
-	TimeoutSeconds   int `json:"timeoutSeconds"`
+	// TODO: The first letter is uppercase, which is inconsistent with the k8s API.
+	PeriodSeconds  int `json:"PeriodSeconds"`
+	TimeoutSeconds int `json:"timeoutSeconds"`
 }
 
 type Condition struct {

@@ -1,0 +1,15 @@
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: input
+spec:
+  ranges:
+    - subnet: 192.168.11.0/24
+  selector:
+    scope:
+      - namespace: ns1
+        project: pj1
+        guestCluster: "*"
+      - namespace: "*"
+        project: pj1
+        guestCluster: cluster1
