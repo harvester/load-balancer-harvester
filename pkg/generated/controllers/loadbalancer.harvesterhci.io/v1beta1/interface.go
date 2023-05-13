@@ -19,9 +19,9 @@ limitations under the License.
 package v1beta1
 
 import (
+	v1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/rancher/lasso/pkg/controller"
 	"github.com/rancher/wrangler/pkg/schemes"
-	v1beta1 "k8s.io/api/discovery/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -30,7 +30,8 @@ func init() {
 }
 
 type Interface interface {
-	EndpointSlice() EndpointSliceController
+	IPPool() IPPoolController
+	LoadBalancer() LoadBalancerController
 }
 
 func New(controllerFactory controller.SharedControllerFactory) Interface {
@@ -43,6 +44,9 @@ type version struct {
 	controllerFactory controller.SharedControllerFactory
 }
 
-func (c *version) EndpointSlice() EndpointSliceController {
-	return NewEndpointSliceController(schema.GroupVersionKind{Group: "discovery.k8s.io", Version: "v1beta1", Kind: "EndpointSlice"}, "endpointslices", true, c.controllerFactory)
+func (c *version) IPPool() IPPoolController {
+	return NewIPPoolController(schema.GroupVersionKind{Group: "loadbalancer.harvesterhci.io", Version: "v1beta1", Kind: "IPPool"}, "ippools", false, c.controllerFactory)
+}
+func (c *version) LoadBalancer() LoadBalancerController {
+	return NewLoadBalancerController(schema.GroupVersionKind{Group: "loadbalancer.harvesterhci.io", Version: "v1beta1", Kind: "LoadBalancer"}, "loadbalancers", true, c.controllerFactory)
 }
