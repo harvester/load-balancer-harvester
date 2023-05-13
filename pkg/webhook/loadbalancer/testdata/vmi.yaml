@@ -1,0 +1,269 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  annotations:
+    harvesterhci.io/sshNames: '[]'
+    harvesterhci.io/waitForLeaseInterfaceNames: '[]'
+    kubernetes.io/hostname: 'y'
+    kubevirt.io/latest-observed-api-version: v1
+    kubevirt.io/storage-observed-api-version: v1alpha3
+  labels:
+    harvesterhci.io/vmName: vm1
+    kubevirt.io/nodeName: 'y'
+  name: vm1
+  namespace: default
+spec:
+  domain:
+    cpu:
+      cores: 2
+      model: host-model
+    devices:
+      disks:
+        - disk:
+            bus: virtio
+          name: cloudinitdisk
+        - bootOrder: 1
+          disk:
+            bus: virtio
+          name: disk-0
+      interfaces:
+        - bridge: {}
+          macAddress: 76:94:85:70:11:f8
+          model: virtio
+          name: nic-0
+    features:
+      acpi:
+        enabled: true
+    firmware:
+      uuid: 4cf4d387-0621-5656-b3c0-ed2bfadbbb19
+    machine:
+      type: q35
+    memory:
+      guest: 3996Mi
+    resources:
+      limits:
+        cpu: '2'
+        memory: 4Gi
+      requests:
+        cpu: 125m
+        memory: 2730Mi
+  evictionStrategy: LiveMigrate
+  networks:
+    - multus:
+        networkName: default/mgmt-untagged
+      name: nic-0
+  volumes:
+    - cloudInitNoCloud:
+        secretRef:
+          name: aaa-pool1-c0f8bf9e-52nhz-cloudinit
+      name: cloudinitdisk
+    - name: disk-0
+      persistentVolumeClaim:
+        claimName: aaa-pool1-c0f8bf9e-52nhz-disk-0-g4rb2
+status:
+  activePods:
+    3948370c-22cd-4f6a-aeac-aaca15809a1d: 'y'
+  conditions:
+    - lastProbeTime: null
+      lastTransitionTime: '2023-03-24T04:13:44Z'
+      status: 'True'
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: null
+      status: 'True'
+      type: LiveMigratable
+    - lastProbeTime: '2023-03-24T04:14:22Z'
+      lastTransitionTime: null
+      status: 'True'
+      type: AgentConnected
+  guestOSInfo:
+    id: ubuntu
+    kernelRelease: 4.15.0-206-generic
+    kernelVersion: '#217-Ubuntu SMP Fri Feb 3 19:10:13 UTC 2023'
+    name: Ubuntu
+    prettyName: Ubuntu 18.04.6 LTS
+    version: '18.04'
+    versionId: '18.04'
+  interfaces:
+    - infoSource: domain, guest-agent
+      interfaceName: enp1s0
+      ipAddress: 172.19.105.96
+      ipAddresses:
+        - 172.19.105.96
+        - fe80::7494:85ff:fe70:11f8
+      mac: 76:94:85:70:11:f8
+      name: nic-0
+    - infoSource: domain, guest-agent
+      interfaceName: calie568152d7fb
+      ipAddress: fe80::ecee:eeff:feee:eeee
+      ipAddresses:
+        - fe80::ecee:eeff:feee:eeee
+      mac: ee:ee:ee:ee:ee:ee
+    - infoSource: guest-agent
+      interfaceName: vxlan.calico
+      ipAddress: 10.42.120.128
+      ipAddresses:
+        - 10.42.120.128
+        - fe80::6446:d6ff:fe3e:f3ba
+      mac: 66:46:d6:3e:f3:ba
+  launcherContainerImageVersion: registry.suse.com/suse/sles/15.4/virt-launcher:0.54.0-150400.3.7.1
+  migrationMethod: BlockMigration
+  migrationTransport: Unix
+  nodeName: 'y'
+  phase: Running
+  phaseTransitionTimestamps:
+    - phase: Pending
+      phaseTransitionTimestamp: '2023-03-24T04:12:29Z'
+    - phase: Scheduling
+      phaseTransitionTimestamp: '2023-03-24T04:12:29Z'
+    - phase: Scheduled
+      phaseTransitionTimestamp: '2023-03-24T04:13:44Z'
+    - phase: Running
+      phaseTransitionTimestamp: '2023-03-24T04:13:47Z'
+  qosClass: Burstable
+  runtimeUser: 0
+  virtualMachineRevisionName: revision-start-vm-8ab3e9ba-8767-408a-a36b-b0a36fcbd4b5-2
+  volumeStatus:
+    - name: cloudinitdisk
+      size: 1048576
+      target: vda
+    - name: disk-0
+      persistentVolumeClaimInfo:
+        accessModes:
+          - ReadWriteMany
+        capacity:
+          storage: 40Gi
+        filesystemOverhead: '0.055'
+        requests:
+          storage: 40Gi
+        volumeMode: Block
+      target: vdb
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  annotations:
+    harvesterhci.io/sshNames: '[]'
+    harvesterhci.io/waitForLeaseInterfaceNames: '[]'
+    kubernetes.io/hostname: 'y'
+    kubevirt.io/latest-observed-api-version: v1
+    kubevirt.io/storage-observed-api-version: v1alpha3
+  labels:
+    harvesterhci.io/vmName: vm2
+    kubevirt.io/nodeName: 'y'
+  name: vm2
+  namespace: default
+spec:
+  domain:
+    cpu:
+      cores: 2
+      model: host-model
+    devices:
+      disks:
+        - disk:
+            bus: virtio
+          name: cloudinitdisk
+        - bootOrder: 1
+          disk:
+            bus: virtio
+          name: disk-0
+      interfaces:
+        - bridge: {}
+          macAddress: d2:07:81:d4:82:ab
+          model: virtio
+          name: nic-0
+    features:
+      acpi:
+        enabled: true
+    firmware:
+      uuid: 153c4777-461a-501f-b357-4f6ccc7412cc
+    machine:
+      type: q35
+    memory:
+      guest: 3996Mi
+    resources:
+      limits:
+        cpu: '2'
+        memory: 4Gi
+      requests:
+        cpu: 125m
+        memory: 2730Mi
+  evictionStrategy: LiveMigrate
+  networks:
+    - multus:
+        networkName: default/mgmt-untagged
+      name: nic-0
+  volumes:
+    - cloudInitNoCloud:
+        secretRef:
+          name: bbb-pool1-fd0d052b-rsk68-cloudinit
+      name: cloudinitdisk
+    - name: disk-0
+      persistentVolumeClaim:
+        claimName: bbb-pool1-fd0d052b-rsk68-disk-0-6qsbr
+status:
+  activePods:
+    bde110cb-77ad-4bdb-b2aa-c84a8c41473c: 'y'
+  conditions:
+    - lastProbeTime: null
+      lastTransitionTime: '2023-03-24T04:13:44Z'
+      status: 'True'
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: null
+      status: 'True'
+      type: LiveMigratable
+    - lastProbeTime: '2023-03-24T04:14:22Z'
+      lastTransitionTime: null
+      status: 'True'
+      type: AgentConnected
+  guestOSInfo:
+    id: ubuntu
+    kernelRelease: 4.15.0-206-generic
+    kernelVersion: '#217-Ubuntu SMP Fri Feb 3 19:10:13 UTC 2023'
+    name: Ubuntu
+    prettyName: Ubuntu 18.04.6 LTS
+    version: '18.04'
+    versionId: '18.04'
+  interfaces:
+    - infoSource: domain, guest-agent
+      interfaceName: enp1s0
+      ipAddress: 172.19.105.122
+      ipAddresses:
+        - 172.19.105.122
+        - fe80::d007:81ff:fed4:82ab
+      mac: d2:07:81:d4:82:ab
+      name: nic-0
+  launcherContainerImageVersion: registry.suse.com/suse/sles/15.4/virt-launcher:0.54.0-150400.3.7.1
+  migrationMethod: BlockMigration
+  migrationTransport: Unix
+  nodeName: 'y'
+  phase: Running
+  phaseTransitionTimestamps:
+    - phase: Pending
+      phaseTransitionTimestamp: '2023-03-24T04:12:30Z'
+    - phase: Scheduling
+      phaseTransitionTimestamp: '2023-03-24T04:12:30Z'
+    - phase: Scheduled
+      phaseTransitionTimestamp: '2023-03-24T04:13:44Z'
+    - phase: Running
+      phaseTransitionTimestamp: '2023-03-24T04:13:47Z'
+  qosClass: Burstable
+  runtimeUser: 0
+  virtualMachineRevisionName: revision-start-vm-31304fc5-43a5-4454-abed-21c8f3d5c0a0-2
+  volumeStatus:
+    - name: cloudinitdisk
+      size: 1048576
+      target: vda
+    - name: disk-0
+      persistentVolumeClaimInfo:
+        accessModes:
+          - ReadWriteMany
+        capacity:
+          storage: 40Gi
+        filesystemOverhead: '0.055'
+        requests:
+          storage: 40Gi
+        volumeMode: Block
+      target: vdb
+

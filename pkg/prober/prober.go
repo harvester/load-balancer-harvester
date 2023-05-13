@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/tevino/tcp-shaker"
-	"k8s.io/klog/v2"
 )
 
 type Prober interface {
@@ -24,7 +24,7 @@ func newTCPProber(ctx context.Context) *tcpProber {
 	checker := tcp.NewChecker()
 	go func() {
 		if err := checker.CheckingLoop(ctx); err != nil {
-			klog.Errorf("checking loop stopped due to fatal error: %s", err.Error())
+			logrus.Errorf("checking loop stopped due to fatal error: %s", err.Error())
 		}
 	}()
 

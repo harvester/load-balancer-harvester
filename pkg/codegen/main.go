@@ -3,9 +3,10 @@ package main
 import (
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
-	"k8s.io/api/discovery/v1beta1"
+	v1 "k8s.io/api/discovery/v1"
 
-	"github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
+	lbv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
+	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 )
 
 func main() {
@@ -15,14 +16,16 @@ func main() {
 		Groups: map[string]args.Group{
 			"loadbalancer.harvesterhci.io": {
 				Types: []interface{}{
-					v1alpha1.LoadBalancer{},
+					lbv1.LoadBalancer{},
+					lbv1.IPPool{},
+					lbv1alpha1.LoadBalancer{},
 				},
 				GenerateTypes:   true,
 				GenerateClients: true,
 			},
 			"discovery.k8s.io": {
 				Types: []interface{}{
-					v1beta1.EndpointSlice{},
+					v1.EndpointSlice{},
 				},
 				GenerateClients: true,
 			},

@@ -12,7 +12,8 @@ const (
 	healthyCase   = "healthy case"
 	unhealthyCase = "unhealthy case"
 
-	healthyAddress   = "rancher.com:80"
+	// dns.opendns.com
+	healthyAddress   = "208.67.222.222:80"
 	unhealthyAddress = "xxxxxxxxxx:80"
 )
 
