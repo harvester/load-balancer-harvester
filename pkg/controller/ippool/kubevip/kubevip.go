@@ -95,9 +95,12 @@ func (c *IPPoolConverter) ConvertFromKubevipConfigMap() ([]*lbv1.IPPool, error) 
 // AfterConversion will add the annotation into kubevip configmap to tag that the conversion is done.
 func (c *IPPoolConverter) AfterConversion() error {
 	cm, err := c.cmClient.Get(kubeSystemNamespace, kubevipIPPoolConfigMap, metav1.GetOptions{})
-	if err != nil {
+	if apierrors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
 		return err
 	}
+
 	if cm.Annotations != nil && cm.Annotations[keyAfterConversion] == utils.ValueTrue {
 		return nil
 	}
