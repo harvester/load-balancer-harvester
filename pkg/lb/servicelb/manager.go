@@ -69,8 +69,11 @@ func (m *Manager) updateHealthCondition(uid string, isHealthy bool) error {
 	}
 
 	eps, err := m.endpointSliceCache.Get(ns, name)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("get cache of endpointslice %s/%s failed, error: %w", ns, name, err)
+	} else if errors.IsNotFound(err) {
+		logrus.Warnf("endpointSlice %s/%s not found", ns, name)
+		return nil
 	}
 
 	for i, ep := range eps.Endpoints {
@@ -106,9 +109,13 @@ func (m *Manager) EnsureLoadBalancer(lb *lbv1.LoadBalancer) error {
 
 func (m *Manager) DeleteLoadBalancer(lb *lbv1.LoadBalancer) error {
 	eps, err := m.endpointSliceCache.Get(lb.Namespace, lb.Name)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return err
+	} else if errors.IsNotFound(err) {
+		logrus.Warnf("endpointSlice %s/%s not found", lb.Namespace, lb.Name)
+		return nil
 	}
+
 	m.removeProbes(lb, eps)
 
 	return nil
@@ -116,8 +123,11 @@ func (m *Manager) DeleteLoadBalancer(lb *lbv1.LoadBalancer) error {
 
 func (m *Manager) GetBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendServer, error) {
 	eps, err := m.endpointSliceCache.Get(lb.Namespace, lb.Name)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
+	} else if errors.IsNotFound(err) {
+		logrus.Warnf("endpointSlice %s/%s not found", lb.Namespace, lb.Name)
+		return []pkglb.BackendServer{}, nil
 	}
 
 	servers := make([]pkglb.BackendServer, 0, len(eps.Endpoints))
@@ -135,9 +145,13 @@ func (m *Manager) GetBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendServe
 
 func (m *Manager) AddBackendServers(lb *lbv1.LoadBalancer, servers []pkglb.BackendServer) (bool, error) {
 	eps, err := m.endpointSliceCache.Get(lb.Namespace, lb.Name)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return false, err
+	} else if errors.IsNotFound(err) {
+		logrus.Warnf("endpointSlice %s/%s not found", lb.Namespace, lb.Name)
+		return false, nil
 	}
+
 	var epsCopy *discoveryv1.EndpointSlice
 	endpoints := make([]*discoveryv1.Endpoint, 0, len(servers))
 	for _, server := range servers {
@@ -185,8 +199,11 @@ func (m *Manager) AddBackendServers(lb *lbv1.LoadBalancer, servers []pkglb.Backe
 
 func (m *Manager) RemoveBackendServers(lb *lbv1.LoadBalancer, servers []pkglb.BackendServer) (bool, error) {
 	eps, err := m.endpointSliceCache.Get(lb.Namespace, lb.Name)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return false, err
+	} else if errors.IsNotFound(err) {
+		logrus.Warnf("endpointSlice %s/%s not found", lb.Namespace, lb.Name)
+		return false, nil
 	}
 
 	indexes := make([]int, 0)
