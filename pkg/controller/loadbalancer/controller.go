@@ -86,37 +86,60 @@ func (h *Handler) OnChange(_ string, lb *lbv1.LoadBalancer) (*lbv1.LoadBalancer,
 	lbCopy := lb.DeepCopy()
 	allocatedAddress, err := h.allocateIP(lb)
 	if err != nil {
-		return nil, fmt.Errorf("allocate ip for lb %s/%s failed, error: %w", lb.Namespace, lb.Name, err)
+		err = fmt.Errorf("allocate ip for lb %s/%s failed, error: %w", lb.Namespace, lb.Name, err)
+		return h.updateStatus(lbCopy, lb, err)
 	}
 	if allocatedAddress != nil {
 		lbCopy.Status.AllocatedAddress = *allocatedAddress
 	}
 	// The workload type defaults to VM if not specified to be compatible with previous versions
 	if lb.Spec.WorkloadType == lbv1.VM || lb.Spec.WorkloadType == "" {
-		if err := h.lbManager.EnsureLoadBalancer(lbCopy); err != nil {
-			return nil, fmt.Errorf("ensure load balancer %s/%s failed, error: %w", lb.Namespace, lb.Name, err)
-		}
-		ip, err := h.waitServiceExternalIP(lb.Namespace, lb.Name)
-		if err != nil {
-			return nil, fmt.Errorf("wait service %s/%s external ip failed, error: %w", lb.Namespace, lb.Name, err)
-		}
-		lbCopy.Status.Address = ip
-		servers, err := h.getBackendServers(lbCopy)
-		if err != nil {
-			return nil, fmt.Errorf("get backend servers of lb %s/%s failed, error: %w", lb.Namespace, lb.Name, err)
-		}
-		lbCopy.Status.BackendServers = servers
-	}
-	// if the status didn't change, don't update it
-	if !reflect.DeepEqual(lbCopy.Status, lb.Status) {
-		lbv1.LoadBalancerReady.True(lbCopy)
-		lbv1.LoadBalancerReady.Message(lbCopy, "")
-		if _, err := h.lbClient.Update(lbCopy); err != nil {
-			return nil, fmt.Errorf("update lb %s/%s status failed, error: %w", lb.Namespace, lb.Name, err)
+		if err = h.ensureVMLoadBalancer(lbCopy); err != nil {
+			return h.updateStatus(lbCopy, lb, err)
 		}
 	}
 
-	return lbCopy, nil
+	return h.updateStatus(lbCopy, lb, nil)
+}
+
+func (h *Handler) ensureVMLoadBalancer(lb *lbv1.LoadBalancer) error {
+	if err := h.lbManager.EnsureLoadBalancer(lb); err != nil {
+		return fmt.Errorf("ensure load balancer %s/%s failed, error: %w", lb.Namespace, lb.Name, err)
+	}
+	ip, err := h.waitServiceExternalIP(lb.Namespace, lb.Name)
+	if err != nil {
+		return fmt.Errorf("wait service %s/%s external ip failed, error: %w", lb.Namespace, lb.Name, err)
+	}
+	lb.Status.Address = ip
+	servers, err := h.getBackendServers(lb)
+	if err != nil {
+		return fmt.Errorf("get backend servers of lb %s/%s failed, error: %w", lb.Namespace, lb.Name, err)
+	}
+	lb.Status.BackendServers = servers
+
+	return nil
+}
+
+func (h *Handler) updateStatus(lbCopy, lb *lbv1.LoadBalancer, err error) (*lbv1.LoadBalancer, error) {
+	if err != nil {
+		lbv1.LoadBalancerReady.False(lbCopy)
+		lbv1.LoadBalancerReady.Message(lbCopy, err.Error())
+	} else {
+		lbv1.LoadBalancerReady.True(lbCopy)
+		lbv1.LoadBalancerReady.Message(lbCopy, "")
+	}
+
+	// status didn't change, don't update it
+	if reflect.DeepEqual(lbCopy.Status, lb.Status) {
+		return lbCopy, err
+	}
+
+	updatedLb, updatedErr := h.lbClient.Update(lbCopy)
+	if updatedErr != nil {
+		return nil, fmt.Errorf("update lb %s/%s status failed, error: %w", lb.Namespace, lb.Name, updatedErr)
+	}
+
+	return updatedLb, err
 }
 
 func (h *Handler) getBackendServers(lb *lbv1.LoadBalancer) ([]string, error) {
