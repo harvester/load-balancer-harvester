@@ -445,11 +445,11 @@ func (m *Manager) constructEndpointSlice(cur *discoveryv1.EndpointSlice, lb *lbv
 	}
 
 	ports := make([]discoveryv1.EndpointPort, 0, len(lb.Spec.Listeners))
-	for _, listener := range lb.Spec.Listeners {
+	for i := range lb.Spec.Listeners {
 		port := discoveryv1.EndpointPort{
-			Name:     &listener.Name,
-			Protocol: &listener.Protocol,
-			Port:     &listener.BackendPort,
+			Name:     &(lb.Spec.Listeners[i].Name),
+			Protocol: &(lb.Spec.Listeners[i].Protocol),
+			Port:     &(lb.Spec.Listeners[i].BackendPort),
 		}
 		ports = append(ports, port)
 	}
@@ -498,6 +498,8 @@ func (m *Manager) constructEndpointSlice(cur *discoveryv1.EndpointSlice, lb *lbv
 		}
 	}
 	eps.Endpoints = endpoints
+
+	logrus.Infoln("constructEndpointSlice: ", eps)
 
 	return eps, nil
 }
