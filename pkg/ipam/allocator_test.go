@@ -2,15 +2,26 @@ package ipam
 
 import (
 	"fmt"
+	"net"
 	"testing"
 
+	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/plugins/plugins/ipam/host-local/backend/allocator"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester-load-balancer/pkg/ipam/store"
 )
 
-const subnet = "192.168.100.0/24"
+var (
+	cClassSubnet        = "192.168.100.0/24"
+	cClassSubnetIP      = net.IP{192, 168, 100, 0}
+	cClassSubnetMask    = net.IPv4Mask(255, 255, 255, 0)
+	cClassSubnetIPStart = net.IP{192, 168, 100, 1}
+	cClassSubnetIPEnd   = net.IP{192, 168, 100, 254}
+	p2pIPStr            = "192.168.100.10/32"
+	p2pIP               = net.IP{192, 168, 100, 10}
+	p2pMask             = net.IPv4Mask(255, 255, 255, 255)
+)
 
 func newFakeAllocator(name string, ranges []lbv1.Range) (*Allocator, error) {
 	if len(ranges) == 0 {
@@ -20,8 +31,8 @@ func newFakeAllocator(name string, ranges []lbv1.Range) (*Allocator, error) {
 	rangeSlice := make([]allocator.Range, 0)
 	var total int64
 
-	for _, r := range ranges {
-		element, err := MakeRange(&r)
+	for i := range ranges {
+		element, err := MakeRange(&ranges[i])
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +52,7 @@ func newFakeAllocator(name string, ranges []lbv1.Range) (*Allocator, error) {
 
 func TestAllocator_Total(t *testing.T) {
 	name := "a1"
-	a1, err := newFakeAllocator(name, []lbv1.Range{{Subnet: subnet}})
+	a1, err := newFakeAllocator(name, []lbv1.Range{{Subnet: cClassSubnet}})
 	if err != nil {
 		t.Fatalf("failed to create allocator %s, error: %s", name, err.Error())
 	}
@@ -49,7 +60,7 @@ func TestAllocator_Total(t *testing.T) {
 	name = "a2"
 	a2, err := newFakeAllocator(name, []lbv1.Range{
 		{
-			Subnet:     subnet,
+			Subnet:     cClassSubnet,
 			RangeStart: "192.168.100.1",
 			RangeEnd:   "192.168.100.10",
 			Gateway:    "192.168.100.11",
@@ -62,7 +73,7 @@ func TestAllocator_Total(t *testing.T) {
 	name = "a3"
 	a3, err := newFakeAllocator(name, []lbv1.Range{
 		{
-			Subnet:     subnet,
+			Subnet:     cClassSubnet,
 			RangeStart: "192.168.100.1",
 			RangeEnd:   "192.168.100.10",
 		},
@@ -74,7 +85,7 @@ func TestAllocator_Total(t *testing.T) {
 	name = "a4"
 	a4, err := newFakeAllocator(name, []lbv1.Range{
 		{
-			Subnet:     subnet,
+			Subnet:     cClassSubnet,
 			RangeStart: "192.168.100.251",
 		},
 	})
@@ -85,7 +96,7 @@ func TestAllocator_Total(t *testing.T) {
 	name = "a5"
 	a5, err := newFakeAllocator(name, []lbv1.Range{
 		{
-			Subnet:   subnet,
+			Subnet:   cClassSubnet,
 			RangeEnd: "192.168.100.10",
 		},
 	})
@@ -139,4 +150,94 @@ func TestAllocator_Total(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMakeRange(t *testing.T) {
+	tests := []struct {
+		name    string
+		r       *lbv1.Range
+		want    *allocator.Range
+		wantErr bool
+	}{
+		{
+			name: "p2pIPNet",
+			r: &lbv1.Range{
+				Subnet: p2pIPStr,
+			},
+			want: &allocator.Range{
+				Subnet: types.IPNet(net.IPNet{
+					IP:   p2pIP,
+					Mask: p2pMask,
+				}),
+				RangeStart: p2pIP,
+				RangeEnd:   p2pIP,
+			},
+			wantErr: false,
+		},
+		{
+			name: "p2pIPNetWithWrongRangeStart",
+			r: &lbv1.Range{
+				Subnet:     p2pIPStr,
+				RangeStart: "192.168.101.10",
+			},
+			wantErr: true,
+		},
+		{
+			name: "cClassIPNet",
+			r: &lbv1.Range{
+				Subnet: cClassSubnet,
+			},
+			want: &allocator.Range{
+				Subnet: types.IPNet(net.IPNet{
+					IP:   cClassSubnetIP,
+					Mask: cClassSubnetMask,
+				}),
+				RangeStart: cClassSubnetIPStart,
+				RangeEnd:   cClassSubnetIPEnd,
+				Gateway:    cClassSubnetIPStart,
+			},
+			wantErr: false,
+		},
+		{
+			name: "cClassIPNetWithRangeStartAndEnd",
+			r: &lbv1.Range{
+				Subnet:     cClassSubnet,
+				RangeStart: "192.168.100.30",
+				RangeEnd:   "192.168.100.40",
+			},
+			want: &allocator.Range{
+				Subnet: types.IPNet(net.IPNet{
+					IP:   cClassSubnetIP,
+					Mask: cClassSubnetMask,
+				}),
+				RangeStart: net.ParseIP("192.168.100.30"),
+				RangeEnd:   net.ParseIP("192.168.100.40"),
+				Gateway:    cClassSubnetIPStart,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		got, err := MakeRange(tt.r)
+		if (err != nil) != tt.wantErr || !rangesEqual(got, tt.want) {
+			fmt.Printf("got: %v, %v, %v. %v\n", got.Subnet, got.RangeStart, got.RangeEnd, got.Gateway)
+			fmt.Printf("want: %v, %v, %v. %v\n", tt.want.Subnet, tt.want.RangeStart, tt.want.RangeEnd, tt.want.Gateway)
+			t.Errorf("test case %s failed, got = (%v,%v,%v.%v), want (%v,%v,%v,%v), err = %v, wantErr %v",
+				tt.name, got.Subnet, got.RangeStart, got.RangeEnd, got.Gateway,
+				tt.want.Subnet, tt.want.RangeStart, tt.want.RangeEnd, tt.want.Gateway, err, tt.wantErr)
+		}
+	}
+}
+
+func rangesEqual(r1, r2 *allocator.Range) bool {
+	if r1 == nil || r2 == nil {
+		return r1 == r2
+	}
+
+	return r1.RangeStart.Equal(r2.RangeStart) &&
+		r1.RangeEnd.Equal(r2.RangeEnd) &&
+		r1.Subnet.IP.Equal(r2.Subnet.IP) &&
+		r1.Subnet.Mask.String() == r2.Subnet.Mask.String() &&
+		r1.Gateway.Equal(r2.Gateway)
 }

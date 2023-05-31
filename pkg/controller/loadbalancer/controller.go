@@ -285,10 +285,11 @@ func (h *Handler) waitServiceExternalIP(namespace, name string) (string, error) 
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	tick := ticker.C
+	timeout := time.After(defaultWaitIPTimeout)
 
 	for {
 		select {
-		case <-time.After(defaultWaitIPTimeout):
+		case <-timeout:
 			return "", fmt.Errorf("timeout")
 		case <-tick:
 			svc, err := h.serviceCache.Get(namespace, name)
