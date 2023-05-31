@@ -18,6 +18,8 @@ import (
 	"github.com/harvester/harvester-load-balancer/pkg/ipam/store"
 )
 
+const p2pMaskStr = "ffffffff"
+
 type Allocator struct {
 	*allocator.IPAllocator
 	name     string
@@ -59,16 +61,21 @@ func NewAllocator(name string, ranges []lbv1.Range, cache ctllbv1.IPPoolCache, c
 }
 
 func MakeRange(r *lbv1.Range) (*allocator.Range, error) {
-	_, ipNet, err := net.ParseCIDR(r.Subnet)
+	ipv4, ipNet, err := net.ParseCIDR(r.Subnet)
 	if err != nil {
 		return nil, fmt.Errorf("invalide range %+v", r)
 	}
 
 	var start, end, gateway net.IP
+	mask := ipNet.Mask.String()
 	// The rangeStart defaults to “.1” IP inside the “subnet” block.
 	if r.RangeStart == "" {
 		// To return the IP with 16 bytes representation as same as what the function net.ParseIP returns
-		start = ip.NextIP(ipNet.IP).To16()
+		if mask == p2pMaskStr {
+			start = ipv4.To16()
+		} else {
+			start = ip.NextIP(ipNet.IP).To16()
+		}
 	} else {
 		start = net.ParseIP(r.RangeStart)
 		if start == nil {
@@ -82,7 +89,11 @@ func MakeRange(r *lbv1.Range) (*allocator.Range, error) {
 
 	// The rangeEnd defaults to “.254” IP inside the “subnet” block for ipv4, “.255” for IPv6.
 	if r.RangeEnd == "" {
-		end = lastIP(*ipNet).To16()
+		if mask == p2pMaskStr {
+			end = ipv4.To16()
+		} else {
+			end = lastIP(*ipNet).To16()
+		}
 	} else {
 		end = net.ParseIP(r.RangeEnd)
 		if end == nil {
@@ -101,9 +112,14 @@ func MakeRange(r *lbv1.Range) (*allocator.Range, error) {
 	}
 
 	// The gateway defaults to “.1” IP inside the “subnet” block.
+	// If the subnet is point to point IP, leave the gateway as empty
 	// The gateway will be skipped during allocation.
 	if r.Gateway == "" {
-		gateway = ip.NextIP(ipNet.IP).To16()
+		if mask == p2pMaskStr {
+			gateway = nil
+		} else {
+			gateway = ip.NextIP(ipNet.IP).To16()
+		}
 	} else {
 		gateway = net.ParseIP(r.Gateway)
 		if gateway == nil {
