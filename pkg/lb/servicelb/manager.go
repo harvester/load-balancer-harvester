@@ -266,8 +266,8 @@ func (m *Manager) ensureProbes(lb *lbv1.LoadBalancer, eps *discoveryv1.EndpointS
 		return
 	}
 
-	for _, ep := range eps.Endpoints {
-		m.addOneProbe(lb, &ep)
+	for i := range eps.Endpoints {
+		m.addOneProbe(lb, &eps.Endpoints[i])
 	}
 }
 
@@ -310,8 +310,8 @@ func (m *Manager) addOneProbe(lb *lbv1.LoadBalancer, ep *discoveryv1.Endpoint) {
 }
 
 func (m *Manager) removeProbes(lb *lbv1.LoadBalancer, eps *discoveryv1.EndpointSlice) {
-	for _, endpoint := range eps.Endpoints {
-		m.removeOneProbe(lb, &endpoint)
+	for i := range eps.Endpoints {
+		m.removeOneProbe(lb, &eps.Endpoints[i])
 	}
 }
 

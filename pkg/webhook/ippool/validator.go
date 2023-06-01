@@ -144,16 +144,16 @@ func (i *ipPoolValidator) getOtherPoolsRanges(myName string) ([]allocator.RangeS
 func checkRange(r allocator.RangeSet, others ...allocator.RangeSet) error {
 	// check overlaps among the ranges of rangeSet r
 	for i, r1 := range r {
-		for _, r2 := range r[i+1:] {
-			if r1.Overlaps(&r2) {
+		for j, r2 := range r[i+1:] {
+			if r1.Overlaps(&r[i+1+j]) {
 				return fmt.Errorf("there are overlaps between range %+v and %+v", r1, r2)
 			}
 		}
 	}
 
 	// check overlaps with other rangeSet
-	for _, rs := range others {
-		if r.Overlaps(&rs) {
+	for i := range others {
+		if r.Overlaps(&others[i]) {
 			return fmt.Errorf("the ranges %+v overlap with other pools", r)
 		}
 	}
