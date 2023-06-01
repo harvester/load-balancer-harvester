@@ -8,8 +8,8 @@ import (
 
 func LBRangesToAllocatorRangeSet(ranges []lbv1.Range) (allocator.RangeSet, error) {
 	ars := make([]allocator.Range, len(ranges))
-	for i, r := range ranges {
-		ar, err := MakeRange(&r)
+	for i := range ranges {
+		ar, err := MakeRange(&ranges[i])
 		if err != nil {
 			return nil, err
 		}

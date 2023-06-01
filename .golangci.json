@@ -13,7 +13,8 @@
 			"gosimple",
 			"prealloc",
 			"deadcode",
-			"errcheck"
+			"errcheck",
+			"gosec"
 		]
 	},
 	"run": {

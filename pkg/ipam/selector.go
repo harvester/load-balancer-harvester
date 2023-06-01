@@ -39,8 +39,8 @@ func (m *Matcher) Matches(r *Requirement) bool {
 		return false
 	}
 
-	for _, tuple := range m.Scope {
-		if isMatch(&tuple, r) {
+	for i := range m.Scope {
+		if isMatch(&m.Scope[i], r) {
 			return true
 		}
 	}

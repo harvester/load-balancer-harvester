@@ -237,12 +237,12 @@ func (c *IPPoolConverter) assignAllAllocatedIPs(pools []*lbv1.IPPool) error {
 		return fmt.Errorf("list configmaps failed, error: %w", err)
 	}
 
-	for _, cm := range cms.Items {
+	for i, cm := range cms.Items {
 		// skip the configmap which is not kube-vip IP pool configmap
 		if cm.Name != kubevipIPPoolConfigMap {
 			continue
 		}
-		if err := c.assignAllocatedIPs(&cm, m[cm.Namespace]); err != nil {
+		if err := c.assignAllocatedIPs(&cms.Items[i], m[cm.Namespace]); err != nil {
 			return fmt.Errorf("assign allocated IPs from configmap %s/%s failed, error: %w", cm.Namespace, cm.Name, err)
 		}
 	}

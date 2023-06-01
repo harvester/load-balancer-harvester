@@ -41,8 +41,8 @@ func NewAllocator(name string, ranges []lbv1.Range, cache ctllbv1.IPPoolCache, c
 	rangeSlice := make([]allocator.Range, 0)
 	var total int64
 
-	for _, r := range ranges {
-		element, err := MakeRange(&r)
+	for i := range ranges {
+		element, err := MakeRange(&ranges[i])
 		if err != nil {
 			return nil, err
 		}
