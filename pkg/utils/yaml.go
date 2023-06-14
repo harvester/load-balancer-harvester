@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 
+	mgmtcattlev3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -21,6 +23,8 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	lbv1beta1.AddToScheme,
 	lbv1alpha1.AddToScheme,
 	kubevirtv1.AddToScheme,
+	corev1.AddToScheme,
+	mgmtcattlev3.AddToScheme,
 }
 
 // ParseFromFile parses a YAML file into a list of Kubernetes objects

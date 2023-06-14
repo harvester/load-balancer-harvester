@@ -1,0 +1,36 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  name: rke2-pool1-0092bbba-wdp7k
+  namespace: default
+  labels:
+    harvesterhci.io/creator: "docker-machine-driver-harvester"
+spec:
+  networks:
+    - multus:
+        networkName: default/mgmt-untagged
+      name: nic-0
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  name: rke2-pool2-0092bbbc-wdp7k
+  namespace: default
+spec:
+  networks:
+    - multus:
+        networkName: default/mgmt-untagged
+      name: nic-0
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  name: k3s-pool1-0092bbbc-wab7a
+  namespace: default
+  labels:
+    harvesterhci.io/creator: "docker-machine-driver-harvester"
+spec:
+  networks:
+    - multus:
+        networkName: default/vlan100
+      name: nic-0

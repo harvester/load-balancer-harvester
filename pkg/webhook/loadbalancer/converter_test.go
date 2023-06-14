@@ -20,25 +20,27 @@ import (
 	"github.com/harvester/harvester-load-balancer/pkg/utils/fakeclients"
 )
 
+const converterCaseDirectory = "./testdata/converter/"
+
 func TestConverter_Convert(t *testing.T) {
-	vmis, err := utils.ParseFromFile(filepath.Join("./testdata/vmi.yaml"))
+	vmis, err := utils.ParseFromFile(filepath.Join(converterCaseDirectory + "vmi.yaml"))
 	if err != nil {
 		t.Error(err)
 	}
-	pools, err := utils.ParseFromFile(filepath.Join("./testdata/pool.yaml"))
+	pools, err := utils.ParseFromFile(filepath.Join(converterCaseDirectory + "pool.yaml"))
 	if err != nil {
 		t.Error(err)
 	}
 	virtualMachineInstanceCache := harvesterfakeclients.VirtualMachineInstanceCache(harvesterfake.NewSimpleClientset(vmis...).KubevirtV1().VirtualMachineInstances)
 	ippoolCache := fakeclients.IPPoolCache(fake.NewSimpleClientset(pools...).LoadbalancerV1beta1().IPPools)
 	converter := NewConverter(virtualMachineInstanceCache, ippoolCache)
-	cases, err := utils.GetSubdirectories("./testdata")
+	cases, err := utils.GetSubdirectories(converterCaseDirectory)
 	if err != nil {
 		t.Error(err)
 	}
 
 	for _, c := range cases {
-		v1alpha1LoadBalancer, v1beta1LoadBalancer, err := getLBResourceFromYAMLFile(filepath.Join("./testdata", c, "loadbalancer.yaml"))
+		v1alpha1LoadBalancer, v1beta1LoadBalancer, err := getLBResourceFromYAMLFile(filepath.Join(converterCaseDirectory, c, "loadbalancer.yaml"))
 		if err != nil {
 			t.Errorf("test %s failed, error: %v", c, err)
 		}

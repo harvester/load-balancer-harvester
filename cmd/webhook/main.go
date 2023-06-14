@@ -9,6 +9,7 @@ import (
 	ctlkubevirt "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io"
 	"github.com/harvester/webhook/pkg/config"
 	"github.com/harvester/webhook/pkg/server"
+	ctlcore "github.com/rancher/wrangler/pkg/generated/controllers/core"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/rancher/wrangler/pkg/start"
@@ -98,24 +99,35 @@ func run(ctx context.Context, cfg *rest.Config, options *config.Options) error {
 	cniFactory := ctlcni.NewFactoryFromConfigOrDie(cfg)
 	lbFactory := ctllb.NewFactoryFromConfigOrDie(cfg)
 	kubevirtFactory := ctlkubevirt.NewFactoryFromConfigOrDie(cfg)
+	coreFactory := ctlcore.NewFactoryFromConfigOrDie(cfg)
+
 	// must declare before start the nad factory
 	poolCache := lbFactory.Loadbalancer().V1beta1().IPPool().Cache()
 	vmiCache := kubevirtFactory.Kubevirt().V1().VirtualMachineInstance().Cache()
 	nadCache := cniFactory.K8s().V1().NetworkAttachmentDefinition().Cache()
-	if err := start.All(ctx, options.Threadiness, cniFactory, lbFactory, kubevirtFactory); err != nil {
+	namespaceCache := coreFactory.Core().V1().Namespace().Cache()
+
+	if err := start.All(ctx, options.Threadiness,
+		cniFactory, lbFactory, kubevirtFactory, coreFactory); err != nil {
 		return fmt.Errorf("failed to start controller: %w", err)
 	}
 
 	webhookServer := server.NewWebhookServer(ctx, cfg, name, options)
-	if err := webhookServer.RegisterValidators(ippool.NewIPPoolValidator(poolCache), loadbalancer.NewValidator(vmiCache)); err != nil {
+
+	if err := webhookServer.RegisterValidators(ippool.NewIPPoolValidator(poolCache),
+		loadbalancer.NewValidator(vmiCache)); err != nil {
 		return fmt.Errorf("failed to register ip pool validator: %w", err)
 	}
-	if err := webhookServer.RegisterMutators(ippool.NewIPPoolMutator(nadCache)); err != nil {
+
+	if err := webhookServer.RegisterMutators(ippool.NewIPPoolMutator(nadCache),
+		loadbalancer.NewMutator(namespaceCache, vmiCache)); err != nil {
 		return fmt.Errorf("failed to register ip pool mutator: %w", err)
 	}
+
 	if err := webhookServer.RegisterConverters(loadbalancer.NewConverter(vmiCache, poolCache)); err != nil {
 		return fmt.Errorf("failed to register load balancer converter: %w", err)
 	}
+
 	if err := webhookServer.Start(); err != nil {
 		return fmt.Errorf("failed to start webhook server: %w", err)
 	}
