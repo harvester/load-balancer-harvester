@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
-	longhornv1 "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta1"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	lhv1beta2 "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta2"
 	"github.com/rancher/steve/pkg/server"
 	corev1 "k8s.io/api/core/v1"
 	kubevirtv1 "kubevirt.io/api/core/v1"
@@ -23,6 +23,7 @@ const (
 	VMByNetworkIndex                   = "vm.harvesterhci.io/vm-by-network"
 	PodByNodeNameIndex                 = "harvesterhci.io/pod-by-nodename"
 	PodByPVCIndex                      = "harvesterhci.io/pod-by-pvc"
+	PodByVMNameIndex                   = "harvesterhci.io/pod-by-vmname"
 	VolumeByNodeIndex                  = "harvesterhci.io/volume-by-node"
 	VMBackupBySourceVMUIDIndex         = "harvesterhci.io/vmbackup-by-source-vm-uid"
 	VMBackupBySourceVMNameIndex        = "harvesterhci.io/vmbackup-by-source-vm-name"
@@ -41,11 +42,12 @@ func Setup(ctx context.Context, server *server.Server, controllers *server.Contr
 	podInformer := management.CoreFactory.Core().V1().Pod().Cache()
 	podInformer.AddIndexer(PodByNodeNameIndex, PodByNodeName)
 	podInformer.AddIndexer(PodByPVCIndex, PodByPVC)
+	podInformer.AddIndexer(PodByVMNameIndex, PodByVMName)
 
-	volumeInformer := management.LonghornFactory.Longhorn().V1beta1().Volume().Cache()
+	volumeInformer := management.LonghornFactory.Longhorn().V1beta2().Volume().Cache()
 	volumeInformer.AddIndexer(VolumeByNodeIndex, VolumeByNodeName)
 
-	volumeSnapshotInformer := management.SnapshotFactory.Snapshot().V1beta1().VolumeSnapshot().Cache()
+	volumeSnapshotInformer := management.SnapshotFactory.Snapshot().V1().VolumeSnapshot().Cache()
 	volumeSnapshotInformer.AddIndexer(VolumeSnapshotBySourcePVCIndex, volumeSnapshotBySourcePVC)
 
 	vmBackupInformer := management.HarvesterFactory.Harvesterhci().V1beta1().VirtualMachineBackup().Cache()
@@ -89,6 +91,14 @@ func PodByPVC(obj *corev1.Pod) ([]string, error) {
 		}
 	}
 	return pvcNames, nil
+}
+
+func PodByVMName(obj *corev1.Pod) ([]string, error) {
+	vmName, ok := obj.Labels[util.LabelVMName]
+	if !ok {
+		return []string{}, nil
+	}
+	return []string{fmt.Sprintf("%s/%s", obj.Namespace, vmName)}, nil
 }
 
 func pvcByDataSourceVolumeSnapshot(obj *corev1.PersistentVolumeClaim) ([]string, error) {
@@ -138,6 +148,6 @@ func volumeSnapshotBySourcePVC(obj *snapshotv1.VolumeSnapshot) ([]string, error)
 	return []string{fmt.Sprintf("%s/%s", obj.Namespace, *obj.Spec.Source.PersistentVolumeClaimName)}, nil
 }
 
-func VolumeByNodeName(obj *longhornv1.Volume) ([]string, error) {
+func VolumeByNodeName(obj *lhv1beta2.Volume) ([]string, error) {
 	return []string{obj.Spec.NodeID}, nil
 }

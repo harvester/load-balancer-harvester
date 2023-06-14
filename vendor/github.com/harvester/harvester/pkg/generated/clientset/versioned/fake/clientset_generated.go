@@ -30,16 +30,16 @@ import (
 	fakekubevirtv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/kubevirt.io/v1/fake"
 	loggingv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/logging.banzaicloud.io/v1beta1"
 	fakeloggingv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/logging.banzaicloud.io/v1beta1/fake"
-	longhornv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/longhorn.io/v1beta1"
-	fakelonghornv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/longhorn.io/v1beta1/fake"
+	longhornv1beta2 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/longhorn.io/v1beta2"
+	fakelonghornv1beta2 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/longhorn.io/v1beta2/fake"
 	managementv3 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/management.cattle.io/v3"
 	fakemanagementv3 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/management.cattle.io/v3/fake"
 	monitoringv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/monitoring.coreos.com/v1"
 	fakemonitoringv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/monitoring.coreos.com/v1/fake"
 	networkingv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/networking.k8s.io/v1"
 	fakenetworkingv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/networking.k8s.io/v1/fake"
-	snapshotv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/snapshot.storage.k8s.io/v1beta1"
-	fakesnapshotv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/snapshot.storage.k8s.io/v1beta1/fake"
+	snapshotv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/snapshot.storage.k8s.io/v1"
+	fakesnapshotv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/snapshot.storage.k8s.io/v1/fake"
 	upgradev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1"
 	fakeupgradev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -124,9 +124,9 @@ func (c *Clientset) LoggingV1beta1() loggingv1beta1.LoggingV1beta1Interface {
 	return &fakeloggingv1beta1.FakeLoggingV1beta1{Fake: &c.Fake}
 }
 
-// LonghornV1beta1 retrieves the LonghornV1beta1Client
-func (c *Clientset) LonghornV1beta1() longhornv1beta1.LonghornV1beta1Interface {
-	return &fakelonghornv1beta1.FakeLonghornV1beta1{Fake: &c.Fake}
+// LonghornV1beta2 retrieves the LonghornV1beta2Client
+func (c *Clientset) LonghornV1beta2() longhornv1beta2.LonghornV1beta2Interface {
+	return &fakelonghornv1beta2.FakeLonghornV1beta2{Fake: &c.Fake}
 }
 
 // ManagementV3 retrieves the ManagementV3Client
@@ -144,9 +144,9 @@ func (c *Clientset) NetworkingV1() networkingv1.NetworkingV1Interface {
 	return &fakenetworkingv1.FakeNetworkingV1{Fake: &c.Fake}
 }
 
-// SnapshotV1beta1 retrieves the SnapshotV1beta1Client
-func (c *Clientset) SnapshotV1beta1() snapshotv1beta1.SnapshotV1beta1Interface {
-	return &fakesnapshotv1beta1.FakeSnapshotV1beta1{Fake: &c.Fake}
+// SnapshotV1 retrieves the SnapshotV1Client
+func (c *Clientset) SnapshotV1() snapshotv1.SnapshotV1Interface {
+	return &fakesnapshotv1.FakeSnapshotV1{Fake: &c.Fake}
 }
 
 // UpgradeV1 retrieves the UpgradeV1Client
