@@ -8,7 +8,6 @@ replace (
 	github.com/docker/docker => github.com/docker/docker v20.10.9+incompatible // oras dep requires a replace is set
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.7
 
-	github.com/harvester/harvester => github.com/harvester/harvester v0.0.2-0.20230425084547-365036c52ce3
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20191219222812-2987a591a72c
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200521150516-05eb9880269c
@@ -62,18 +61,20 @@ replace (
 require (
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.1.1
-	github.com/harvester/harvester v1.1.2
+	github.com/harvester/harvester v1.2.0-rc1
 	github.com/harvester/harvester-network-controller v0.3.2
 	github.com/harvester/webhook v0.1.3
 	github.com/rancher/lasso v0.0.0-20221227210133-6ea88ca2fbcc
+	github.com/rancher/rancher v0.0.0-20230124173128-2207cfed1803
+	github.com/rancher/rancher/pkg/apis v0.0.0
 	github.com/rancher/wrangler v1.1.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
 	github.com/urfave/cli v1.22.9
 	k8s.io/api v0.25.9
-	k8s.io/apimachinery v0.26.0
+	k8s.io/apimachinery v0.27.1
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2
+	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	kubevirt.io/api v0.54.0
 )
 
@@ -100,7 +101,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
@@ -118,16 +119,16 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/jinzhu/copier v0.3.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/k3s-io/helm-controller v0.11.7 // indirect
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v0.0.0-20200331171230-d50e42f2b669 // indirect
-	github.com/kubernetes-csi/external-snapshotter/v2 v2.1.3 // indirect
+	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0 // indirect
 	github.com/kubernetes/dashboard v1.10.1 // indirect
-	github.com/longhorn/go-iscsi-helper v0.0.0-20230215054929-acb305e1031b // indirect
-	github.com/longhorn/longhorn-manager v1.4.1 // indirect
+	github.com/longhorn/go-iscsi-helper v0.0.0-20230425064248-72f136f48524 // indirect
+	github.com/longhorn/longhorn-manager v1.4.2 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/matryer/moq v0.0.0-20200607124540-4638a53893e6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -150,8 +151,6 @@ require (
 	github.com/rancher/gke-operator v1.1.4 // indirect
 	github.com/rancher/kubernetes-provider-detector v0.1.5 // indirect
 	github.com/rancher/norman v0.0.0-20221205184727-32ef2e185b99 // indirect
-	github.com/rancher/rancher v0.0.0-20230124173128-2207cfed1803 // indirect
-	github.com/rancher/rancher/pkg/apis v0.0.0 // indirect
 	github.com/rancher/remotedialer v0.2.6-0.20220624190122-ea57207bf2b8 // indirect
 	github.com/rancher/rke v1.3.18 // indirect
 	github.com/rancher/steve v0.0.0-20221209194631-acf9d31ce0dd // indirect
@@ -180,7 +179,7 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220628200809-02e64fa58f26 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
@@ -189,7 +188,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220720214146-176da50484ac // indirect
 	google.golang.org/grpc v1.48.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -199,7 +198,7 @@ require (
 	k8s.io/component-base v0.25.9 // indirect
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/klog/v2 v2.80.1 // indirect
+	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-aggregator v0.25.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	kubevirt.io/containerized-data-importer-api v1.47.0 // indirect

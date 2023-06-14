@@ -9,7 +9,7 @@ import (
 
 	ctlcniv1 "github.com/harvester/harvester/pkg/generated/controllers/k8s.cni.cncf.io/v1"
 	ctlkubevirtv1 "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io/v1"
-	ctlCorev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	ctlcorev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 
 	lb "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io"
@@ -37,8 +37,8 @@ type Handler struct {
 	lbClient            ctllbv1.LoadBalancerClient
 	ipPoolCache         ctllbv1.IPPoolCache
 	nadCache            ctlcniv1.NetworkAttachmentDefinitionCache
-	serviceClient       ctlCorev1.ServiceClient
-	serviceCache        ctlCorev1.ServiceCache
+	serviceClient       ctlcorev1.ServiceClient
+	serviceCache        ctlcorev1.ServiceCache
 	endpointSliceClient ctldiscoveryv1.EndpointSliceClient
 	endpointSliceCache  ctldiscoveryv1.EndpointSliceCache
 	vmiCache            ctlkubevirtv1.VirtualMachineInstanceCache

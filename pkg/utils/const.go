@@ -7,4 +7,9 @@ const (
 	ValueTrue       = "true"
 
 	Address4AskDHCP = "0.0.0.0"
+
+	AnnotationKeyNetwork   = lb.GroupName + "/network"
+	AnnotationKeyProject   = lb.GroupName + "/project"
+	AnnotationKeyNamespace = lb.GroupName + "/namespace"
+	AnnotationKeyCluster   = lb.GroupName + "/cluster"
 )
