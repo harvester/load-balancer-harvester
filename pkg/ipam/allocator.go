@@ -10,7 +10,7 @@ import (
 
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/containernetworking/plugins/pkg/ip"
+	cnip "github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/plugins/ipam/host-local/backend/allocator"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
@@ -61,47 +61,45 @@ func NewAllocator(name string, ranges []lbv1.Range, cache ctllbv1.IPPoolCache, c
 }
 
 func MakeRange(r *lbv1.Range) (*allocator.Range, error) {
-	ipv4, ipNet, err := net.ParseCIDR(r.Subnet)
+	ip, ipNet, err := net.ParseCIDR(r.Subnet)
 	if err != nil {
 		return nil, fmt.Errorf("invalide range %+v", r)
 	}
 
-	var start, end, gateway net.IP
+	var defaultStart, defaultEnd, defaultGateway, start, end, gateway net.IP
 	mask := ipNet.Mask.String()
-	// The rangeStart defaults to “.1” IP inside the “subnet” block.
-	if r.RangeStart == "" {
-		// To return the IP with 16 bytes representation as same as what the function net.ParseIP returns
-		if mask == p2pMaskStr {
-			start = ipv4.To16()
-		} else {
-			start = ip.NextIP(ipNet.IP).To16()
-		}
+	// If the subnet is a point to point IP
+	if mask == p2pMaskStr {
+		defaultStart = ip.To16()
+		defaultEnd = ip.To16()
+		defaultGateway = nil
 	} else {
-		start = net.ParseIP(r.RangeStart)
-		if start == nil {
-			return nil, fmt.Errorf("invalid rangeStart %s", r.RangeStart)
-		}
-
-		if !ipNet.Contains(start) {
-			return nil, fmt.Errorf("range start IP %s is out of subnet %s", start.String(), ipNet.String())
-		}
+		// The rangeStart defaults to `.1` IP inside the `subnet` block.
+		// The rangeEnd defaults to `.254` IP inside the `subnet` block for ipv4, `.255` for IPv6.
+		// The gateway defaults to `.1` IP inside the `subnet` block.
+		// Example:
+		// 	  subnet: 192.168.0.0/24
+		// 	  rangeStart: 192.168.0.1
+		// 	  rangeEnd: 192.168.0.254
+		// 	  gateway: 192.168.0.1
+		// The gateway will be skipped during allocation.
+		// To return the IP with 16 bytes representation as same as what the function net.ParseIP returns
+		defaultStart = cnip.NextIP(ipNet.IP).To16()
+		defaultEnd = lastIP(*ipNet).To16()
+		defaultGateway = cnip.NextIP(ipNet.IP).To16()
 	}
 
-	// The rangeEnd defaults to “.254” IP inside the “subnet” block for ipv4, “.255” for IPv6.
-	if r.RangeEnd == "" {
-		if mask == p2pMaskStr {
-			end = ipv4.To16()
-		} else {
-			end = lastIP(*ipNet).To16()
-		}
-	} else {
-		end = net.ParseIP(r.RangeEnd)
-		if end == nil {
-			return nil, fmt.Errorf("invalid rangeEnd %s", r.RangeEnd)
-		}
-		if !ipNet.Contains(end) {
-			return nil, fmt.Errorf("range end IP %s is out of subnet %s", start.String(), ipNet.String())
-		}
+	start, err = parseIP(r.RangeStart, ipNet, defaultStart)
+	if err != nil {
+		return nil, fmt.Errorf("invalid range start %s: %w", r.RangeStart, err)
+	}
+	end, err = parseIP(r.RangeEnd, ipNet, defaultEnd)
+	if err != nil {
+		return nil, fmt.Errorf("invalid range end %s: %w", r.RangeEnd, err)
+	}
+	gateway, err = parseIP(r.Gateway, ipNet, defaultGateway)
+	if err != nil {
+		return nil, fmt.Errorf("invalid gateway %s: %w", r.Gateway, err)
 	}
 
 	// Ensure start IP is smaller than end IP
@@ -111,28 +109,34 @@ func MakeRange(r *lbv1.Range) (*allocator.Range, error) {
 		start, end = end, start
 	}
 
-	// The gateway defaults to “.1” IP inside the “subnet” block.
-	// If the subnet is point to point IP, leave the gateway as empty
-	// The gateway will be skipped during allocation.
-	if r.Gateway == "" {
-		if mask == p2pMaskStr {
-			gateway = nil
-		} else {
-			gateway = ip.NextIP(ipNet.IP).To16()
-		}
-	} else {
-		gateway = net.ParseIP(r.Gateway)
-		if gateway == nil {
-			return nil, fmt.Errorf("invalid gateway %s", r.Gateway)
-		}
-	}
-
 	return &allocator.Range{
 		RangeStart: start,
 		RangeEnd:   end,
 		Subnet:     types.IPNet(*ipNet),
 		Gateway:    gateway,
 	}, nil
+}
+
+func parseIP(ipStr string, ipNet *net.IPNet, defaultIP net.IP) (net.IP, error) {
+	if ipStr == "" {
+		return defaultIP, nil
+	}
+
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return nil, fmt.Errorf("invalid IP %s", ipStr)
+	}
+	if !ipNet.Contains(ip) {
+		return nil, fmt.Errorf("IP %s is out of subnet %s", ipStr, ipNet.String())
+	}
+	if ip.Equal(networkIP(*ipNet)) {
+		return nil, fmt.Errorf("IP %s is the network address", ipStr)
+	}
+	if ip.Equal(broadcastIP(*ipNet)) {
+		return nil, fmt.Errorf("IP %s is the broadcast address", ipStr)
+	}
+
+	return ip, nil
 }
 
 // Determine the last IP of a subnet, excluding the broadcast if IPv4
@@ -156,6 +160,18 @@ func countIP(r *allocator.Range) int64 {
 	}
 
 	return count
+}
+
+func networkIP(n net.IPNet) net.IP {
+	return n.IP.Mask(n.Mask)
+}
+
+func broadcastIP(n net.IPNet) net.IP {
+	broadcast := make(net.IP, len(n.IP))
+	for i := 0; i < len(n.IP); i++ {
+		broadcast[i] = n.IP[i] | ^n.Mask[i]
+	}
+	return broadcast
 }
 
 func ipToInt(ip net.IP) *big.Int {
