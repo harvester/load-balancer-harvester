@@ -18,6 +18,7 @@ var (
 	cClassSubnetMask    = net.IPv4Mask(255, 255, 255, 0)
 	cClassSubnetIPStart = net.IP{192, 168, 100, 1}
 	cClassSubnetIPEnd   = net.IP{192, 168, 100, 254}
+	cClassBroadcast     = net.IP{192, 168, 100, 255}
 	p2pIPStr            = "192.168.100.10/32"
 	p2pIP               = net.IP{192, 168, 100, 10}
 	p2pMask             = net.IPv4Mask(255, 255, 255, 255)
@@ -216,6 +217,22 @@ func TestMakeRange(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "cClassIPNetWithNetworkIPRangeStart",
+			r: &lbv1.Range{
+				Subnet:     cClassSubnet,
+				RangeStart: "192.168.100.0",
+			},
+			wantErr: true,
+		},
+		{
+			name: "cClassIPNetWithBroadcastRangeEnd",
+			r: &lbv1.Range{
+				Subnet:   cClassSubnet,
+				RangeEnd: "192.168.100.255",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -240,4 +257,35 @@ func rangesEqual(r1, r2 *allocator.Range) bool {
 		r1.Subnet.IP.Equal(r2.Subnet.IP) &&
 		r1.Subnet.Mask.String() == r2.Subnet.Mask.String() &&
 		r1.Gateway.Equal(r2.Gateway)
+}
+
+// Test networkIP
+func TestNetworkIP(t *testing.T) {
+	tests := []struct {
+		name string
+		ip   net.IP
+		want net.IP
+	}{
+		{
+			name: "cClassIP",
+			ip:   cClassSubnetIP,
+			want: cClassSubnetIP,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := networkIP(net.IPNet{IP: tt.ip, Mask: cClassSubnetMask}); !got.Equal(tt.want) {
+				t.Errorf("networkIP() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func TestBroadcastIP(t *testing.T) {
+	_, subnet, _ := net.ParseCIDR(cClassSubnet)
+	broadcast := broadcastIP(*subnet)
+
+	if !broadcast.Equal(cClassBroadcast) {
+		t.Errorf("Broadcast address should be %s, but got %s", cClassBroadcast.String(), broadcast.String())
+	}
 }
