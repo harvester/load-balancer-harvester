@@ -11,7 +11,7 @@ spec:
       project: "*"
       guestCluster: "*"
 status:
-  allocated:
+  allocatedHistory:
     192.168.0.162: default/lb1
 ---
 apiVersion: loadbalancer.harvesterhci.io/v1beta1
@@ -27,6 +27,6 @@ spec:
         project: "*"
         guestCluster: "*"
 status:
-  allocated:
+  allocatedHistory:
     192.168.10.73: default/lb2
 

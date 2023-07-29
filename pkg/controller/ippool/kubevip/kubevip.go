@@ -284,10 +284,10 @@ func (c *IPPoolConverter) assignAllocatedIPs(cm *corev1.ConfigMap, pool *lbv1.IP
 		// assign the IP to the pool, if it is not in the pool, try to assign to GlobalIPPoolName IP pool
 		if pool != nil && len(rangeSet) > 0 && rangeSet.Contains(ip) {
 			logrus.Infof("ip %s in the pool %s", ip, pool.Name)
-			pool.Status.Allocated[service.VIP] = cm.Namespace + "/" + service.ServiceName
+			pool.Status.AllocatedHistory[service.VIP] = cm.Namespace + "/" + service.ServiceName
 		} else if c.GlobalIPPoolNamePool != nil && c.GlobalIPPoolNameRangeSet != nil && c.GlobalIPPoolNameRangeSet.Contains(ip) {
 			logrus.Infof("ip %s in the global pool", ip)
-			c.GlobalIPPoolNamePool.Status.Allocated[service.VIP] = cm.Namespace + "/" + service.ServiceName
+			c.GlobalIPPoolNamePool.Status.AllocatedHistory[service.VIP] = cm.Namespace + "/" + service.ServiceName
 		}
 	}
 
@@ -318,7 +318,7 @@ func makeIPPool(name string, ranges []lbv1.Range) *lbv1.IPPool {
 			Selector: selector,
 		},
 		Status: lbv1.IPPoolStatus{
-			Allocated: make(map[string]string),
+			AllocatedHistory: make(map[string]string),
 		},
 	}
 
