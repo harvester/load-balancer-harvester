@@ -15,7 +15,6 @@ import (
 
 	lbv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
 	lbv1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
-	"github.com/harvester/harvester-load-balancer/pkg/controller/ippool/kubevip"
 	ctllbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester-load-balancer/pkg/lb/servicelb"
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
@@ -182,25 +181,21 @@ func (c *converter) convertBackendServersToBackendServerSelector(backendServers 
 	return selector, nil
 }
 
-// The address allocated by the pool with the name as the namespace or the global pool
+// List all the pools and find the pool which has allocated the address of the lb
 func (c *converter) getPoolByAddressOfV1alpha1LB(addr, lbName, lbNamespace string) (string, error) {
 	name := fmt.Sprintf("%s/%s", lbNamespace, lbName)
-	// Find from the pool with the name as the namespace first
-	pool, err := c.ippoolCache.Get(lbNamespace)
+
+	pools, err := c.ippoolCache.List(labels.Everything())
 	if err != nil {
 		return "", err
-	}
-	if applicant, ok := pool.Status.Allocated[addr]; ok && applicant == name {
-		return lbNamespace, nil
-	}
-	// Find from the global pool
-	pool, err = c.ippoolCache.Get(kubevip.GlobalIPPoolName)
-	if err != nil {
-		return "", err
-	}
-	if applicant, ok := pool.Status.Allocated[addr]; ok && applicant == name {
-		return lbNamespace, nil
 	}
 
-	return "", fmt.Errorf("address %s is not allocated by the %s pool or the global pool", addr, lbNamespace)
+	for _, pool := range pools {
+		if pool.Status.Allocated[addr] == name {
+			logrus.Infof("pool: %s, name: %s", pool.Name, name)
+			return pool.Name, nil
+		}
+	}
+
+	return "", fmt.Errorf("not found pool for lb %s with address %s", name, addr)
 }

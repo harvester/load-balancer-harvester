@@ -1,0 +1,31 @@
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  labels:
+    loadbalancer.harvesterhci.io/global-ip-pool: "false"
+    loadbalancer.harvesterhci.io/vid: "0"
+  name: default
+spec:
+  ranges:
+    - subnet: 172.19.110.192/27
+  selector:
+    scope:
+      - guestCluster: '*'
+        namespace: default
+        project: '*'
+---
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  labels:
+    loadbalancer.harvesterhci.io/global-ip-pool: "true"
+    loadbalancer.harvesterhci.io/vid: "0"
+  name: global
+spec:
+  ranges:
+    - subnet: 172.19.111.192/27
+  selector:
+    scope:
+      - guestCluster: '*'
+        namespace: '*'
+        project: '*'

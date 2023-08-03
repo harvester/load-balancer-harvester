@@ -63,6 +63,7 @@ func (s *Selector) Select(r *Requirement) (*lbv1.IPPool, error) {
 	for _, pool := range pools {
 		if pool.Labels != nil && pool.Labels[utils.KeyGlobalIPPool] == utils.ValueTrue {
 			globalPool = pool
+			continue
 		}
 		// If the priority is not zero, every pool has different priority value.
 		if NewMatcher(pool.Spec.Selector).Matches(r) && pool.Spec.Selector.Priority >= priority {
