@@ -206,7 +206,7 @@ func (m *Manager) RemoveBackendServers(lb *lbv1.LoadBalancer, servers []pkglb.Ba
 		return false, nil
 	}
 
-	indexes := make([]int, 0)
+	indexes := make([]int, 0, len(servers))
 	for _, server := range servers {
 		flag, index, err := isExisting(eps, server)
 		if err != nil || !flag {
@@ -220,7 +220,7 @@ func (m *Manager) RemoveBackendServers(lb *lbv1.LoadBalancer, servers []pkglb.Ba
 	}
 
 	epsCopy := eps.DeepCopy()
-	epsCopy.Endpoints = make([]discoveryv1.Endpoint, 0)
+	epsCopy.Endpoints = make([]discoveryv1.Endpoint, 0, len(eps.Endpoints))
 	preIndex := -1
 	for _, index := range indexes {
 		epsCopy.Endpoints = append(epsCopy.Endpoints, eps.Endpoints[preIndex+1:index]...)
@@ -499,7 +499,7 @@ func (m *Manager) constructEndpointSlice(cur *discoveryv1.EndpointSlice, lb *lbv
 	}
 	eps.Endpoints = endpoints
 
-	logrus.Infoln("constructEndpointSlice: ", eps)
+	logrus.Debugln("constructEndpointSlice: ", eps)
 
 	return eps, nil
 }

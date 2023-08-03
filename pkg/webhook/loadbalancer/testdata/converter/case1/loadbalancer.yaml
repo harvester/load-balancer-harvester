@@ -35,7 +35,7 @@ metadata:
   namespace: default
 spec:
   ipam: pool
-  ipPool: default
+  ipPool: pool1
   listeners:
     - backendPort: 30131
       name: a
@@ -51,7 +51,7 @@ status:
     - 172.19.105.122
   allocatedAddress:
     ip: 192.168.0.100
-    ipPool: default
+    ipPool: pool1
   address: 192.168.0.100
   conditions:
     - lastUpdateTime: '2023-03-20T12:26:45Z'

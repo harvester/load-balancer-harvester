@@ -1,0 +1,26 @@
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: default
+spec:
+  ranges:
+    - subnet: 172.19.110.192/27
+  selector:
+    scope:
+      - guestCluster: '*'
+        namespace: default
+        project: '*'
+---
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: default-priority100
+spec:
+  ranges:
+    - subnet: 172.19.110.192/27
+  selector:
+    priority: 100
+    scope:
+      - guestCluster: '*'
+        namespace: default
+        project: '*'
