@@ -1,6 +1,6 @@
 module github.com/harvester/harvester-load-balancer
 
-go 1.18
+go 1.20
 
 replace (
 	golang.org/x/net => golang.org/x/net v0.7.0
