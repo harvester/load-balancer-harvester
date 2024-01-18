@@ -63,7 +63,7 @@ require (
 	github.com/containernetworking/plugins v1.1.1
 	github.com/harvester/harvester v1.2.0-rc1
 	github.com/harvester/harvester-network-controller v0.3.2
-	github.com/harvester/webhook v0.1.3
+	github.com/harvester/webhook v0.1.4
 	github.com/rancher/lasso v0.0.0-20221227210133-6ea88ca2fbcc
 	github.com/rancher/rancher v0.0.0-20230124173128-2207cfed1803
 	github.com/rancher/rancher/pkg/apis v0.0.0

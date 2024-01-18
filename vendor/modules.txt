@@ -223,7 +223,7 @@ github.com/harvester/harvester/tests/framework/fuzz
 ## explicit; go 1.18
 github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io
 github.com/harvester/harvester-network-controller/pkg/utils
-# github.com/harvester/webhook v0.1.3
+# github.com/harvester/webhook v0.1.4
 ## explicit; go 1.19
 github.com/harvester/webhook/pkg/clients
 github.com/harvester/webhook/pkg/config
