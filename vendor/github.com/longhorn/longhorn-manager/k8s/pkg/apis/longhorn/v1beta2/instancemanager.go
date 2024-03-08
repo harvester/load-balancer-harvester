@@ -19,10 +19,12 @@ const (
 	InstanceManagerStateUnknown  = InstanceManagerState("unknown")
 )
 
-// +kubebuilder:validation:Enum=engine;replica
+// +kubebuilder:validation:Enum=aio;engine;replica
 type InstanceManagerType string
 
 const (
+	InstanceManagerTypeAllInOne = InstanceManagerType("aio")
+	// Deprecate
 	InstanceManagerTypeEngine  = InstanceManagerType("engine")
 	InstanceManagerTypeReplica = InstanceManagerType("replica")
 )
@@ -45,6 +47,11 @@ type InstanceProcess struct {
 type InstanceProcessSpec struct {
 	// +optional
 	Name string `json:"name"`
+	// Deprecated:Replaced by field `dataEngine`.
+	// +optional
+	BackendStoreDriver BackendStoreDriverType `json:"backendStoreDriver"`
+	// +optional
+	DataEngine DataEngineType `json:"dataEngine"`
 }
 
 type InstanceState string
@@ -66,14 +73,23 @@ type InstanceSpec struct {
 	VolumeSize int64 `json:"volumeSize,string"`
 	// +optional
 	NodeID string `json:"nodeID"`
+	// Deprecated: Replaced by field `image`.
 	// +optional
 	EngineImage string `json:"engineImage"`
+	// +optional
+	Image string `json:"image"`
 	// +optional
 	DesireState InstanceState `json:"desireState"`
 	// +optional
 	LogRequested bool `json:"logRequested"`
 	// +optional
 	SalvageRequested bool `json:"salvageRequested"`
+	// Deprecated:Replaced by field `dataEngine`.
+	// +optional
+	BackendStoreDriver BackendStoreDriverType `json:"backendStoreDriver"`
+	// +kubebuilder:validation:Enum=v1;v2
+	// +optional
+	DataEngine DataEngineType `json:"dataEngine"`
 }
 
 type InstanceStatus struct {
@@ -107,6 +123,8 @@ type InstanceProcessStatus struct {
 	Endpoint string `json:"endpoint"`
 	// +optional
 	ErrorMsg string `json:"errorMsg"`
+	//+optional
+	Conditions map[string]bool `json:"conditions"`
 	// +optional
 	Listen string `json:"listen"`
 	// +optional
@@ -121,7 +139,7 @@ type InstanceProcessStatus struct {
 	ResourceVersion int64 `json:"resourceVersion"`
 }
 
-// InstanceManagerSpec defines the desired state of the Longhorn instancer manager
+// InstanceManagerSpec defines the desired state of the Longhorn instance manager
 type InstanceManagerSpec struct {
 	// +optional
 	Image string `json:"image"`
@@ -129,9 +147,8 @@ type InstanceManagerSpec struct {
 	NodeID string `json:"nodeID"`
 	// +optional
 	Type InstanceManagerType `json:"type"`
-	// Deprecated: This field is useless.
 	// +optional
-	EngineImage string `json:"engineImage"`
+	DataEngine DataEngineType `json:"dataEngine"`
 }
 
 // InstanceManagerStatus defines the observed state of the Longhorn instance manager
@@ -142,7 +159,10 @@ type InstanceManagerStatus struct {
 	CurrentState InstanceManagerState `json:"currentState"`
 	// +optional
 	// +nullable
-	Instances map[string]InstanceProcess `json:"instances"`
+	InstanceEngines map[string]InstanceProcess `json:"instanceEngines,omitempty"`
+	// +optional
+	// +nullable
+	InstanceReplicas map[string]InstanceProcess `json:"instanceReplicas,omitempty"`
 	// +optional
 	IP string `json:"ip"`
 	// +optional
@@ -153,6 +173,11 @@ type InstanceManagerStatus struct {
 	ProxyAPIMinVersion int `json:"proxyApiMinVersion"`
 	// +optional
 	ProxyAPIVersion int `json:"proxyApiVersion"`
+
+	// Deprecated: Replaced by InstanceEngines and InstanceReplicas
+	// +optional
+	// +nullable
+	Instances map[string]InstanceProcess `json:"instances,omitempty"`
 }
 
 // +genclient
@@ -160,6 +185,7 @@ type InstanceManagerStatus struct {
 // +kubebuilder:resource:shortName=lhim
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Data Engine",type=string,JSONPath=`.spec.dataEngine`,description="The data engine of the instance manager"
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.currentState`,description="The state of the instance manager"
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.type`,description="The type of the instance manager (engine or replica)"
 // +kubebuilder:printcolumn:name="Node",type=string,JSONPath=`.spec.nodeID`,description="The node that the instance manager is running on"

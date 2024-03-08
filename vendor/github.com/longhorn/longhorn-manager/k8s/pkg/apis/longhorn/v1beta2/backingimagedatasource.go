@@ -3,16 +3,27 @@ package v1beta2
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 const (
-	DataSourceTypeDownloadParameterURL = "url"
+	DataSourceTypeDownloadParameterURL      = "url"
+	DataSourceTypeExportParameterExportType = "export-type"
+	DataSourceTypeExportParameterVolumeName = "volume-name"
 )
 
-// +kubebuilder:validation:Enum=download;upload;export-from-volume
+// +kubebuilder:validation:Enum=download;upload;export-from-volume;restore
 type BackingImageDataSourceType string
 
 const (
 	BackingImageDataSourceTypeDownload         = BackingImageDataSourceType("download")
 	BackingImageDataSourceTypeUpload           = BackingImageDataSourceType("upload")
 	BackingImageDataSourceTypeExportFromVolume = BackingImageDataSourceType("export-from-volume")
+	BackingImageDataSourceTypeRestore          = BackingImageDataSourceType("restore")
+
+	DataSourceTypeExportFromVolumeParameterVolumeName                = "volume-name"
+	DataSourceTypeExportFromVolumeParameterVolumeSize                = "volume-size"
+	DataSourceTypeExportFromVolumeParameterSnapshotName              = "snapshot-name"
+	DataSourceTypeExportFromVolumeParameterSenderAddress             = "sender-address"
+	DataSourceTypeExportFromVolumeParameterFileSyncHTTPClientTimeout = "file-sync-http-client-timeout"
+	DataSourceTypeRestoreParameterBackupURL                          = "backup-url"
+	DataSourceTypeRestoreParameterConcurrentLimit                    = "concurrent-limit"
 )
 
 // BackingImageDataSourceSpec defines the desired state of the Longhorn backing image data source
