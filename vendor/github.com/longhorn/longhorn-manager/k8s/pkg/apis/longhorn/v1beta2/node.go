@@ -26,10 +26,11 @@ const (
 )
 
 const (
-	DiskConditionReasonDiskPressure          = "DiskPressure"
-	DiskConditionReasonDiskFilesystemChanged = "DiskFilesystemChanged"
-	DiskConditionReasonNoDiskInfo            = "NoDiskInfo"
-	DiskConditionReasonDiskNotReady          = "DiskNotReady"
+	DiskConditionReasonDiskPressure           = "DiskPressure"
+	DiskConditionReasonDiskFilesystemChanged  = "DiskFilesystemChanged"
+	DiskConditionReasonNoDiskInfo             = "NoDiskInfo"
+	DiskConditionReasonDiskNotReady           = "DiskNotReady"
+	DiskConditionReasonDiskServiceUnreachable = "DiskServiceUnreachable"
 )
 
 const (
@@ -45,12 +46,24 @@ const (
 	ErrorReplicaScheduleSchedulingFailed                 = "replica scheduling failed"
 )
 
+type DiskType string
+
+const (
+	// DiskTypeFilesystem is the disk type for storing v1 replica directories
+	DiskTypeFilesystem = DiskType("filesystem")
+	// DiskTypeBlock is the disk type for storing v2 replica logical volumes
+	DiskTypeBlock = DiskType("block")
+)
+
 type SnapshotCheckStatus struct {
 	// +optional
 	LastPeriodicCheckedAt metav1.Time `json:"lastPeriodicCheckedAt"`
 }
 
 type DiskSpec struct {
+	// +kubebuilder:validation:Enum=filesystem;block
+	// +optional
+	Type DiskType `json:"diskType"`
 	// +optional
 	Path string `json:"path"`
 	// +optional
@@ -78,6 +91,10 @@ type DiskStatus struct {
 	ScheduledReplica map[string]int64 `json:"scheduledReplica"`
 	// +optional
 	DiskUUID string `json:"diskUUID"`
+	// +optional
+	Type DiskType `json:"diskType"`
+	// +optional
+	FSType string `json:"filesystemType"`
 }
 
 // NodeSpec defines the desired state of the Longhorn node
@@ -93,9 +110,7 @@ type NodeSpec struct {
 	// +optional
 	Tags []string `json:"tags"`
 	// +optional
-	EngineManagerCPURequest int `json:"engineManagerCPURequest"`
-	// +optional
-	ReplicaManagerCPURequest int `json:"replicaManagerCPURequest"`
+	InstanceManagerCPURequest int `json:"instanceManagerCPURequest"`
 }
 
 // NodeStatus defines the observed state of the Longhorn node
@@ -112,6 +127,8 @@ type NodeStatus struct {
 	Zone string `json:"zone"`
 	// +optional
 	SnapshotCheckStatus SnapshotCheckStatus `json:"snapshotCheckStatus"`
+	// +optional
+	AutoEvicting bool `json:"autoEvicting"`
 }
 
 // +genclient

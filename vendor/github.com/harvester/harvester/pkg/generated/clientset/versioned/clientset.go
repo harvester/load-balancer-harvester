@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Rancher Labs, Inc.
+Copyright 2024 Rancher Labs, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
+	catalogv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/catalog.cattle.io/v1"
 	clusterv1alpha4 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/cluster.x-k8s.io/v1alpha4"
 	harvesterhciv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/harvesterhci.io/v1beta1"
 	k8scnicncfiov1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/k8s.cni.cncf.io/v1"
@@ -32,6 +33,7 @@ import (
 	monitoringv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/monitoring.coreos.com/v1"
 	networkingv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/networking.k8s.io/v1"
 	snapshotv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/snapshot.storage.k8s.io/v1"
+	storagev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/storage.k8s.io/v1"
 	upgradev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -40,6 +42,7 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	CatalogV1() catalogv1.CatalogV1Interface
 	ClusterV1alpha4() clusterv1alpha4.ClusterV1alpha4Interface
 	HarvesterhciV1beta1() harvesterhciv1beta1.HarvesterhciV1beta1Interface
 	K8sCniCncfIoV1() k8scnicncfiov1.K8sCniCncfIoV1Interface
@@ -50,13 +53,14 @@ type Interface interface {
 	MonitoringV1() monitoringv1.MonitoringV1Interface
 	NetworkingV1() networkingv1.NetworkingV1Interface
 	SnapshotV1() snapshotv1.SnapshotV1Interface
+	StorageV1() storagev1.StorageV1Interface
 	UpgradeV1() upgradev1.UpgradeV1Interface
 }
 
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
+// Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	catalogV1           *catalogv1.CatalogV1Client
 	clusterV1alpha4     *clusterv1alpha4.ClusterV1alpha4Client
 	harvesterhciV1beta1 *harvesterhciv1beta1.HarvesterhciV1beta1Client
 	k8sCniCncfIoV1      *k8scnicncfiov1.K8sCniCncfIoV1Client
@@ -67,7 +71,13 @@ type Clientset struct {
 	monitoringV1        *monitoringv1.MonitoringV1Client
 	networkingV1        *networkingv1.NetworkingV1Client
 	snapshotV1          *snapshotv1.SnapshotV1Client
+	storageV1           *storagev1.StorageV1Client
 	upgradeV1           *upgradev1.UpgradeV1Client
+}
+
+// CatalogV1 retrieves the CatalogV1Client
+func (c *Clientset) CatalogV1() catalogv1.CatalogV1Interface {
+	return c.catalogV1
 }
 
 // ClusterV1alpha4 retrieves the ClusterV1alpha4Client
@@ -120,6 +130,11 @@ func (c *Clientset) SnapshotV1() snapshotv1.SnapshotV1Interface {
 	return c.snapshotV1
 }
 
+// StorageV1 retrieves the StorageV1Client
+func (c *Clientset) StorageV1() storagev1.StorageV1Interface {
+	return c.storageV1
+}
+
 // UpgradeV1 retrieves the UpgradeV1Client
 func (c *Clientset) UpgradeV1() upgradev1.UpgradeV1Interface {
 	return c.upgradeV1
@@ -169,6 +184,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
+	cs.catalogV1, err = catalogv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 	cs.clusterV1alpha4, err = clusterv1alpha4.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
@@ -209,6 +228,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
+	cs.storageV1, err = storagev1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 	cs.upgradeV1, err = upgradev1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
@@ -234,6 +257,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.catalogV1 = catalogv1.New(c)
 	cs.clusterV1alpha4 = clusterv1alpha4.New(c)
 	cs.harvesterhciV1beta1 = harvesterhciv1beta1.New(c)
 	cs.k8sCniCncfIoV1 = k8scnicncfiov1.New(c)
@@ -244,6 +268,7 @@ func New(c rest.Interface) *Clientset {
 	cs.monitoringV1 = monitoringv1.New(c)
 	cs.networkingV1 = networkingv1.New(c)
 	cs.snapshotV1 = snapshotv1.New(c)
+	cs.storageV1 = storagev1.New(c)
 	cs.upgradeV1 = upgradev1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

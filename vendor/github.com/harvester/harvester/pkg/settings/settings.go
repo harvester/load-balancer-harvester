@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -48,10 +47,11 @@ var (
 	ContainerdRegistry                     = NewSetting(ContainerdRegistrySettingName, "")
 	StorageNetwork                         = NewSetting(StorageNetworkName, "")
 	DefaultVMTerminationGracePeriodSeconds = NewSetting(DefaultVMTerminationGracePeriodSecondsSettingName, "120")
-	RancherManagerSupport                  = NewSetting(RancherManagerSupportSettingName, "false")
 
 	// HarvesterCSICCMVersion this is the chart version from https://github.com/harvester/charts instead of image versions
 	HarvesterCSICCMVersion = NewSetting(HarvesterCSICCMSettingName, `{"harvester-cloud-provider":">=0.0.1 <0.3.0","harvester-csi-provider":">=0.0.1 <0.3.0"}`)
+	NTPServers             = NewSetting(NTPServersSettingName, "")
+	WhiteListedSettings    = []string{"server-version", "default-storage-class", "harvester-csi-ccm-versions", "default-vm-termination-grace-period-seconds"}
 )
 
 const (
@@ -65,7 +65,7 @@ const (
 	SSLParametersName                                 = "ssl-parameters"
 	VipPoolsConfigSettingName                         = "vip-pools"
 	VolumeSnapshotClassSettingName                    = "volume-snapshot-class"
-	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/release-harvester-v1.2/index.html"
+	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/latest/index.html"
 	SupportBundleImageName                            = "support-bundle-image"
 	CSIDriverConfigSettingName                        = "csi-driver-config"
 	UIIndexSettingName                                = "ui-index"
@@ -73,12 +73,12 @@ const (
 	UISourceSettingName                               = "ui-source"
 	UIPluginIndexSettingName                          = "ui-plugin-index"
 	UIPluginBundledVersionSettingName                 = "ui-plugin-bundled-version"
-	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-release-harvester-v1.2/harvester-release-harvester-v1.2.umd.min.js"
+	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-latest/harvester-latest.umd.min.js"
 	ContainerdRegistrySettingName                     = "containerd-registry"
 	HarvesterCSICCMSettingName                        = "harvester-csi-ccm-versions"
 	StorageNetworkName                                = "storage-network"
 	DefaultVMTerminationGracePeriodSecondsSettingName = "default-vm-termination-grace-period-seconds"
-	RancherManagerSupportSettingName                  = "rancher-manager-support"
+	NTPServersSettingName                             = "ntp-servers"
 )
 
 func init() {
@@ -269,12 +269,6 @@ type SSLCertificate struct {
 type SSLParameter struct {
 	Protocols string `json:"protocols"`
 	Ciphers   string `json:"ciphers"`
-}
-
-type Image struct {
-	Repository      string            `json:"repository"`
-	Tag             string            `json:"tag"`
-	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy"`
 }
 
 type CSIDriverInfo struct {

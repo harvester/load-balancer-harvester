@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Rancher Labs, Inc.
+Copyright 2024 Rancher Labs, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ package fake
 
 import (
 	clientset "github.com/harvester/harvester/pkg/generated/clientset/versioned"
+	catalogv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/catalog.cattle.io/v1"
+	fakecatalogv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/catalog.cattle.io/v1/fake"
 	clusterv1alpha4 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/cluster.x-k8s.io/v1alpha4"
 	fakeclusterv1alpha4 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/cluster.x-k8s.io/v1alpha4/fake"
 	harvesterhciv1beta1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/harvesterhci.io/v1beta1"
@@ -40,6 +42,8 @@ import (
 	fakenetworkingv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/networking.k8s.io/v1/fake"
 	snapshotv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/snapshot.storage.k8s.io/v1"
 	fakesnapshotv1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/snapshot.storage.k8s.io/v1/fake"
+	storagev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/storage.k8s.io/v1"
+	fakestoragev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/storage.k8s.io/v1/fake"
 	upgradev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1"
 	fakeupgradev1 "github.com/harvester/harvester/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -99,6 +103,11 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
+// CatalogV1 retrieves the CatalogV1Client
+func (c *Clientset) CatalogV1() catalogv1.CatalogV1Interface {
+	return &fakecatalogv1.FakeCatalogV1{Fake: &c.Fake}
+}
+
 // ClusterV1alpha4 retrieves the ClusterV1alpha4Client
 func (c *Clientset) ClusterV1alpha4() clusterv1alpha4.ClusterV1alpha4Interface {
 	return &fakeclusterv1alpha4.FakeClusterV1alpha4{Fake: &c.Fake}
@@ -147,6 +156,11 @@ func (c *Clientset) NetworkingV1() networkingv1.NetworkingV1Interface {
 // SnapshotV1 retrieves the SnapshotV1Client
 func (c *Clientset) SnapshotV1() snapshotv1.SnapshotV1Interface {
 	return &fakesnapshotv1.FakeSnapshotV1{Fake: &c.Fake}
+}
+
+// StorageV1 retrieves the StorageV1Client
+func (c *Clientset) StorageV1() storagev1.StorageV1Interface {
+	return &fakestoragev1.FakeStorageV1{Fake: &c.Fake}
 }
 
 // UpgradeV1 retrieves the UpgradeV1Client

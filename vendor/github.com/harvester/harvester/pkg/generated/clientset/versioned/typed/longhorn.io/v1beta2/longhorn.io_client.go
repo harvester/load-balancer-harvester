@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Rancher Labs, Inc.
+Copyright 2024 Rancher Labs, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ type LonghornV1beta2Interface interface {
 	SystemBackupsGetter
 	SystemRestoresGetter
 	VolumesGetter
+	VolumeAttachmentsGetter
 }
 
 // LonghornV1beta2Client is used to interact with features provided by the longhorn.io group.
@@ -133,6 +134,10 @@ func (c *LonghornV1beta2Client) SystemRestores(namespace string) SystemRestoreIn
 
 func (c *LonghornV1beta2Client) Volumes(namespace string) VolumeInterface {
 	return newVolumes(c, namespace)
+}
+
+func (c *LonghornV1beta2Client) VolumeAttachments(namespace string) VolumeAttachmentInterface {
+	return newVolumeAttachments(c, namespace)
 }
 
 // NewForConfig creates a new LonghornV1beta2Client for the given config.

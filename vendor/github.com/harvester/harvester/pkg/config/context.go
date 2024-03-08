@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 
+	ctlnodeharvester "github.com/harvester/node-manager/pkg/generated/controllers/node.harvesterhci.io"
 	helmv1 "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io"
 	dashboardapi "github.com/kubernetes/dashboard/src/app/backend/auth/api"
 	"github.com/rancher/lasso/pkg/controller"
@@ -35,6 +36,7 @@ import (
 	monitoringv1 "github.com/harvester/harvester/pkg/generated/controllers/monitoring.coreos.com"
 	"github.com/harvester/harvester/pkg/generated/controllers/networking.k8s.io"
 	snapshotv1 "github.com/harvester/harvester/pkg/generated/controllers/snapshot.storage.k8s.io"
+	ctlharvstoragev1 "github.com/harvester/harvester/pkg/generated/controllers/storage.k8s.io"
 	"github.com/harvester/harvester/pkg/generated/controllers/upgrade.cattle.io"
 )
 
@@ -60,6 +62,7 @@ type Scaled struct {
 	VirtFactory              *kubevirt.Factory
 	HarvesterFactory         *ctlharvesterv1.Factory
 	HarvesterCoreFactory     *ctlharvcorev1.Factory
+	HarvesterStorageFactory  *ctlharvstoragev1.Factory
 	CoreFactory              *corev1.Factory
 	AppsFactory              *appsv1.Factory
 	BatchFactory             *batchv1.Factory
@@ -84,6 +87,7 @@ type Management struct {
 	VirtFactory              *kubevirt.Factory
 	HarvesterFactory         *ctlharvesterv1.Factory
 	HarvesterCoreFactory     *ctlharvcorev1.Factory
+	HarvesterStorageFactory  *ctlharvstoragev1.Factory
 	LoggingFactory           *loggingv1.Factory
 	CoreFactory              *corev1.Factory
 	CniFactory               *cniv1.Factory
@@ -102,6 +106,7 @@ type Management struct {
 	NetworkingFactory *networking.Factory
 	UpgradeFactory    *upgrade.Factory
 	ClusterFactory    *cluster.Factory
+	NodeConfigFactory *ctlnodeharvester.Factory
 
 	ClientSet  *kubernetes.Clientset
 	RestConfig *rest.Config
@@ -133,7 +138,14 @@ func SetupScaled(ctx context.Context, restConfig *rest.Config, opts *generic.Fac
 		return nil, nil, err
 	}
 	scaled.HarvesterCoreFactory = harvesterCoreFactory
-	scaled.starters = append(scaled.starters, harvesterFactory)
+	scaled.starters = append(scaled.starters, harvesterCoreFactory)
+
+	harvesterStorageFactory, err := ctlharvstoragev1.NewFactoryFromConfigWithOptions(restConfig, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	scaled.HarvesterStorageFactory = harvesterStorageFactory
+	scaled.starters = append(scaled.starters, harvesterStorageFactory)
 
 	core, err := corev1.NewFactoryFromConfigWithOptions(restConfig, opts)
 	if err != nil {
@@ -244,6 +256,13 @@ func setupManagement(ctx context.Context, restConfig *rest.Config, opts *generic
 	}
 	management.HarvesterCoreFactory = harvCore
 	management.starters = append(management.starters, harvCore)
+
+	harvStorage, err := ctlharvstoragev1.NewFactoryFromConfigWithOptions(restConfig, opts)
+	if err != nil {
+		return nil, err
+	}
+	management.HarvesterStorageFactory = harvStorage
+	management.starters = append(management.starters, harvStorage)
 
 	core, err := corev1.NewFactoryFromConfigWithOptions(restConfig, opts)
 	if err != nil {
@@ -363,6 +382,13 @@ func setupManagement(ctx context.Context, restConfig *rest.Config, opts *generic
 	}
 	management.MonitoringFactory = monitoring
 	management.starters = append(management.starters, monitoring)
+
+	nodeconfig, err := ctlnodeharvester.NewFactoryFromConfigWithOptions(restConfig, opts)
+	if err != nil {
+		return nil, err
+	}
+	management.NodeConfigFactory = nodeconfig
+	management.starters = append(management.starters, nodeconfig)
 
 	management.RestConfig = restConfig
 	management.ClientSet, err = kubernetes.NewForConfig(restConfig)
