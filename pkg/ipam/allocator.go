@@ -63,7 +63,7 @@ func NewAllocator(name string, ranges []lbv1.Range, cache ctllbv1.IPPoolCache, c
 func MakeRange(r *lbv1.Range) (*allocator.Range, error) {
 	ip, ipNet, err := net.ParseCIDR(r.Subnet)
 	if err != nil {
-		return nil, fmt.Errorf("invalide range %+v", r)
+		return nil, fmt.Errorf("invalid range %+v", r)
 	}
 
 	var defaultStart, defaultEnd, defaultGateway, start, end, gateway net.IP
