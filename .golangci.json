@@ -3,7 +3,6 @@
 		"disable-all": true,
 		"enable": [
 			"govet",
-			"golint",
 			"goimports",
 			"misspell",
 			"ineffassign",
@@ -12,19 +11,20 @@
 			"bodyclose",
 			"gosimple",
 			"prealloc",
-			"deadcode",
 			"errcheck",
 			"gosec"
 		]
 	},
-	"run": {
-		"skip-files": [
+	"issues": {
+		"exclude-files": [
 			"/zz_generated_"
 		],
-		"skip-dirs": [
+		"exclude-dirs": [
 			"generated"
-		],
-		"deadline": "5m",
+		]
+	},
+	"run": {
+		"timeout": "5m",
 		"tests": true,
 		"build-tags": [
 			"test"

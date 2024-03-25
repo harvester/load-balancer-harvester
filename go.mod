@@ -1,6 +1,6 @@
 module github.com/harvester/harvester-load-balancer
 
-go 1.20
+go 1.21
 
 replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.6.18
