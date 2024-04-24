@@ -16,8 +16,8 @@ if echo $TAG | grep -q dirty; then
 fi
 
 mkdir -p dist/artifacts
-cp bin/harvester-load-balancer dist/artifacts/harvester-load-balancer${SUFFIX}
-cp bin/harvester-load-balancer-webhook dist/artifacts/harvester-load-balancer-webhook${SUFFIX}
+cp bin/harvester-load-balancer${SUFFIX} dist/artifacts/harvester-load-balancer${SUFFIX}
+cp bin/harvester-load-balancer-webhook${SUFFIX} dist/artifacts/harvester-load-balancer-webhook${SUFFIX}
 
 IMAGE=${REPO}/harvester-load-balancer:${TAG}
 IMAGE_WEBHOOK=${REPO}/harvester-load-balancer-webhook:${TAG}
@@ -27,7 +27,11 @@ if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE=${DOCKERFILE}.${ARCH}
     DOCKERFILE_WEBHOOK=${DOCKERFILE_WEBHOOK}.${ARCH}
 fi
-DOCKER_BUILDKIT=0 docker build -f ${DOCKERFILE} -t ${IMAGE} .
+
+buildx build --load \
+    -f ${DOCKERFILE} -t ${IMAGE} .
 echo Built ${IMAGE}
-DOCKER_BUILDKIT=0 docker build -f ${DOCKERFILE_WEBHOOK} -t ${IMAGE_WEBHOOK} .
+
+buildx build --load \
+    -f ${DOCKERFILE_WEBHOOK} -t ${IMAGE_WEBHOOK} .
 echo Built ${IMAGE_WEBHOOK}
