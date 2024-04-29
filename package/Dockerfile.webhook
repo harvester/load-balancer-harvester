@@ -11,5 +11,5 @@ RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/a
 
 ENV ARCH=${TARGETPLATFORM#linux/}
 
-COPY bin/harvester-load-balancer-webhook-${ARCH} /usr/bin/
+COPY bin/harvester-load-balancer-webhook-${ARCH} /usr/bin/harvester-load-balancer-webhook
 CMD ["harvester-load-balancer-webhook"]
