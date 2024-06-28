@@ -18,43 +18,57 @@ const (
 )
 
 func TestManager(t *testing.T) {
-	mng.AddWorker(healthyCase, HealthOption{
+	if err := mng.AddWorker(healthyCase, healthyAddress, HealthOption{
 		Address:          healthyAddress,
 		SuccessThreshold: 1,
 		FailureThreshold: 3,
 		Timeout:          time.Second,
 		Period:           time.Second,
 		InitialCondition: false,
-	})
-	time.Sleep(time.Second * 2)
-	if len(mng.workers) != 1 {
-		t.Errorf("case; %s, add worker failed", healthyCase)
+	}); err != nil {
+		t.Errorf("case: %s, add worker failed %s", healthyCase, err.Error())
 	}
-	if !mng.workers[healthyCase].condition {
+	time.Sleep(time.Second * 2)
+	if len(mng.workers) == 0 {
+		t.Errorf("case: %s, add worker failed", healthyCase)
+	}
+	if len(mng.workers[healthyCase]) == 0 {
+		t.Errorf("case: %s, add worker address %s failed", healthyCase, healthyAddress)
+	}
+	if _, ok := mng.workers[healthyCase][healthyAddress]; !ok {
+		t.Errorf("case: %s, works map is wrong", healthyCase)
+	}
+	if !mng.workers[healthyCase][healthyAddress].condition {
 		t.Errorf("it should be able to connect %s", healthyAddress)
 	}
-	mng.RemoveWorker(healthyCase)
-	if len(mng.workers) != 0 {
+	if _, err := mng.RemoveWorker(healthyCase, healthyAddress); err != nil {
+		t.Errorf("case: %s, remove worker failed %s", healthyCase, err.Error())
+	}
+	if len(mng.workers[healthyCase]) != 0 {
 		t.Errorf("case: %s, remove worker failed", healthyCase)
 	}
 
-	mng.AddWorker(unhealthyCase, HealthOption{
+	if err := mng.AddWorker(unhealthyCase, unhealthyAddress, HealthOption{
 		Address:          unhealthyAddress,
 		SuccessThreshold: 1,
 		FailureThreshold: 2,
 		Timeout:          time.Second,
 		Period:           time.Second,
 		InitialCondition: true,
-	})
+	}); err != nil {
+		t.Errorf("case: %s, add worker failed %s", unhealthyCase, err.Error())
+	}
+	if len(mng.workers[unhealthyCase]) != 1 {
+		t.Errorf("case: %s, Add worker failed, len=%d", unhealthyCase, len(mng.workers[unhealthyCase]))
+	}
 	time.Sleep(time.Second * 5)
-	if mng.workers[unhealthyCase].condition {
+	if mng.workers[unhealthyCase][unhealthyAddress].condition {
 		t.Errorf("it should not be able to connect %s", unhealthyAddress)
 	}
-	if len(mng.workers) != 1 {
-		t.Errorf("case: %s, Add worker failed", unhealthyCase)
+	if _, err := mng.RemoveWorker(unhealthyCase, unhealthyAddress); err != nil {
+		t.Errorf("case: %s, remove worker failed %s", unhealthyCase, err.Error())
 	}
-	mng.RemoveWorker(unhealthyCase)
-	if len(mng.workers) != 0 {
+	if len(mng.workers[unhealthyAddress]) != 0 {
 		t.Errorf("case: %s, remove worker failed", unhealthyCase)
 	}
 }
@@ -67,7 +81,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func printCondition(uid string, isHealthy bool) error {
-	fmt.Printf("health check result, uid: %s, isHealthy: %t\n", uid, isHealthy)
+func printCondition(uid, address string, isHealthy bool) error {
+	fmt.Printf("health check result, uid: %s, address %s, isHealthy: %t\n", uid, address, isHealthy)
 	return nil
 }

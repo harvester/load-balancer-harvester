@@ -81,11 +81,8 @@ func (h *Handler) OnRemove(_ string, ipPool *lbv1.IPPool) (*lbv1.IPPool, error) 
 	if ipPool == nil {
 		return nil, nil
 	}
-
-	logrus.Debugf("IP Pool %s has been deleted", ipPool.Name)
-
+	logrus.Infof("IP Pool %s is deleted", ipPool.Name)
 	h.allocatorMap.Delete(ipPool.Name)
-
 	return ipPool, nil
 }
 

@@ -12,6 +12,12 @@ type HealthOption struct {
 }
 
 type healthCondition struct {
-	workerUID string
-	isHealth  bool
+	uid       string
+	address   string
+	isHealthy bool
+}
+
+func (ho *HealthOption) Equal(h HealthOption) bool {
+	return ho.Address == h.Address && ho.SuccessThreshold == h.SuccessThreshold && ho.FailureThreshold == h.FailureThreshold &&
+		ho.Timeout == h.Timeout && ho.Period == h.Period
 }

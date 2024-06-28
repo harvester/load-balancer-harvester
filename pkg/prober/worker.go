@@ -7,34 +7,30 @@ import (
 )
 
 type Worker struct {
-	tcpProber        Prober
-	uid              string
-	address          string
-	successThreshold uint
-	successCounter   uint
-	failureThreshold uint
-	failureCounter   uint
-	timeout          time.Duration
-	Period           time.Duration
-	condition        bool
-	conditionChan    chan healthCondition
-	stopCh           chan struct{}
+	HealthOption
+	uid            string
+	tcpProber      Prober
+	successCounter uint
+	failureCounter uint
+	condition      bool
+	conditionChan  chan healthCondition
+	stopCh         chan struct{}
+	logFailure     bool
+	logSuccess     bool
 }
 
 func newWorker(uid string, tcpProber Prober, option HealthOption, conditionChan chan healthCondition) *Worker {
 	return &Worker{
-		tcpProber:        tcpProber,
-		uid:              uid,
-		address:          option.Address,
-		successThreshold: option.SuccessThreshold,
-		successCounter:   0,
-		failureThreshold: option.FailureThreshold,
-		failureCounter:   0,
-		timeout:          option.Timeout,
-		Period:           option.Period,
-		condition:        option.InitialCondition,
-		conditionChan:    conditionChan,
-		stopCh:           make(chan struct{}),
+		tcpProber:      tcpProber,
+		uid:            uid,
+		HealthOption:   option,
+		successCounter: 0,
+		failureCounter: 0,
+		conditionChan:  conditionChan,
+		stopCh:         make(chan struct{}),
+		condition:      option.InitialCondition,
+		logFailure:     true,
+		logSuccess:     true,
 	}
 }
 
@@ -58,35 +54,49 @@ func (w *Worker) stop() {
 
 // probe only supports TCP
 func (w *Worker) probe() error {
-	return w.tcpProber.Probe(w.address, w.timeout)
+	return w.tcpProber.Probe(w.Address, w.Timeout)
 }
 
 func (w *Worker) doProbe() {
+	// failure case
 	if err := w.probe(); err != nil {
-		logrus.Infof("probe error, %s, address: %s, timeout: %v", err.Error(), w.address, w.timeout)
 		w.successCounter = 0
 		w.failureCounter++
-	} else {
-		logrus.Infof("probe successful, address: %s, timeout: %v", w.address, w.timeout)
-		w.failureCounter = 0
-		w.successCounter++
-	}
-	if w.successCounter == w.successThreshold {
-		if !w.condition {
-			w.condition = true
-			w.conditionChan <- healthCondition{
-				workerUID: w.uid,
-				isHealth:  w.condition,
+		w.logSuccess = true
+		if w.failureCounter >= w.FailureThreshold {
+			// for continuous failure, only log error once in the controller life-cycle
+			if w.logFailure {
+				logrus.Infof("probe error uid:%s, address: %s, timeout: %v, error: %s", w.uid, w.Address, w.Timeout, err.Error())
+				w.logFailure = false
 			}
-		}
-	}
-	if w.failureCounter == w.failureThreshold {
-		if w.condition {
+			// notify anyway, the receiver may fail when processing
 			w.condition = false
 			w.conditionChan <- healthCondition{
-				workerUID: w.uid,
-				isHealth:  w.condition,
+				uid:       w.uid,
+				address:   w.Address,
+				isHealthy: w.condition,
 			}
+			w.failureCounter = 0
 		}
+		return
+	}
+
+	// successful case
+	w.failureCounter = 0
+	w.successCounter++
+	w.logFailure = true
+	if w.successCounter >= w.SuccessThreshold {
+		if w.logSuccess {
+			logrus.Infof("probe successful, uid:%s, address: %s, timeout: %v", w.uid, w.Address, w.Timeout)
+			w.logSuccess = false
+		}
+		// notify anyway, the receiver may fail when processing
+		w.condition = true
+		w.conditionChan <- healthCondition{
+			uid:       w.uid,
+			address:   w.Address,
+			isHealthy: w.condition,
+		}
+		w.successCounter = 0
 	}
 }

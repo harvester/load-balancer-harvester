@@ -7,10 +7,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type updateCondition func(workerKey string, isHealthy bool) error
+type updateCondition func(uid, address string, isHealthy bool) error
+
+type WorkerMap map[string]*Worker
 
 type Manager struct {
-	workers       map[string]*Worker
+	workers       map[string]WorkerMap
 	workerLock    sync.RWMutex
 	conditionChan chan healthCondition
 	tcpProber     *tcpProber
@@ -18,7 +20,7 @@ type Manager struct {
 
 func NewManager(ctx context.Context, handler updateCondition) *Manager {
 	m := &Manager{
-		workers:       make(map[string]*Worker),
+		workers:       make(map[string]WorkerMap),
 		workerLock:    sync.RWMutex{},
 		conditionChan: make(chan healthCondition),
 		tcpProber:     newTCPProber(ctx),
@@ -26,8 +28,8 @@ func NewManager(ctx context.Context, handler updateCondition) *Manager {
 
 	go func() {
 		for cond := range m.conditionChan {
-			if err := handler(cond.workerUID, cond.isHealth); err != nil {
-				logrus.Errorf("update status failed, key: %s, condition: %t", cond.workerUID, cond.isHealth)
+			if err := handler(cond.uid, cond.address, cond.isHealthy); err != nil {
+				logrus.Errorf("prober update status to manager failed, uid:%s, address: %s, condition: %t", cond.uid, cond.address, cond.isHealthy)
 			}
 		}
 	}()
@@ -35,54 +37,81 @@ func NewManager(ctx context.Context, handler updateCondition) *Manager {
 	return m
 }
 
-func (m *Manager) GetWorker(uid string) (*Worker, bool) {
+func (m *Manager) GetWorkerHealthOptionMap(uid string) (map[string]HealthOption, error) {
 	m.workerLock.RLock()
 	defer m.workerLock.RUnlock()
-	if w, ok := m.workers[uid]; ok {
-		return w, true
+	if wm, ok := m.workers[uid]; ok {
+		// copy out
+		prob := make(map[string]HealthOption)
+		for _, w := range wm {
+			prob[w.Address] = w.HealthOption
+		}
+		return prob, nil
 	}
-	return nil, false
+	return nil, nil
 }
 
-func (m *Manager) ListWorkers() map[string]*Worker {
-	return m.workers
+func (m *Manager) AddWorker(uid string, address string, option HealthOption) error {
+	m.workerLock.Lock()
+	defer m.workerLock.Unlock()
+
+	wm, ok := m.workers[uid]
+	if !ok {
+		wm = make(WorkerMap)
+		m.workers[uid] = wm
+	}
+
+	// stop if duplicated
+	if w, ok := wm[address]; ok {
+		logrus.Infof("porber worker already exists, uid %s, address %s, will stop it", uid, address)
+		w.stop()
+	}
+	w := newWorker(uid, m.tcpProber, option, m.conditionChan)
+	wm[address] = w
+
+	go w.run()
+
+	logrus.Infof("add porber worker, uid: %s, address: %s, option: %+v", uid, address, option)
+	return nil
 }
 
-func (m *Manager) AddWorker(uid string, option HealthOption) {
-	w, existed := m.GetWorker(uid)
-	if existed {
-		if isChanged(option, w) {
-			m.RemoveWorker(uid)
-		} else {
-			return
+func (m *Manager) RemoveWorker(uid, address string) (int, error) {
+	m.workerLock.Lock()
+	defer m.workerLock.Unlock()
+
+	cnt := 0
+	if wm, ok := m.workers[uid]; ok {
+		if w, ok := wm[address]; ok {
+			w.stop()
+			delete(wm, address)
+			cnt = 1
 		}
 	}
 
-	logrus.Infof("add worker, uid: %s, option: %+v", uid, option)
-	w = newWorker(uid, m.tcpProber, option, m.conditionChan)
-	m.workerLock.Lock()
-	defer m.workerLock.Unlock()
-	m.workers[uid] = w
-	go w.run()
-}
-
-func (m *Manager) RemoveWorker(uid string) {
-	w, existed := m.GetWorker(uid)
-	if !existed {
-		return
-	}
-	logrus.Infof("remove worker, uid: %s", uid)
-	w.stop()
-	m.workerLock.Lock()
-	defer m.workerLock.Unlock()
-	delete(m.workers, uid)
-}
-
-func isChanged(o HealthOption, w *Worker) bool {
-	if o.Address == w.address && o.Timeout == w.timeout && o.Period == w.Period &&
-		o.SuccessThreshold == w.successThreshold && o.FailureThreshold == w.failureThreshold {
-		return false
+	if cnt > 0 {
+		logrus.Infof("remove porber worker, uid: %s, address: %s", uid, address)
 	}
 
-	return true
+	return cnt, nil
+}
+
+func (m *Manager) RemoveWorkersByUid(uid string) (int, error) {
+	m.workerLock.Lock()
+	defer m.workerLock.Unlock()
+
+	cnt := 0
+	if wm, ok := m.workers[uid]; ok {
+		cnt = len(wm)
+		for k, w := range wm {
+			w.stop()
+			delete(wm, k)
+		}
+		delete(m.workers, uid)
+	}
+
+	if cnt > 0 {
+		logrus.Infof("remove %d porber workers from uid: %s", cnt, uid)
+	}
+
+	return cnt, nil
 }
