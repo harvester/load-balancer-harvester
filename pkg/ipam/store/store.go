@@ -47,10 +47,15 @@ func (s *Store) Reserve(applicantID, _ string, ip net.IP, _ string) (bool, error
 
 	ipStr := ip.String()
 
-	// return false if the ip has been allocated
 	if ipPool.Status.Allocated != nil {
-		if _, ok := ipPool.Status.Allocated[ipStr]; ok {
-			return false, nil
+		if id, ok := ipPool.Status.Allocated[ipStr]; ok {
+			if id != applicantID {
+				// the ip has been allocated to other application
+				return false, nil
+			}
+			// pool allocated ip to lb, but lb failed to book it (e.g. failed to update status due to conflict)
+			// when lb allocates again, return success
+			return true, nil
 		}
 	}
 
@@ -66,7 +71,7 @@ func (s *Store) Reserve(applicantID, _ string, ip net.IP, _ string) (bool, error
 	ipPoolCopy.Status.Available--
 
 	if _, err := s.iPPoolClient.Update(ipPoolCopy); err != nil {
-		return false, fmt.Errorf("record %s into %s failed", ipStr, s.iPPoolName)
+		return false, fmt.Errorf("fail to reserve %s into %s", ipStr, s.iPPoolName)
 	}
 
 	return true, nil
@@ -90,19 +95,25 @@ func (s *Store) Release(ip net.IP) error {
 		return nil
 	}
 
-	ipPoolCopy := ipPool.DeepCopy()
+	// tolerant duplicated release
+	// e.g. lb released ip but failed to update self, then release again
+	// still, need to check applicant ID
+	// luckily the host-local/backend/allocator only calls ReleaseByID
 	ipStr := ip.String()
+	if _, ok := ipPool.Status.Allocated[ipStr]; ok {
+		ipPoolCopy := ipPool.DeepCopy()
 
-	if ipPool.Status.AllocatedHistory == nil {
-		ipPoolCopy.Status.AllocatedHistory = make(map[string]string)
-	}
-	ipPoolCopy.Status.AllocatedHistory[ipStr] = ipPool.Status.Allocated[ipStr]
-	delete(ipPoolCopy.Status.Allocated, ipStr)
-	ipPoolCopy.Status.Available++
+		if ipPool.Status.AllocatedHistory == nil {
+			ipPoolCopy.Status.AllocatedHistory = make(map[string]string)
+		}
+		ipPoolCopy.Status.AllocatedHistory[ipStr] = ipPool.Status.Allocated[ipStr]
+		delete(ipPoolCopy.Status.Allocated, ipStr)
+		ipPoolCopy.Status.Available++
 
-	_, err = s.iPPoolClient.Update(ipPoolCopy)
-	if err != nil {
-		return err
+		_, err = s.iPPoolClient.Update(ipPoolCopy)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -118,7 +129,11 @@ func (s *Store) ReleaseByID(applicantID, _ string) error {
 	}
 
 	ipPoolCopy := ipPool.DeepCopy()
+	found := false
 
+	// tolerant duplicated release
+	// e.g. lb released ip but failed to update self, then release again
+	// the host-local/backend/allocator only calls ReleaseByID
 	for ip, applicant := range ipPool.Status.Allocated {
 		if applicant == applicantID {
 			if ipPool.Status.AllocatedHistory == nil {
@@ -127,12 +142,16 @@ func (s *Store) ReleaseByID(applicantID, _ string) error {
 			ipPoolCopy.Status.AllocatedHistory[ip] = applicant
 			delete(ipPoolCopy.Status.Allocated, ip)
 			ipPoolCopy.Status.Available++
+			found = true
+			break
 		}
 	}
 
-	_, err = s.iPPoolClient.Update(ipPoolCopy)
-	if err != nil {
-		return err
+	if found {
+		_, err = s.iPPoolClient.Update(ipPoolCopy)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -144,7 +163,8 @@ func (s *Store) GetByID(applicantID, _ string) []net.IP {
 		return nil
 	}
 
-	ips := make([]net.IP, 0, 10)
+	// each ID can only have max 1 IP
+	ips := make([]net.IP, 0, 1)
 
 	for ip, applicant := range ipPool.Status.Allocated {
 		if applicantID == applicant {
