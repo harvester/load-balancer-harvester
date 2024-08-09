@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -132,7 +133,7 @@ func (m *Manager) updateAllConditions(lb *lbv1.LoadBalancer, eps *discoveryv1.En
 	epsCopy := eps.DeepCopy()
 	updated := false
 	for i := range epsCopy.Endpoints {
-		if needUpdateEndpointConditions(&epsCopy.Endpoints[i].Conditions, isHealthy) {
+		if !isDummyEndpoint(&epsCopy.Endpoints[i]) && needUpdateEndpointConditions(&epsCopy.Endpoints[i].Conditions, isHealthy) {
 			updateEndpointConditions(&epsCopy.Endpoints[i].Conditions, isHealthy)
 			updated = true
 		}
@@ -161,7 +162,7 @@ func (m *Manager) GetProbeReadyBackendServerCount(lb *lbv1.LoadBalancer) (int, e
 	// if use `for _, ep := range eps.Endpoints`
 	// get: G601: Implicit memory aliasing in for loop. (gosec)
 	for i := range eps.Endpoints {
-		if isEndpointConditionsReady(&eps.Endpoints[i].Conditions) {
+		if !isDummyEndpoint(&eps.Endpoints[i]) && isEndpointConditionsReady(&eps.Endpoints[i].Conditions) {
 			count++
 		}
 	}
@@ -209,7 +210,7 @@ func (m *Manager) getServiceBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.Backe
 
 	servers := make([]pkglb.BackendServer, 0, len(vmis))
 
-	// skip being-deleting vmi, no-address vmi
+	// skip being-deleted vmi, no-address vmi
 	for _, vmi := range vmis {
 		if vmi.DeletionTimestamp != nil {
 			continue
@@ -244,22 +245,22 @@ func (m *Manager) EnsureBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendSe
 		return nil, err
 	}
 
-	epsCopy, err := m.constructEndpointSliceFromBackendServers(eps, lb, servers)
+	epsNew, err := m.constructEndpointSliceFromBackendServers(eps, lb, servers)
 	if err != nil {
 		return nil, err
 	}
 
-	// reate a new one
+	// create a new one
 	if eps == nil {
-		// do not check IsAlreadyExists
-		eps, err = m.endpointSliceClient.Create(epsCopy)
+		// it is ok to do not check IsAlreadyExists, reconciler will pass
+		eps, err = m.endpointSliceClient.Create(epsNew)
 		if err != nil {
 			return nil, fmt.Errorf("fail to create endpointslice, error: %w", err)
 		}
 	} else {
-		if !reflect.DeepEqual(eps, epsCopy) {
+		if !reflect.DeepEqual(eps, epsNew) {
 			logrus.Debugf("update endpointslice %s/%s", lb.Namespace, lb.Name)
-			eps, err = m.endpointSliceClient.Update(epsCopy)
+			eps, err = m.endpointSliceClient.Update(epsNew)
 			if err != nil {
 				return nil, fmt.Errorf("fail to update endpointslice, error: %w", err)
 			}
@@ -268,7 +269,12 @@ func (m *Manager) EnsureBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendSe
 
 	// always ensure probs
 	if err := m.ensureProbes(lb, eps); err != nil {
-		return nil, fmt.Errorf("fail to enuse probs, error: %w", err)
+		return nil, fmt.Errorf("fail to ensure probs, error: %w", err)
+	}
+
+	// always ensure dummy endpoint
+	if err := m.ensureDummyEndpoint(lb, eps); err != nil {
+		return nil, fmt.Errorf("fail to ensure dummy endpointslice, error: %w", err)
 	}
 
 	return servers, nil
@@ -313,7 +319,7 @@ func (m *Manager) ensureProbes(lb *lbv1.LoadBalancer, eps *discoveryv1.EndpointS
 	targetProbers := make(map[string]prober.HealthOption)
 	// indexing to skip G601 in go v121
 	for i := range eps.Endpoints {
-		if len(eps.Endpoints[i].Addresses) == 0 {
+		if len(eps.Endpoints[i].Addresses) == 0 || isDummyEndpoint(&eps.Endpoints[i]) {
 			continue
 		}
 		targetProbers[marshalPorberAddress(lb, &eps.Endpoints[i])] = m.generateOneProber(lb, &eps.Endpoints[i])
@@ -345,11 +351,11 @@ func (m *Manager) updateAllProbers(uid string, activeProbers, targetProbers map[
 					return err
 				}
 			}
-			// proessed above or equal; then delete it from both maps
+			// replaced or equal; then delete it from both maps
 			delete(activeProbers, ap.Address)
 			delete(targetProbers, tp.Address)
 		}
-		// not found in targetProbers, processed in next lines
+		// for those not found in the targetProbers, will be processed in next lines
 	}
 
 	// remove all remainings of activeProbers
@@ -362,11 +368,49 @@ func (m *Manager) updateAllProbers(uid string, activeProbers, targetProbers map[
 
 	// add all remainings of targetProbers
 	for _, tp := range targetProbers {
-		// already checked, skip error
 		logrus.Debugf("+probe %s %s", uid, tp.Address)
 		if err := m.AddWorker(uid, tp.Address, tp); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// without at least one Ready (dummy) endpoint, the service may route traffic to local host
+func (m *Manager) ensureDummyEndpoint(lb *lbv1.LoadBalancer, eps *discoveryv1.EndpointSlice) error {
+	dummyCount := 0
+	activeCount := 0
+	// if use `for _, ep := range eps.Endpoints`
+	// get: G601: Implicit memory aliasing in for loop. (gosec)
+	for i := range eps.Endpoints {
+		if isDummyEndpoint(&eps.Endpoints[i]) {
+			dummyCount++
+		} else if isEndpointConditionsReady(&eps.Endpoints[i].Conditions) {
+			activeCount++
+		}
+	}
+
+	// add the dummy endpoint
+	if activeCount == 0 && dummyCount == 0 {
+		epsCopy := eps.DeepCopy()
+		epsCopy.Endpoints = appendDummyEndpoint(epsCopy.Endpoints, lb)
+		if _, err := m.endpointSliceClient.Update(epsCopy); err != nil {
+			return fmt.Errorf("fail to append dummy endpoint to lb %v endpoint, error: %w", lb.Name, err)
+		}
+		return nil
+	}
+
+	// remove the dummy endpoint
+	if activeCount > 0 && dummyCount > 0 {
+		epsCopy := eps.DeepCopy()
+		epsCopy.Endpoints = slices.DeleteFunc(epsCopy.Endpoints, func(ep discoveryv1.Endpoint) bool {
+			return ep.TargetRef.UID == dummyEndpointID
+		})
+		if _, err := m.endpointSliceClient.Update(epsCopy); err != nil {
+			return fmt.Errorf("fail to remove dummy endpoint from lb %v endpoint, error: %w", lb.Name, err)
+		}
+		return nil
 	}
 
 	return nil
@@ -515,6 +559,29 @@ func constructService(cur *corev1.Service, lb *lbv1.LoadBalancer) *corev1.Servic
 	return svc
 }
 
+const dummyEndpointIPv4Address = "10.52.0.255"
+const dummyEndpointID = "dummy347-546a-4642-9da6-5608endpoint"
+
+func appendDummyEndpoint(eps []discoveryv1.Endpoint, lb *lbv1.LoadBalancer) []discoveryv1.Endpoint {
+	endpoint := discoveryv1.Endpoint{
+		Addresses: []string{dummyEndpointIPv4Address},
+		TargetRef: &corev1.ObjectReference{
+			Namespace: lb.Namespace,
+			Name:      lb.Name,
+			UID:       dummyEndpointID,
+		},
+		Conditions: discoveryv1.EndpointConditions{
+			Ready: pointer.Bool(true),
+		},
+	}
+	eps = append(eps, endpoint)
+	return eps
+}
+
+func isDummyEndpoint(ep *discoveryv1.Endpoint) bool {
+	return ep.TargetRef.UID == dummyEndpointID
+}
+
 func (m *Manager) constructEndpointSliceFromBackendServers(cur *discoveryv1.EndpointSlice, lb *lbv1.LoadBalancer, servers []pkglb.BackendServer) (*discoveryv1.EndpointSlice, error) {
 	eps := &discoveryv1.EndpointSlice{}
 	if cur != nil {
@@ -585,6 +652,10 @@ func (m *Manager) constructEndpointSliceFromBackendServers(cur *discoveryv1.Endp
 			}
 			endpoints = append(endpoints, endpoint)
 		}
+	}
+	// a dummy endpoint avoids the LB traffic is routed to other services/local host accidentally
+	if len(endpoints) == 0 {
+		endpoints = appendDummyEndpoint(endpoints, lb)
 	}
 	eps.Endpoints = endpoints
 
