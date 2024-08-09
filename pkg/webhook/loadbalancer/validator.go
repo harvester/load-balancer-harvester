@@ -3,26 +3,22 @@ package loadbalancer
 import (
 	"fmt"
 
-	ctlkubevirtv1 "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io/v1"
 	"github.com/harvester/webhook/pkg/server/admission"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
-	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
 
 type validator struct {
 	admission.DefaultValidator
-	vmiCache ctlkubevirtv1.VirtualMachineInstanceCache
 }
 
 var _ admission.Validator = &validator{}
 
-func NewValidator(vmiCache ctlkubevirtv1.VirtualMachineInstanceCache) admission.Validator {
-	return &validator{
-		vmiCache: vmiCache,
-	}
+func NewValidator() admission.Validator {
+	return &validator{}
 }
 
 func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
@@ -32,12 +28,8 @@ func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
 		return fmt.Errorf("create loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
 	}
 
-	ok, err := v.matchAtLeastOneVmi(lb)
-	if err != nil {
-		return fmt.Errorf("create loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
-	}
-	if !ok {
-		return fmt.Errorf("create loadbalancer %s/%s failed: no virtual machine instance matched", lb.Namespace, lb.Name)
+	if err := checkHealthyCheck(lb); err != nil {
+		return fmt.Errorf("create loadbalancer %s/%s failed with healthyCheck: %w", lb.Namespace, lb.Name, err)
 	}
 
 	return nil
@@ -54,12 +46,8 @@ func (v *validator) Update(_ *admission.Request, oldObj, newObj runtime.Object) 
 		return fmt.Errorf("update loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
 	}
 
-	ok, err := v.matchAtLeastOneVmi(lb)
-	if err != nil {
-		return fmt.Errorf("update loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
-	}
-	if !ok {
-		return fmt.Errorf("update loadbalancer %s/%s failed: no virtual machine instance matched", lb.Namespace, lb.Name)
+	if err := checkHealthyCheck(lb); err != nil {
+		return fmt.Errorf("update loadbalancer %s/%s failed with healthyCheck: %w", lb.Namespace, lb.Name, err)
 	}
 
 	return nil
@@ -79,22 +67,11 @@ func (v *validator) Resource() admission.Resource {
 	}
 }
 
-func (v *validator) matchAtLeastOneVmi(lb *lbv1.LoadBalancer) (bool, error) {
-	selector, err := utils.NewSelector(lb.Spec.BackendServerSelector)
-	if err != nil {
-		return false, err
-	}
-
-	vmis, err := v.vmiCache.List(lb.Namespace, selector)
-	if err != nil {
-		return false, err
-	}
-
-	return len(vmis) > 0, nil
-}
-
 func checkListeners(lb *lbv1.LoadBalancer) error {
 	nameMap, portMap, backendMap := map[string]bool{}, map[int32]int{}, map[int32]int{}
+	if len(lb.Spec.Listeners) == 0 {
+		return fmt.Errorf("the loadbalancer needs to have at least one listener")
+	}
 	for i, listener := range lb.Spec.Listeners {
 		// check listener name
 		if _, ok := nameMap[listener.Name]; ok {
@@ -115,6 +92,40 @@ func checkListeners(lb *lbv1.LoadBalancer) error {
 				listener.BackendPort, lb.Spec.Listeners[index].Name)
 		}
 		backendMap[listener.BackendPort] = i
+	}
+
+	return nil
+}
+
+func checkHealthyCheck(lb *lbv1.LoadBalancer) error {
+	if lb.Spec.HealthCheck != nil && lb.Spec.HealthCheck.Port != 0 {
+		wrongProtocol := false
+		for _, listener := range lb.Spec.Listeners {
+			// check listener port and protocol, only TCP is supported now
+			if uint(listener.BackendPort) == lb.Spec.HealthCheck.Port {
+				if listener.Protocol == corev1.ProtocolTCP {
+					if lb.Spec.HealthCheck.SuccessThreshold == 0 {
+						return fmt.Errorf("healthcheck SuccessThreshold should > 0")
+					}
+					if lb.Spec.HealthCheck.FailureThreshold == 0 {
+						return fmt.Errorf("healthcheck FailureThreshold should > 0")
+					}
+					if lb.Spec.HealthCheck.PeriodSeconds == 0 {
+						return fmt.Errorf("healthcheck PeriodSeconds should > 0")
+					}
+					if lb.Spec.HealthCheck.TimeoutSeconds == 0 {
+						return fmt.Errorf("healthcheck TimeoutSeconds should > 0")
+					}
+					return nil
+				}
+				// not the expected TCP
+				wrongProtocol = true
+			}
+		}
+		if wrongProtocol {
+			return fmt.Errorf("healthcheck port %v can only be a TCP backend port", lb.Spec.HealthCheck.Port)
+		}
+		return fmt.Errorf("healthcheck port %v is not in listener backend port list", lb.Spec.HealthCheck.Port)
 	}
 
 	return nil

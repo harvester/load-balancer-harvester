@@ -115,7 +115,7 @@ func run(ctx context.Context, cfg *rest.Config, options *config.Options) error {
 	webhookServer := server.NewWebhookServer(ctx, cfg, name, options)
 
 	if err := webhookServer.RegisterValidators(ippool.NewIPPoolValidator(poolCache),
-		loadbalancer.NewValidator(vmiCache)); err != nil {
+		loadbalancer.NewValidator()); err != nil {
 		return fmt.Errorf("failed to register ip pool validator: %w", err)
 	}
 

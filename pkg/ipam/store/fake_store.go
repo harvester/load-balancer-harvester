@@ -69,12 +69,14 @@ func (f *FakeStore) Release(ip net.IP) error {
 	}
 
 	ipStr := ip.String()
-	if f.pool.Status.AllocatedHistory == nil {
-		f.pool.Status.AllocatedHistory = make(map[string]string)
+	if _, ok := f.pool.Status.Allocated[ipStr]; ok {
+		if f.pool.Status.AllocatedHistory == nil {
+			f.pool.Status.AllocatedHistory = make(map[string]string)
+		}
+		f.pool.Status.AllocatedHistory[ipStr] = f.pool.Status.Allocated[ipStr]
+		delete(f.pool.Status.Allocated, ipStr)
+		f.pool.Status.Available++
 	}
-	f.pool.Status.AllocatedHistory[ipStr] = f.pool.Status.Allocated[ipStr]
-	delete(f.pool.Status.Allocated, ipStr)
-	f.pool.Status.Available++
 
 	return nil
 }
@@ -92,6 +94,7 @@ func (f *FakeStore) ReleaseByID(applicantID, _ string) error {
 			f.pool.Status.AllocatedHistory[ip] = applicant
 			delete(f.pool.Status.Allocated, ip)
 			f.pool.Status.Available++
+			break
 		}
 	}
 
