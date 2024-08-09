@@ -5,6 +5,7 @@ import (
 
 	"github.com/harvester/webhook/pkg/server/admission"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
@@ -27,6 +28,10 @@ func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
 		return fmt.Errorf("create loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
 	}
 
+	if err := checkHealthyCheck(lb); err != nil {
+		return fmt.Errorf("create loadbalancer %s/%s failed with healthyCheck: %w", lb.Namespace, lb.Name, err)
+	}
+
 	return nil
 }
 
@@ -39,6 +44,10 @@ func (v *validator) Update(_ *admission.Request, oldObj, newObj runtime.Object) 
 
 	if err := checkListeners(lb); err != nil {
 		return fmt.Errorf("update loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
+	}
+
+	if err := checkHealthyCheck(lb); err != nil {
+		return fmt.Errorf("update loadbalancer %s/%s failed with healthyCheck: %w", lb.Namespace, lb.Name, err)
 	}
 
 	return nil
@@ -60,6 +69,9 @@ func (v *validator) Resource() admission.Resource {
 
 func checkListeners(lb *lbv1.LoadBalancer) error {
 	nameMap, portMap, backendMap := map[string]bool{}, map[int32]int{}, map[int32]int{}
+	if len(lb.Spec.Listeners) == 0 {
+		return fmt.Errorf("the loadbalancer needs to have at least one listener")
+	}
 	for i, listener := range lb.Spec.Listeners {
 		// check listener name
 		if _, ok := nameMap[listener.Name]; ok {
@@ -80,6 +92,40 @@ func checkListeners(lb *lbv1.LoadBalancer) error {
 				listener.BackendPort, lb.Spec.Listeners[index].Name)
 		}
 		backendMap[listener.BackendPort] = i
+	}
+
+	return nil
+}
+
+func checkHealthyCheck(lb *lbv1.LoadBalancer) error {
+	if lb.Spec.HealthCheck != nil && lb.Spec.HealthCheck.Port != 0 {
+		wrongProtocol := false
+		for _, listener := range lb.Spec.Listeners {
+			// check listener port and protocol, only TCP is supported now
+			if uint(listener.BackendPort) == lb.Spec.HealthCheck.Port {
+				if listener.Protocol == corev1.ProtocolTCP {
+					if lb.Spec.HealthCheck.SuccessThreshold == 0 {
+						return fmt.Errorf("healthcheck SuccessThreshold should > 0")
+					}
+					if lb.Spec.HealthCheck.FailureThreshold == 0 {
+						return fmt.Errorf("healthcheck FailureThreshold should > 0")
+					}
+					if lb.Spec.HealthCheck.PeriodSeconds == 0 {
+						return fmt.Errorf("healthcheck PeriodSeconds should > 0")
+					}
+					if lb.Spec.HealthCheck.TimeoutSeconds == 0 {
+						return fmt.Errorf("healthcheck TimeoutSeconds should > 0")
+					}
+					return nil
+				}
+				// not the expected TCP
+				wrongProtocol = true
+			}
+		}
+		if wrongProtocol {
+			return fmt.Errorf("healthcheck port %v can only be a TCP backend port", lb.Spec.HealthCheck.Port)
+		}
+		return fmt.Errorf("healthcheck port %v is not in listener backend port list", lb.Spec.HealthCheck.Port)
 	}
 
 	return nil
