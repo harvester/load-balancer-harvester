@@ -41,7 +41,20 @@ func NewMutator(namespaceCache ctlcorev1.NamespaceCache,
 func (m *mutator) Create(_ *admission.Request, newObj runtime.Object) (admission.Patch, error) {
 	lb := newObj.(*lbv1.LoadBalancer)
 
-	return m.getAnnotationsPatch(lb)
+	ap, err := m.getAnnotationsPatch(lb)
+	if err != nil {
+		return nil, err
+	}
+
+	hcp, err := m.getHealthyCheckPatch(lb)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ap) == 0 {
+		return hcp, nil
+	}
+	return append(ap, hcp...), nil
 }
 
 func (m *mutator) Update(_ *admission.Request, _, newObj runtime.Object) (admission.Patch, error) {
@@ -51,7 +64,62 @@ func (m *mutator) Update(_ *admission.Request, _, newObj runtime.Object) (admiss
 		return nil, nil
 	}
 
-	return m.getAnnotationsPatch(lb)
+	ap, err := m.getAnnotationsPatch(lb)
+	if err != nil {
+		return nil, err
+	}
+
+	hcp, err := m.getHealthyCheckPatch(lb)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ap) == 0 {
+		return hcp, nil
+	}
+	return append(ap, hcp...), nil
+}
+
+// those fields are not checked in the past, necessary to overwrite them to at least 1
+func (m *mutator) getHealthyCheckPatch(lb *lbv1.LoadBalancer) (admission.Patch, error) {
+	if lb.Spec.HealthCheck == nil || lb.Spec.HealthCheck.Port == 0 {
+		return nil, nil
+	}
+
+	hc := *lb.Spec.HealthCheck
+	patched := false
+
+	if hc.SuccessThreshold == 0 {
+		hc.SuccessThreshold = 2
+		patched = true
+	}
+
+	if hc.FailureThreshold == 0 {
+		hc.FailureThreshold = 2
+		patched = true
+	}
+
+	if hc.PeriodSeconds == 0 {
+		hc.PeriodSeconds = 1
+		patched = true
+	}
+
+	if hc.TimeoutSeconds == 0 {
+		hc.TimeoutSeconds = 1
+		patched = true
+	}
+
+	if patched {
+		return []admission.PatchOp{
+			{
+				Op:    admission.PatchOpReplace,
+				Path:  "/spec/healthCheck",
+				Value: hc,
+			},
+		}, nil
+	}
+
+	return nil, nil
 }
 
 func (m *mutator) getAnnotationsPatch(lb *lbv1.LoadBalancer) (admission.Patch, error) {
