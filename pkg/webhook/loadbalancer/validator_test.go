@@ -209,6 +209,140 @@ func TestCheckListeners(t *testing.T) {
 		},
 	}
 
+	testsIPAM := []struct {
+		name    string
+		oldLb   *lbv1.LoadBalancer
+		newLb   *lbv1.LoadBalancer
+		wantErr bool
+	}{
+		{
+			name: "IPAM can't be changed from empty to DHCP",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: "", // defaults to lbv1.Pool
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.DHCP,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "IPAM can't be changed from Pool to DHCP",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.Pool,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.DHCP,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "IPAM can't be changed from DHCP to Pool",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.DHCP,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.Pool,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "IPAM can't be changed from DHCP to empty",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.DHCP,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: "",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "IPAM keeps DHCP",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.DHCP,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.DHCP,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "IPAM keeps Pool",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.Pool,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.Pool,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "IPAM keeps empty",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: "",
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "IPAM changes from Pool to empty",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.Pool,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "IPAM changes from empty to Pool",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: "",
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					IPAM: lbv1.Pool,
+				},
+			},
+			wantErr: false,
+		},
+	}
+
 	for _, tt := range tests {
 		if err := checkListeners(tt.lb); (err != nil) != tt.wantErr {
 			t.Errorf("%q. checkListeners() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -218,6 +352,12 @@ func TestCheckListeners(t *testing.T) {
 	for _, tt := range testsHealtyCheck {
 		if err := checkHealthyCheck(tt.lb); (err != nil) != tt.wantErr {
 			t.Errorf("%q. checkHealthyCheck() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+
+	for _, tt := range testsIPAM {
+		if err := checkIPAM(tt.oldLb, tt.newLb); (err != nil) != tt.wantErr {
+			t.Errorf("%q. checkIPAM() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
 }
