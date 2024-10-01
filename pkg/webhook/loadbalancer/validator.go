@@ -37,6 +37,7 @@ func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
 
 func (v *validator) Update(_ *admission.Request, oldObj, newObj runtime.Object) error {
 	lb := newObj.(*lbv1.LoadBalancer)
+	oldLb := oldObj.(*lbv1.LoadBalancer)
 
 	if lb.DeletionTimestamp != nil {
 		return nil
@@ -48,6 +49,10 @@ func (v *validator) Update(_ *admission.Request, oldObj, newObj runtime.Object) 
 
 	if err := checkHealthyCheck(lb); err != nil {
 		return fmt.Errorf("update loadbalancer %s/%s failed with healthyCheck: %w", lb.Namespace, lb.Name, err)
+	}
+
+	if err := checkIPAM(oldLb, lb); err != nil {
+		return fmt.Errorf("update loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
 	}
 
 	return nil
@@ -142,6 +147,17 @@ func checkHealthyCheck(lb *lbv1.LoadBalancer) error {
 			return fmt.Errorf("healthcheck port %v can only be a TCP backend port", lb.Spec.HealthCheck.Port)
 		}
 		return fmt.Errorf("healthcheck port %v is not in listener backend port list", lb.Spec.HealthCheck.Port)
+	}
+
+	return nil
+}
+
+// change the IPAM may cause IP leaking
+// user may re-create the LB to change the IPAM
+// if IPAM is not setting, it defaults to lbv1.Pool
+func checkIPAM(oldLb, newLb *lbv1.LoadBalancer) error {
+	if (oldLb.Spec.IPAM != lbv1.DHCP && newLb.Spec.IPAM == lbv1.DHCP) || (oldLb.Spec.IPAM == lbv1.DHCP && newLb.Spec.IPAM != lbv1.DHCP) {
+		return fmt.Errorf("can't change the IPAM from %v to %v", oldLb.Spec.IPAM, newLb.Spec.IPAM)
 	}
 
 	return nil
