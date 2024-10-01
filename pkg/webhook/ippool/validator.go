@@ -32,7 +32,7 @@ func NewIPPoolValidator(ipPoolCache ctllbv1.IPPoolCache) admission.Validator {
 func (i *ipPoolValidator) Create(_ *admission.Request, newObj runtime.Object) error {
 	pool := newObj.(*lbv1.IPPool)
 	if len(pool.Spec.Ranges) == 0 {
-		return fmt.Errorf(createErr, pool.Name, fmt.Errorf("range could not be empty"))
+		return fmt.Errorf(createErr, pool.Name, fmt.Errorf("range can't be empty"))
 	}
 
 	rs, err := ipam.LBRangesToAllocatorRangeSet(pool.Spec.Ranges)
@@ -64,7 +64,7 @@ func (i *ipPoolValidator) Update(_ *admission.Request, _, newObj runtime.Object)
 	}
 
 	if len(pool.Spec.Ranges) == 0 {
-		return fmt.Errorf(updateErr, pool.Name, fmt.Errorf("range could not be empty"))
+		return fmt.Errorf(updateErr, pool.Name, fmt.Errorf("range can't be empty"))
 	}
 
 	rs, err := ipam.LBRangesToAllocatorRangeSet(pool.Spec.Ranges)
@@ -96,7 +96,7 @@ func (i *ipPoolValidator) Delete(_ *admission.Request, oldObj runtime.Object) er
 	pool := oldObj.(*lbv1.IPPool)
 
 	if len(pool.Status.Allocated) != 0 {
-		return fmt.Errorf("could not delete pool before releasing all the allocated IP")
+		return fmt.Errorf("can't delete pool before releasing all the allocated IP")
 	}
 
 	return nil
@@ -246,7 +246,7 @@ func (i *ipPoolValidator) checkSelectorWithOthers(pool *lbv1.IPPool) error {
 		}
 		// priority could not be same if it's not zero
 		if p.Spec.Selector.Priority != 0 && p.Spec.Selector.Priority == pool.Spec.Selector.Priority {
-			return fmt.Errorf("the priority could not be the same as the pool %s", p.Name)
+			return fmt.Errorf("the priority can't be the same as the pool %s", p.Name)
 		} else if p.Spec.Selector.Priority == 0 && pool.Spec.Selector.Priority == 0 {
 			// check the scope overlaps if both of them are zero
 			r := &ipam.Requirement{
@@ -257,7 +257,7 @@ func (i *ipPoolValidator) checkSelectorWithOthers(pool *lbv1.IPPool) error {
 				r.Namespace = t.Namespace
 				r.Cluster = t.GuestCluster
 				if ipam.NewMatcher(p.Spec.Selector).Matches(r) {
-					return fmt.Errorf("scope overlaps with %s", p.Name)
+					return fmt.Errorf("scope selector is same as the pool %s with priority 0 Project %v Namespace %v GuestCluster %v, set a different priority or scope", p.Name, t.Project, t.Namespace, t.GuestCluster)
 				}
 			}
 		}
