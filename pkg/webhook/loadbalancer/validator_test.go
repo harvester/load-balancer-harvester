@@ -109,6 +109,24 @@ func TestCheckListeners(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "VM-type lb should have listeners defined",
+			lb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "cluster-type lb can have no listeners",
+			lb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	testsHealtyCheck := []struct {

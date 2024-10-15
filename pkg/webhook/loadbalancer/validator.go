@@ -76,6 +76,12 @@ const maxPort = 65535
 
 func checkListeners(lb *lbv1.LoadBalancer) error {
 	nameMap, portMap, backendMap := map[string]bool{}, map[int32]int{}, map[int32]int{}
+
+	// Cluster-type load balancers can have no listeners since the actual load-balancing is done in the guest cluster.
+	if lb.Spec.WorkloadType == lbv1.Cluster {
+		return nil
+	}
+
 	if len(lb.Spec.Listeners) == 0 {
 		return fmt.Errorf("the loadbalancer needs to have at least one listener")
 	}
