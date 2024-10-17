@@ -35,7 +35,7 @@ type SafeAllocatorMap struct {
 
 func NewAllocator(name string, ranges []lbv1.Range, cache ctllbv1.IPPoolCache, client ctllbv1.IPPoolClient) (*Allocator, error) {
 	if len(ranges) == 0 {
-		return nil, fmt.Errorf("range could not be empty")
+		return nil, fmt.Errorf("range can't be empty")
 	}
 
 	rangeSlice := make([]allocator.Range, 0)
@@ -63,7 +63,8 @@ func NewAllocator(name string, ranges []lbv1.Range, cache ctllbv1.IPPoolCache, c
 func MakeRange(r *lbv1.Range) (*allocator.Range, error) {
 	ip, ipNet, err := net.ParseCIDR(r.Subnet)
 	if err != nil {
-		return nil, fmt.Errorf("invalid range %+v", r)
+		// the return error is like: "invalid CIDR address: 192.168.300.0/24"
+		return nil, fmt.Errorf("%w, a valid example is 192.168.1.0/24", err)
 	}
 
 	var defaultStart, defaultEnd, defaultGateway, start, end, gateway net.IP
