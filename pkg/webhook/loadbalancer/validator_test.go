@@ -225,6 +225,20 @@ func TestCheckListeners(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Cluster type LB may set invalid health check, but it is skipped",
+			lb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+					Listeners: []lbv1.Listener{
+						{Name: "a", BackendPort: 80, Protocol: corev1.ProtocolTCP},
+						{Name: "b", BackendPort: 32, Protocol: corev1.ProtocolUDP},
+					},
+					HealthCheck: &lbv1.HealthCheck{Port: 32},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	testsIPAM := []struct {
@@ -361,6 +375,140 @@ func TestCheckListeners(t *testing.T) {
 		},
 	}
 
+	testsWorkloadType := []struct {
+		name    string
+		oldLb   *lbv1.LoadBalancer
+		newLb   *lbv1.LoadBalancer
+		wantErr bool
+	}{
+		{
+			name: "WorkloadType can't be changed from empty to Cluster",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: "", // defaults to lbv1.VM
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "WorkloadType can't be changed from VM to Cluster",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "WorkloadType can't be changed from Cluster to VM",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "WorkloadType can't be changed from Cluster to empty",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: "",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "WorkloadType keeps Cluster",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "WorkloadType keeps VM",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "WorkloadType keeps empty",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: "",
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "WorkloadType changes from VM to empty",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "WorkloadType changes from empty to VM",
+			oldLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: "",
+				},
+			},
+			newLb: &lbv1.LoadBalancer{
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
+				},
+			},
+			wantErr: false,
+		},
+	}
+
 	for _, tt := range tests {
 		if err := checkListeners(tt.lb); (err != nil) != tt.wantErr {
 			t.Errorf("%q. checkListeners() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -376,6 +524,12 @@ func TestCheckListeners(t *testing.T) {
 	for _, tt := range testsIPAM {
 		if err := checkIPAM(tt.oldLb, tt.newLb); (err != nil) != tt.wantErr {
 			t.Errorf("%q. checkIPAM() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+
+	for _, tt := range testsWorkloadType {
+		if err := checkWorkloadType(tt.oldLb, tt.newLb); (err != nil) != tt.wantErr {
+			t.Errorf("%q. checkWorkloadType() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
 }
