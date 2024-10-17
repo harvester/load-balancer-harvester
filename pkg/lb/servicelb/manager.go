@@ -198,6 +198,10 @@ func (m *Manager) DeleteLoadBalancer(lb *lbv1.LoadBalancer) error {
 
 // get the qualified backend servers of one LB
 func (m *Manager) getServiceBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendServer, error) {
+	// if user does not set the selector, then return nil
+	if len(lb.Spec.BackendServerSelector) == 0 {
+		return nil, nil
+	}
 	// get related vmis
 	selector, err := utils.NewSelector(lb.Spec.BackendServerSelector)
 	if err != nil {
