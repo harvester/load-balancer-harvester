@@ -22,6 +22,10 @@ var (
 	p2pIPStr            = "192.168.100.10/32"
 	p2pIP               = net.IP{192, 168, 100, 10}
 	p2pMask             = net.IPv4Mask(255, 255, 255, 255)
+
+	cClassErrorSubnet1 = "192.168.100.0"
+	cClassErrorSubnet2 = "192.168.100.0/100"
+	cClassErrorSubnet3 = "192.168.300.0/24"
 )
 
 func newFakeAllocator(name string, ranges []lbv1.Range) (*Allocator, error) {
@@ -49,6 +53,44 @@ func newFakeAllocator(name string, ranges []lbv1.Range) (*Allocator, error) {
 		checkSum:    CalculateCheckSum(ranges),
 		total:       total,
 	}, nil
+}
+
+func TestAllocator_CheckSubnet(t *testing.T) {
+	tests := []struct {
+		name    string
+		subnet  string
+		wantErr bool
+	}{
+		{
+			name:    "test1",
+			subnet:  cClassErrorSubnet1,
+			wantErr: true,
+		},
+		{
+			name:    "test2",
+			subnet:  cClassErrorSubnet2,
+			wantErr: true,
+		},
+		{
+			name:    "test3",
+			subnet:  cClassErrorSubnet3,
+			wantErr: true,
+		},
+		{
+			name:    "test4",
+			subnet:  cClassSubnet,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := newFakeAllocator(tt.name, []lbv1.Range{{Subnet: tt.subnet}})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, returnErr %v", tt.wantErr, err != nil)
+			}
+		})
+	}
 }
 
 func TestAllocator_Total(t *testing.T) {
