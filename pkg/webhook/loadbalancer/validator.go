@@ -55,6 +55,10 @@ func (v *validator) Update(_ *admission.Request, oldObj, newObj runtime.Object) 
 		return fmt.Errorf("update loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
 	}
 
+	if err := checkWorkloadType(oldLb, lb); err != nil {
+		return fmt.Errorf("update loadbalancer %s/%s failed: %w", lb.Namespace, lb.Name, err)
+	}
+
 	return nil
 }
 
@@ -125,6 +129,11 @@ func checkListeners(lb *lbv1.LoadBalancer) error {
 }
 
 func checkHealthyCheck(lb *lbv1.LoadBalancer) error {
+	// The healthyCheck related configuration is only valid for VM type LB.
+	if lb.Spec.WorkloadType == lbv1.Cluster {
+		return nil
+	}
+
 	if lb.Spec.HealthCheck != nil && lb.Spec.HealthCheck.Port != 0 {
 		wrongProtocol := false
 		for _, listener := range lb.Spec.Listeners {
@@ -160,10 +169,21 @@ func checkHealthyCheck(lb *lbv1.LoadBalancer) error {
 
 // change the IPAM may cause IP leaking
 // user may re-create the LB to change the IPAM
-// if IPAM is not setting, it defaults to lbv1.Pool
+// if IPAM is not set, it defaults to lbv1.Pool
 func checkIPAM(oldLb, newLb *lbv1.LoadBalancer) error {
 	if (oldLb.Spec.IPAM != lbv1.DHCP && newLb.Spec.IPAM == lbv1.DHCP) || (oldLb.Spec.IPAM == lbv1.DHCP && newLb.Spec.IPAM != lbv1.DHCP) {
 		return fmt.Errorf("can't change the IPAM from %v to %v", oldLb.Spec.IPAM, newLb.Spec.IPAM)
+	}
+
+	return nil
+}
+
+// change the WorkloadType makes no sense as they come from different scenarios with different parameters
+// Cluster type is created by the cloud-provider-harvester on Rancher and VM type is created by Harvester
+// if WorkloadType is not set, it defaults to lbv1.VM
+func checkWorkloadType(oldLb, newLb *lbv1.LoadBalancer) error {
+	if (oldLb.Spec.WorkloadType != lbv1.Cluster && newLb.Spec.WorkloadType == lbv1.Cluster) || (oldLb.Spec.WorkloadType == lbv1.Cluster && newLb.Spec.WorkloadType != lbv1.Cluster) {
+		return fmt.Errorf("can't change the WorkloadType from %v to %v", oldLb.Spec.WorkloadType, newLb.Spec.WorkloadType)
 	}
 
 	return nil
