@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+
+	supportBundleUtil "github.com/harvester/harvester/pkg/util/supportbundle"
 )
 
 var (
@@ -36,7 +38,9 @@ var (
 	SSLParameters                          = NewSetting(SSLParametersName, "{}")
 	SupportBundleImage                     = NewSetting(SupportBundleImageName, "{}")
 	SupportBundleNamespaces                = NewSetting("support-bundle-namespaces", "")
-	SupportBundleTimeout                   = NewSetting(SupportBundleTimeoutSettingName, "10") // Unit is minute. 0 means disable timeout.
+	SupportBundleTimeout                   = NewSetting(SupportBundleTimeoutSettingName, "10")                                                                  // Unit is minute. 0 means disable timeout.
+	SupportBundleExpiration                = NewSetting(SupportBundleExpirationSettingName, supportBundleUtil.SupportBundleExpirationDefaultStr)                // Unit is minute.
+	SupportBundleNodeCollectionTimeout     = NewSetting(SupportBundleNodeCollectionTimeoutName, supportBundleUtil.SupportBundleNodeCollectionTimeoutDefaultStr) // Unit is minute.
 	DefaultStorageClass                    = NewSetting("default-storage-class", "longhorn")
 	HTTPProxy                              = NewSetting(HTTPProxySettingName, "{}")
 	VMForceResetPolicySet                  = NewSetting(VMForceResetPolicySettingName, InitVMForceResetPolicy())
@@ -47,7 +51,8 @@ var (
 	ContainerdRegistry                     = NewSetting(ContainerdRegistrySettingName, "")
 	StorageNetwork                         = NewSetting(StorageNetworkName, "")
 	DefaultVMTerminationGracePeriodSeconds = NewSetting(DefaultVMTerminationGracePeriodSecondsSettingName, "120")
-
+	AutoRotateRKE2CertsSet                 = NewSetting(AutoRotateRKE2CertsSettingName, InitAutoRotateRKE2Certs())
+	KubeconfigTTL                          = NewSetting(KubeconfigDefaultTokenTTLMinutesSettingName, "0") // "0" is default value to ensure token does not expire
 	// HarvesterCSICCMVersion this is the chart version from https://github.com/harvester/charts instead of image versions
 	HarvesterCSICCMVersion = NewSetting(HarvesterCSICCMSettingName, `{"harvester-cloud-provider":">=0.0.1 <0.3.0","harvester-csi-provider":">=0.0.1 <0.3.0"}`)
 	NTPServers             = NewSetting(NTPServersSettingName, "")
@@ -65,7 +70,7 @@ const (
 	SSLParametersName                                 = "ssl-parameters"
 	VipPoolsConfigSettingName                         = "vip-pools"
 	VolumeSnapshotClassSettingName                    = "volume-snapshot-class"
-	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/latest/index.html"
+	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/release-harvester-v1.3/index.html"
 	SupportBundleImageName                            = "support-bundle-image"
 	CSIDriverConfigSettingName                        = "csi-driver-config"
 	UIIndexSettingName                                = "ui-index"
@@ -73,12 +78,16 @@ const (
 	UISourceSettingName                               = "ui-source"
 	UIPluginIndexSettingName                          = "ui-plugin-index"
 	UIPluginBundledVersionSettingName                 = "ui-plugin-bundled-version"
-	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-latest/harvester-latest.umd.min.js"
+	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-release-harvester-v1.3/harvester-release-harvester-v1.3.umd.min.js"
 	ContainerdRegistrySettingName                     = "containerd-registry"
 	HarvesterCSICCMSettingName                        = "harvester-csi-ccm-versions"
 	StorageNetworkName                                = "storage-network"
 	DefaultVMTerminationGracePeriodSecondsSettingName = "default-vm-termination-grace-period-seconds"
+	SupportBundleExpirationSettingName                = "support-bundle-expiration"
 	NTPServersSettingName                             = "ntp-servers"
+	AutoRotateRKE2CertsSettingName                    = "auto-rotate-rke2-certs"
+	KubeconfigDefaultTokenTTLMinutesSettingName       = "kubeconfig-default-token-ttl-minutes"
+	SupportBundleNodeCollectionTimeoutName            = "support-bundle-node-collection-timeout"
 )
 
 func init() {
@@ -141,16 +150,23 @@ func (s Setting) Get() string {
 }
 
 func (s Setting) GetInt() int {
-	v := s.Get()
-	i, err := strconv.Atoi(v)
-	if err == nil {
-		return i
+	var (
+		i   int
+		err error
+		v   = s.Get()
+	)
+
+	if v != "" {
+		if i, err = strconv.Atoi(v); err == nil {
+			return i
+		}
+		logrus.Errorf("failed to parse setting %s=%s as int: %v", s.Name, v, err)
 	}
-	logrus.Errorf("failed to parse setting %s=%s as int: %v", s.Name, v, err)
-	i, err = strconv.Atoi(s.Default)
-	if err != nil {
+
+	if i, err = strconv.Atoi(s.Default); err != nil {
 		return 0
 	}
+
 	return i
 }
 
@@ -274,6 +290,23 @@ type SSLParameter struct {
 type CSIDriverInfo struct {
 	VolumeSnapshotClassName       string `json:"volumeSnapshotClassName"`
 	BackupVolumeSnapshotClassName string `json:"backupVolumeSnapshotClassName"`
+}
+
+type AutoRotateRKE2Certs struct {
+	Enable          bool `json:"enable"`
+	ExpiringInHours int  `json:"expiringInHours"`
+}
+
+func InitAutoRotateRKE2Certs() string {
+	autoRotateRKE2Certs := &AutoRotateRKE2Certs{
+		Enable:          false,
+		ExpiringInHours: 240, // 7 days
+	}
+	autoRotateRKE2CertsStr, err := json.Marshal(autoRotateRKE2Certs)
+	if err != nil {
+		logrus.WithField("name", AutoRotateRKE2CertsSettingName).WithError(err).Error("failed to init setting")
+	}
+	return string(autoRotateRKE2CertsStr)
 }
 
 func GetCSIDriverInfo(provisioner string) (*CSIDriverInfo, error) {

@@ -31,7 +31,7 @@ const (
 	VolumeSnapshotBySourcePVCIndex     = "harvesterhci.io/volumesnapshot-by-source-pvc"
 )
 
-func Setup(ctx context.Context, server *server.Server, controllers *server.Controllers, options config.Options) error {
+func Setup(ctx context.Context, _ *server.Server, _ *server.Controllers, _ config.Options) error {
 	scaled := config.ScaledWithContext(ctx)
 	management := scaled.Management
 
@@ -130,15 +130,15 @@ func VMTemplateVersionByImageID(obj *harvesterv1.VirtualMachineTemplateVersion) 
 		return []string{}, fmt.Errorf("can't unmarshal %s, err: %w", util.AnnotationVolumeClaimTemplates, err)
 	}
 
-	imageIds := []string{}
+	imageIDs := []string{}
 	for _, volumeClaimTemplate := range volumeClaimTemplates {
 		imageID, ok := volumeClaimTemplate.Annotations[util.AnnotationImageID]
 		if !ok || imageID == "" {
 			continue
 		}
-		imageIds = append(imageIds, imageID)
+		imageIDs = append(imageIDs, imageID)
 	}
-	return imageIds, nil
+	return imageIDs, nil
 }
 
 func volumeSnapshotBySourcePVC(obj *snapshotv1.VolumeSnapshot) ([]string, error) {
