@@ -57,7 +57,6 @@ const (
 	RancherMonitoringGrafana            = "rancher-monitoring-grafana"
 	CattleLoggingSystemNamespaceName    = "cattle-logging-system"
 	HarvesterUpgradeImageRepository     = "rancher/harvester-upgrade"
-	HarvesterLonghornStorageClassName   = "harvester-longhorn"
 	GrafanaPVCName                      = "rancher-monitoring-grafana"
 	RancherMonitoringName               = "rancher-monitoring"
 	CattleMonitoringSystemNamespaceName = "cattle-monitoring-system"
@@ -102,4 +101,6 @@ const (
 	RancherInternalServerURLSetting          = "internal-server-url"
 	APIServerURLKey                          = "apiServerURL"
 	APIServerCAKey                           = "apiServerCA"
+
+	RKEControlPlaneRoleLabel = "rke.cattle.io/control-plane-role"
 )
