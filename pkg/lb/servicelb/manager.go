@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
 
 	"github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io"
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
@@ -567,6 +566,7 @@ const dummyEndpointIPv4Address = "10.52.0.255"
 const dummyEndpointID = "dummy347-546a-4642-9da6-5608endpoint"
 
 func appendDummyEndpoint(eps []discoveryv1.Endpoint, lb *lbv1.LoadBalancer) []discoveryv1.Endpoint {
+	cond := true
 	endpoint := discoveryv1.Endpoint{
 		Addresses: []string{dummyEndpointIPv4Address},
 		TargetRef: &corev1.ObjectReference{
@@ -575,7 +575,7 @@ func appendDummyEndpoint(eps []discoveryv1.Endpoint, lb *lbv1.LoadBalancer) []di
 			UID:       dummyEndpointID,
 		},
 		Conditions: discoveryv1.EndpointConditions{
-			Ready: pointer.Bool(true),
+			Ready: &cond,
 		},
 	}
 	eps = append(eps, endpoint)
@@ -642,6 +642,7 @@ func (m *Manager) constructEndpointSliceFromBackendServers(cur *discoveryv1.Endp
 			}
 		}
 		// add the non-existing endpoint
+		cond := false
 		if !existing {
 			endpoint := discoveryv1.Endpoint{
 				Addresses: []string{address},
@@ -651,7 +652,7 @@ func (m *Manager) constructEndpointSliceFromBackendServers(cur *discoveryv1.Endp
 					UID:       server.GetUID(),
 				},
 				Conditions: discoveryv1.EndpointConditions{
-					Ready: pointer.Bool(true),
+					Ready: &cond,
 				},
 			}
 			endpoints = append(endpoints, endpoint)
