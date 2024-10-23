@@ -28,7 +28,7 @@ func TestManager(t *testing.T) {
 	}); err != nil {
 		t.Errorf("case: %s, add worker failed %s", healthyCase, err.Error())
 	}
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 10)
 	if len(mng.workers) == 0 {
 		t.Errorf("case: %s, add worker failed", healthyCase)
 	}
@@ -54,14 +54,15 @@ func TestManager(t *testing.T) {
 		FailureThreshold: 2,
 		Timeout:          time.Second,
 		Period:           time.Second,
-		InitialCondition: true,
+		// it depends on where to run the test cases, some may block on dns looking up, set initial condition to false
+		InitialCondition: false,
 	}); err != nil {
 		t.Errorf("case: %s, add worker failed %s", unhealthyCase, err.Error())
 	}
 	if len(mng.workers[unhealthyCase]) != 1 {
 		t.Errorf("case: %s, Add worker failed, len=%d", unhealthyCase, len(mng.workers[unhealthyCase]))
 	}
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 10)
 	if mng.workers[unhealthyCase][unhealthyAddress].condition {
 		t.Errorf("it should not be able to connect %s", unhealthyAddress)
 	}
