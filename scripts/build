@@ -9,6 +9,6 @@ mkdir -p bin
 [ "$(uname)" != "Darwin" ] && LINKFLAGS="-extldflags -static -s"
 
 for arch in "amd64" "arm64"; do
-    GOARCH="$arch" CGO_ENABLED=0 go build -ldflags "-X main.VERSION=$VERSION $LINKFLAGS" -o bin/harvester-load-balancer-"$arch" main.go
-    GOARCH="$arch" CGO_ENABLED=0 go build -ldflags "-X main.VERSION=$VERSION $LINKFLAGS" -o bin/harvester-load-balancer-webhook-"$arch" cmd/webhook/main.go
+    GOARCH="$arch" CGO_ENABLED=0 go build -ldflags "-X main.VERSION=$VERSION $LINKFLAGS" -o bin/harvester-load-balancer-"$arch"
+    GOARCH="$arch" CGO_ENABLED=0 go build -ldflags "-X main.VERSION=$VERSION $LINKFLAGS" -o bin/harvester-load-balancer-webhook-"$arch" ./cmd/webhook
 done
