@@ -19,7 +19,7 @@ $ helm install kube-vip/kube-vip-cloud-provider
 ```
 
 ## License
-Copyright (c) 2020 Rancher Labs, Inc.
+Copyright (c) 2025 [SUSE, LLC.](https://www.suse.com/)
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
