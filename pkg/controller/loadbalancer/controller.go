@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strings"
 	"time"
 
 	ctlcniv1 "github.com/harvester/harvester/pkg/generated/controllers/k8s.cni.cncf.io/v1"
@@ -30,6 +31,8 @@ const (
 	AnnotationKeyProject   = lb.GroupName + "/project"
 	AnnotationKeyNamespace = lb.GroupName + "/namespace"
 	AnnotationKeyCluster   = lb.GroupName + "/cluster"
+
+	DuplicateAllocationKeyWord = "duplicate allocation is not allowed"
 )
 
 var (
@@ -277,6 +280,15 @@ func (h *Handler) ensureAllocatedAddressPool(lbCopy, lb *lbv1.LoadBalancer) (*lb
 		ip, err := h.allocateIPFromPool(lb)
 		if err != nil {
 			logrus.Debugf("lb %s/%s fail to allocate from pool %s", lb.Namespace, lb.Name, err.Error())
+			// if unlucky the DuplicateAllocationKeyWord is reported, try to release IP, do not overwrite original error
+			if strings.Contains(err.Error(), DuplicateAllocationKeyWord) {
+				pool, releaseErr := h.tryReleaseDuplicatedIPToPool(lb)
+				if releaseErr != nil {
+					logrus.Infof("lb %s/%s error: %s, try to release ip to pool %s, error: %s", lb.Namespace, lb.Name, err.Error(), pool, releaseErr.Error())
+				} else {
+					logrus.Infof("lb %s/%s error: %s, try to release ip to pool %s, ok", lb.Namespace, lb.Name, err.Error(), pool)
+				}
+			}
 			return lb, err
 		}
 
@@ -300,6 +312,24 @@ func (h *Handler) allocateIPFromPool(lb *lbv1.LoadBalancer) (*lbv1.AllocatedAddr
 	}
 
 	return h.requestIP(lb, pool)
+}
+
+func (h *Handler) tryReleaseDuplicatedIPToPool(lb *lbv1.LoadBalancer) (string, error) {
+	pool := lb.Spec.IPPool
+	if pool == "" {
+		// match an IP pool automatically if not specified
+		pool, err := h.selectIPPool(lb)
+		if err != nil {
+			return pool, err
+		}
+	}
+
+	// if pool is not ready, just fail and wait
+	a := h.allocatorMap.Get(pool)
+	if a == nil {
+		return pool, fmt.Errorf("fail to get allocator %s", pool)
+	}
+	return pool, a.Release(fmt.Sprintf("%s/%s", lb.Namespace, lb.Name), "")
 }
 
 func (h *Handler) requestIP(lb *lbv1.LoadBalancer, pool string) (*lbv1.AllocatedAddress, error) {
