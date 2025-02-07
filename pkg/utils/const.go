@@ -12,4 +12,9 @@ const (
 	AnnotationKeyProject   = lb.GroupName + "/project"
 	AnnotationKeyNamespace = lb.GroupName + "/namespace"
 	AnnotationKeyCluster   = lb.GroupName + "/cluster"
+
+	// value format: loadbalancer.harvesterhci.io/manuallyReleaseIP: "192.168.5.12: default/cluster1-lb-3"
+	AnnotationKeyManuallyReleaseIP = lb.GroupName + "/manuallyReleaseIP"
+
+	DuplicateAllocationKeyWord = "duplicate allocation is not allowed"
 )
