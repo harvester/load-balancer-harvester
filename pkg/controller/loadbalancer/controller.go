@@ -14,7 +14,6 @@ import (
 	ctlcorev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 
-	lb "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io"
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester-load-balancer/pkg/config"
 	ctldiscoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io/v1"
@@ -27,12 +26,11 @@ import (
 const (
 	controllerName = "harvester-lb-controller"
 
-	AnnotationKeyNetwork   = lb.GroupName + "/network"
-	AnnotationKeyProject   = lb.GroupName + "/project"
-	AnnotationKeyNamespace = lb.GroupName + "/namespace"
-	AnnotationKeyCluster   = lb.GroupName + "/cluster"
-
-	DuplicateAllocationKeyWord = "duplicate allocation is not allowed"
+	// referred by cloud-provider-harvester
+	AnnotationKeyNetwork   = utils.AnnotationKeyNetwork
+	AnnotationKeyProject   = utils.AnnotationKeyProject
+	AnnotationKeyNamespace = utils.AnnotationKeyNamespace
+	AnnotationKeyCluster   = utils.AnnotationKeyCluster
 )
 
 var (
@@ -281,7 +279,7 @@ func (h *Handler) ensureAllocatedAddressPool(lbCopy, lb *lbv1.LoadBalancer) (*lb
 		if err != nil {
 			logrus.Debugf("lb %s/%s fail to allocate from pool %s", lb.Namespace, lb.Name, err.Error())
 			// if unlucky the DuplicateAllocationKeyWord is reported, try to release IP, do not overwrite original error
-			if strings.Contains(err.Error(), DuplicateAllocationKeyWord) {
+			if strings.Contains(err.Error(), utils.DuplicateAllocationKeyWord) {
 				pool, releaseErr := h.tryReleaseDuplicatedIPToPool(lb)
 				if releaseErr != nil {
 					logrus.Infof("lb %s/%s error: %s, try to release ip to pool %s, error: %s", lb.Namespace, lb.Name, err.Error(), pool, releaseErr.Error())
@@ -353,10 +351,10 @@ func (h *Handler) requestIP(lb *lbv1.LoadBalancer, pool string) (*lbv1.Allocated
 
 func (h *Handler) selectIPPool(lb *lbv1.LoadBalancer) (string, error) {
 	r := &ipam.Requirement{
-		Network:   lb.Annotations[AnnotationKeyNetwork],
-		Project:   lb.Annotations[AnnotationKeyProject],
-		Namespace: lb.Annotations[AnnotationKeyNamespace],
-		Cluster:   lb.Annotations[AnnotationKeyCluster],
+		Network:   lb.Annotations[utils.AnnotationKeyNetwork],
+		Project:   lb.Annotations[utils.AnnotationKeyProject],
+		Namespace: lb.Annotations[utils.AnnotationKeyNamespace],
+		Cluster:   lb.Annotations[utils.AnnotationKeyCluster],
 	}
 	if r.Namespace == "" {
 		r.Namespace = lb.Namespace
