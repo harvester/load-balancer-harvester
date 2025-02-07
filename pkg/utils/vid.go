@@ -47,3 +47,24 @@ func GetVid(network string, nadCache ctlcniv1.NetworkAttachmentDefinitionCache) 
 	}
 	return netConf.VLAN, nil
 }
+
+// input format: "192.168.5.12: default/cluster1-lb-3"
+func SplitIPAllocatedString(ipStr string) (ip, namespace, name string, err error) {
+	ipStr = strings.Trim(ipStr, " ")
+	fields := strings.Split(ipStr, ":")
+	if len(fields) != 2 {
+		err = fmt.Errorf("%s is not a valid allocation record", ipStr)
+		return
+	}
+	nsnameStr := strings.Trim(fields[1], " ")
+	fields2 := strings.Split(nsnameStr, "/")
+	if len(fields2) != 2 {
+		err = fmt.Errorf("%s is not a valid allocation record", ipStr)
+		return
+	}
+	ip = fields[0]
+	namespace = fields2[0]
+	name = fields2[1]
+	err = nil
+	return
+}
