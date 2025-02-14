@@ -441,11 +441,14 @@ func (m *Manager) generateOneProber(lb *lbv1.LoadBalancer, ep *discoveryv1.Endpo
 	if lb.Spec.HealthCheck.TimeoutSeconds == 0 {
 		option.Timeout = defaultTimeout
 	} else {
+		// escape gosec error: G115: integer overflow conversion uint -> int64 (gosec)
+		//#nosec
 		option.Timeout = time.Duration(lb.Spec.HealthCheck.TimeoutSeconds) * time.Second
 	}
 	if lb.Spec.HealthCheck.PeriodSeconds == 0 {
 		option.Period = defaultPeriod
 	} else {
+		//#nosec
 		option.Period = time.Duration(lb.Spec.HealthCheck.PeriodSeconds) * time.Second
 	}
 	if ep.Conditions.Ready != nil {
@@ -472,6 +475,7 @@ func unMarshalUID(uid string) (namespace, name string, err error) {
 }
 
 func marshalPorberAddress(lb *lbv1.LoadBalancer, ep *discoveryv1.Endpoint) string {
+	//#nosec
 	return ep.Addresses[0] + ":" + strconv.Itoa(int(lb.Spec.HealthCheck.Port))
 }
 
