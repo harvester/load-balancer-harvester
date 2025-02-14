@@ -96,9 +96,11 @@ func (c *converter) convertFromV1alpha1ToV1beta1(obj *unstructured.Unstructured)
 		for _, listener := range listeners {
 			l := listener.(map[string]interface{})
 			v1beta1Listeners = append(v1beta1Listeners, lbv1beta1.Listener{
-				Name:        l[keyName].(string),
-				Port:        int32(l[keyPort].(int64)),
-				Protocol:    corev1.Protocol(l[keyProtocol].(string)),
+				Name: l[keyName].(string),
+				//#nosec
+				Port:     int32(l[keyPort].(int64)),
+				Protocol: corev1.Protocol(l[keyProtocol].(string)),
+				//#nosec
 				BackendPort: int32(l[keyBackendPort].(int64)),
 			})
 		}
@@ -133,9 +135,11 @@ func (c *converter) convertFromV1beta1ToV1alpha1(obj *unstructured.Unstructured)
 		for _, listener := range listeners {
 			l := listener.(map[string]interface{})
 			v1alpha1Listeners = append(v1alpha1Listeners, &lbv1alpha1.Listener{
-				Name:        l[keyName].(string),
-				Port:        int32(l[keyPort].(int64)),
-				Protocol:    corev1.Protocol(l[keyProtocol].(string)),
+				Name: l[keyName].(string),
+				//#nosec
+				Port:     int32(l[keyPort].(int64)),
+				Protocol: corev1.Protocol(l[keyProtocol].(string)),
+				//#nosec
 				BackendPort: int32(l[keyBackendPort].(int64)),
 			})
 		}

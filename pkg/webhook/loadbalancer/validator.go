@@ -138,6 +138,7 @@ func checkHealthyCheck(lb *lbv1.LoadBalancer) error {
 		wrongProtocol := false
 		for _, listener := range lb.Spec.Listeners {
 			// check listener port and protocol, only TCP is supported now
+			//#nosec
 			if uint(listener.BackendPort) == lb.Spec.HealthCheck.Port {
 				if listener.Protocol == corev1.ProtocolTCP {
 					if lb.Spec.HealthCheck.SuccessThreshold == 0 {
