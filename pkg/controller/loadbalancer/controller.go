@@ -314,9 +314,10 @@ func (h *Handler) allocateIPFromPool(lb *lbv1.LoadBalancer) (*lbv1.AllocatedAddr
 
 func (h *Handler) tryReleaseDuplicatedIPToPool(lb *lbv1.LoadBalancer) (string, error) {
 	pool := lb.Spec.IPPool
+	var err error
 	if pool == "" {
 		// match an IP pool automatically if not specified
-		pool, err := h.selectIPPool(lb)
+		pool, err = h.selectIPPool(lb)
 		if err != nil {
 			return pool, err
 		}
