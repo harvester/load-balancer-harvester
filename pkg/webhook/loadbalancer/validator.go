@@ -79,7 +79,7 @@ func (v *validator) Resource() admission.Resource {
 const maxPort = 65535
 
 func checkListeners(lb *lbv1.LoadBalancer) error {
-	nameMap, portMap, backendMap := map[string]bool{}, map[int32]int{}, map[int32]int{}
+	nameMap, portMap, backendMap := map[string]bool{}, map[string]int{}, map[string]int{}
 
 	// Cluster-type load balancers can have no listeners since the actual load-balancing is done in the guest cluster.
 	if lb.Spec.WorkloadType == lbv1.Cluster {
@@ -97,18 +97,20 @@ func checkListeners(lb *lbv1.LoadBalancer) error {
 		nameMap[listener.Name] = true
 
 		// check listener port
-		if index, ok := portMap[listener.Port]; ok {
-			return fmt.Errorf("listener %s has duplicate port %d with listener %s", listener.Name,
-				listener.Port, lb.Spec.Listeners[index].Name)
+		portKey := fmt.Sprintf("%s:%v", listener.Protocol, listener.Port)
+		if index, ok := portMap[portKey]; ok {
+			return fmt.Errorf("listener %s has duplicate port %s with listener %s", listener.Name,
+				portKey, lb.Spec.Listeners[index].Name)
 		}
-		portMap[listener.Port] = i
+		portMap[portKey] = i
 
 		// check backend port
-		if index, ok := backendMap[listener.BackendPort]; ok {
-			return fmt.Errorf("listener %s has duplicate backend port %d with listener %s", listener.Name,
-				listener.BackendPort, lb.Spec.Listeners[index].Name)
+		backendKey := fmt.Sprintf("%s:%v", listener.Protocol, listener.BackendPort)
+		if index, ok := backendMap[backendKey]; ok {
+			return fmt.Errorf("listener %s has duplicate backend port %s with listener %s", listener.Name,
+				backendKey, lb.Spec.Listeners[index].Name)
 		}
-		backendMap[listener.BackendPort] = i
+		backendMap[backendKey] = i
 	}
 
 	for _, listener := range lb.Spec.Listeners {
