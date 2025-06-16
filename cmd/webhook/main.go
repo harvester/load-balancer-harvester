@@ -25,6 +25,8 @@ import (
 
 const name = "harvester-load-balancer-webhook"
 
+var VERSION string // injected by linkflag
+
 func main() {
 	var options config.Options
 	var logLevel string
@@ -73,6 +75,8 @@ func main() {
 			Value:       "system:serviceaccount:kube-system:generic-garbage-collector",
 		},
 	}
+
+	logrus.Infof("Starting %v version %v", name, VERSION)
 
 	cfg, err := kubeconfig.GetNonInteractiveClientConfig(os.Getenv("KUBECONFIG")).ClientConfig()
 	if err != nil {

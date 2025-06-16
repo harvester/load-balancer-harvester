@@ -23,8 +23,13 @@ import (
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
 
-var threadiness int
-var logLevel string
+const name = "harvester-load-balancer"
+
+var (
+	threadiness int
+	logLevel    string
+	VERSION     string // injected by linkflag
+)
 
 func main() {
 	flags := []cli.Flag{
@@ -43,6 +48,8 @@ func main() {
 			Destination: &threadiness,
 		},
 	}
+
+	logrus.Infof("Starting %v version %v", name, VERSION)
 
 	cfg, err := kubeconfig.GetNonInteractiveClientConfig(os.Getenv("KUBECONFIG")).ClientConfig()
 	if err != nil {
