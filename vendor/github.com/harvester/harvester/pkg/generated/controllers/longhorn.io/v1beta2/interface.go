@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Rancher Labs, Inc.
+Copyright 2025 Rancher Labs, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ package v1beta2
 import (
 	v1beta2 "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta2"
 	"github.com/rancher/lasso/pkg/controller"
-	"github.com/rancher/wrangler/pkg/schemes"
+	"github.com/rancher/wrangler/v3/pkg/generic"
+	"github.com/rancher/wrangler/v3/pkg/schemes"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -33,9 +34,14 @@ type Interface interface {
 	BackingImage() BackingImageController
 	BackingImageDataSource() BackingImageDataSourceController
 	Backup() BackupController
+	BackupBackingImage() BackupBackingImageController
+	BackupTarget() BackupTargetController
+	BackupVolume() BackupVolumeController
 	Engine() EngineController
+	Node() NodeController
 	Replica() ReplicaController
 	Setting() SettingController
+	Snapshot() SnapshotController
 	Volume() VolumeController
 }
 
@@ -49,24 +55,50 @@ type version struct {
 	controllerFactory controller.SharedControllerFactory
 }
 
-func (c *version) BackingImage() BackingImageController {
-	return NewBackingImageController(schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "BackingImage"}, "backingimages", true, c.controllerFactory)
+func (v *version) BackingImage() BackingImageController {
+	return generic.NewController[*v1beta2.BackingImage, *v1beta2.BackingImageList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "BackingImage"}, "backingimages", true, v.controllerFactory)
 }
-func (c *version) BackingImageDataSource() BackingImageDataSourceController {
-	return NewBackingImageDataSourceController(schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "BackingImageDataSource"}, "backingimagedatasources", true, c.controllerFactory)
+
+func (v *version) BackingImageDataSource() BackingImageDataSourceController {
+	return generic.NewController[*v1beta2.BackingImageDataSource, *v1beta2.BackingImageDataSourceList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "BackingImageDataSource"}, "backingimagedatasources", true, v.controllerFactory)
 }
-func (c *version) Backup() BackupController {
-	return NewBackupController(schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Backup"}, "backups", true, c.controllerFactory)
+
+func (v *version) Backup() BackupController {
+	return generic.NewController[*v1beta2.Backup, *v1beta2.BackupList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Backup"}, "backups", true, v.controllerFactory)
 }
-func (c *version) Engine() EngineController {
-	return NewEngineController(schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Engine"}, "engines", true, c.controllerFactory)
+
+func (v *version) BackupBackingImage() BackupBackingImageController {
+	return generic.NewController[*v1beta2.BackupBackingImage, *v1beta2.BackupBackingImageList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "BackupBackingImage"}, "backupbackingimages", true, v.controllerFactory)
 }
-func (c *version) Replica() ReplicaController {
-	return NewReplicaController(schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Replica"}, "replicas", true, c.controllerFactory)
+
+func (v *version) BackupTarget() BackupTargetController {
+	return generic.NewController[*v1beta2.BackupTarget, *v1beta2.BackupTargetList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "BackupTarget"}, "backuptargets", true, v.controllerFactory)
 }
-func (c *version) Setting() SettingController {
-	return NewSettingController(schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Setting"}, "settings", true, c.controllerFactory)
+
+func (v *version) BackupVolume() BackupVolumeController {
+	return generic.NewController[*v1beta2.BackupVolume, *v1beta2.BackupVolumeList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "BackupVolume"}, "backupvolumes", true, v.controllerFactory)
 }
-func (c *version) Volume() VolumeController {
-	return NewVolumeController(schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Volume"}, "volumes", true, c.controllerFactory)
+
+func (v *version) Engine() EngineController {
+	return generic.NewController[*v1beta2.Engine, *v1beta2.EngineList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Engine"}, "engines", true, v.controllerFactory)
+}
+
+func (v *version) Node() NodeController {
+	return generic.NewController[*v1beta2.Node, *v1beta2.NodeList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Node"}, "nodes", true, v.controllerFactory)
+}
+
+func (v *version) Replica() ReplicaController {
+	return generic.NewController[*v1beta2.Replica, *v1beta2.ReplicaList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Replica"}, "replicas", true, v.controllerFactory)
+}
+
+func (v *version) Setting() SettingController {
+	return generic.NewController[*v1beta2.Setting, *v1beta2.SettingList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Setting"}, "settings", true, v.controllerFactory)
+}
+
+func (v *version) Snapshot() SnapshotController {
+	return generic.NewController[*v1beta2.Snapshot, *v1beta2.SnapshotList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Snapshot"}, "snapshots", true, v.controllerFactory)
+}
+
+func (v *version) Volume() VolumeController {
+	return generic.NewController[*v1beta2.Volume, *v1beta2.VolumeList](schema.GroupVersionKind{Group: "longhorn.io", Version: "v1beta2", Kind: "Volume"}, "volumes", true, v.controllerFactory)
 }

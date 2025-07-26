@@ -1,33 +1,54 @@
 {
-	"linters": {
-		"disable-all": true,
-		"enable": [
-			"govet",
-			"goimports",
-			"misspell",
-			"ineffassign",
-			"gofmt",
-			"staticcheck",
-			"bodyclose",
-			"gosimple",
-			"prealloc",
-			"errcheck",
-			"gosec"
-		]
-	},
-	"issues": {
-		"exclude-files": [
-			"/zz_generated_"
-		],
-		"exclude-dirs": [
-			"generated"
-		]
-	},
-	"run": {
-		"timeout": "5m",
-		"tests": true,
-		"build-tags": [
-			"test"
-		]
-	}
+  "formatters": {
+    "enable": [
+      "gofmt",
+      "goimports"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        "/zz_generated_",
+        "generated",
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ]
+    }
+  },
+  "linters": {
+    "default": "none",
+    "enable": [
+      "bodyclose",
+      "errcheck",
+      "gosec",
+      "govet",
+      "ineffassign",
+      "misspell",
+      "prealloc",
+      "staticcheck"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        "/zz_generated_",
+        "generated",
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ],
+      "presets": [
+        "comments",
+        "common-false-positives",
+        "legacy",
+        "std-error-handling"
+      ]
+    }
+  },
+  "run": {
+    "build-tags": [
+      "test"
+    ],
+    "tests": true
+  },
+  "version": "2"
 }
