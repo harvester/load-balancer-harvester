@@ -3,12 +3,12 @@ package fakeclients
 import (
 	"context"
 
+	"github.com/rancher/wrangler/v3/pkg/generic"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	lbv1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1beta1"
-	ctllbv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1beta1"
 )
 
 type IPPoolCache func() lbv1.IPPoolInterface
@@ -31,7 +31,7 @@ func (i IPPoolCache) List(selector labels.Selector) ([]*lbv1beta1.IPPool, error)
 	return result, err
 }
 
-func (i IPPoolCache) AddIndexer(indexName string, indexer ctllbv1beta1.IPPoolIndexer) {
+func (i IPPoolCache) AddIndexer(indexName string, indexer generic.Indexer[*lbv1beta1.IPPool]) {
 	panic("implement me")
 }
 

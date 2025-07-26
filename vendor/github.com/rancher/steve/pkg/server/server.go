@@ -14,17 +14,35 @@ import (
 	"github.com/rancher/steve/pkg/client"
 	"github.com/rancher/steve/pkg/clustercache"
 	schemacontroller "github.com/rancher/steve/pkg/controllers/schema"
+	"github.com/rancher/steve/pkg/ext"
 	"github.com/rancher/steve/pkg/resources"
 	"github.com/rancher/steve/pkg/resources/common"
 	"github.com/rancher/steve/pkg/resources/schemas"
 	"github.com/rancher/steve/pkg/schema"
+	"github.com/rancher/steve/pkg/schema/definitions"
 	"github.com/rancher/steve/pkg/server/handler"
 	"github.com/rancher/steve/pkg/server/router"
+	metricsStore "github.com/rancher/steve/pkg/stores/metrics"
+	"github.com/rancher/steve/pkg/stores/proxy"
+	"github.com/rancher/steve/pkg/stores/sqlpartition"
+	"github.com/rancher/steve/pkg/stores/sqlproxy"
 	"github.com/rancher/steve/pkg/summarycache"
 	"k8s.io/client-go/rest"
 )
 
 var ErrConfigRequired = errors.New("rest config is required")
+
+var _ ExtensionAPIServer = (*ext.ExtensionAPIServer)(nil)
+
+// ExtensionAPIServer will run an extension API server. The extension API server
+// will be accessible from Steve at the /ext endpoint and will be compatible with
+// the aggregate API server in Kubernetes.
+type ExtensionAPIServer interface {
+	// The ExtensionAPIServer is served at /ext in Steve's mux
+	http.Handler
+	// Run configures the API server and make the HTTP handler available
+	Run(ctx context.Context) error
+}
 
 type Server struct {
 	http.Handler
@@ -39,6 +57,8 @@ type Server struct {
 	ClusterRegistry string
 	Version         string
 
+	extensionAPIServer ExtensionAPIServer
+
 	authMiddleware      auth.Middleware
 	controllers         *Controllers
 	needControllerStart bool
@@ -47,6 +67,7 @@ type Server struct {
 
 	aggregationSecretNamespace string
 	aggregationSecretName      string
+	SQLCache                   bool
 }
 
 type Options struct {
@@ -61,6 +82,16 @@ type Options struct {
 	AggregationSecretName      string
 	ClusterRegistry            string
 	ServerVersion              string
+	// SQLCache enables the SQLite-based caching mechanism
+	SQLCache bool
+
+	// ExtensionAPIServer enables an extension API server that will be served
+	// under /ext
+	// If nil, Steve's default http handler for unknown routes will be served.
+	//
+	// In most cases, you'll want to use [github.com/rancher/steve/pkg/ext.NewExtensionAPIServer]
+	// to create an ExtensionAPIServer.
+	ExtensionAPIServer ExtensionAPIServer
 }
 
 func New(ctx context.Context, restConfig *rest.Config, opts *Options) (*Server, error) {
@@ -80,6 +111,9 @@ func New(ctx context.Context, restConfig *rest.Config, opts *Options) (*Server, 
 		aggregationSecretName:      opts.AggregationSecretName,
 		ClusterRegistry:            opts.ClusterRegistry,
 		Version:                    opts.ServerVersion,
+		// SQLCache enables the SQLite-based lasso caching mechanism
+		SQLCache:           opts.SQLCache,
+		extensionAPIServer: opts.ExtensionAPIServer,
 	}
 
 	if err := setup(ctx, server); err != nil {
@@ -141,17 +175,55 @@ func setup(ctx context.Context, server *Server) error {
 	if err = resources.DefaultSchemas(ctx, server.BaseSchemas, ccache, server.ClientFactory, sf, server.Version); err != nil {
 		return err
 	}
+	definitions.Register(ctx, server.BaseSchemas, server.controllers.K8s.Discovery(),
+		server.controllers.CRD.CustomResourceDefinition(), server.controllers.API.APIService())
 
 	summaryCache := summarycache.New(sf, ccache)
 	summaryCache.Start(ctx)
-
-	for _, template := range resources.DefaultSchemaTemplates(cf, server.BaseSchemas, summaryCache, asl, server.controllers.K8s.Discovery()) {
-		sf.AddTemplate(template)
-	}
-
 	cols, err := common.NewDynamicColumns(server.RESTConfig)
 	if err != nil {
 		return err
+	}
+
+	var onSchemasHandler schemacontroller.SchemasHandlerFunc
+	if server.SQLCache {
+		s, err := sqlproxy.NewProxyStore(cols, cf, summaryCache, summaryCache, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		errStore := proxy.NewErrorStore(
+			proxy.NewUnformatterStore(
+				proxy.NewWatchRefresh(
+					sqlpartition.NewStore(
+						s,
+						asl,
+					),
+					asl,
+				),
+			),
+		)
+		store := metricsStore.NewMetricsStore(errStore)
+		// end store setup code
+
+		for _, template := range resources.DefaultSchemaTemplatesForStore(store, server.BaseSchemas, summaryCache, asl, server.controllers.K8s.Discovery()) {
+			sf.AddTemplate(template)
+		}
+
+		onSchemasHandler = func(schemas *schema.Collection) error {
+			if err := ccache.OnSchemas(schemas); err != nil {
+				return err
+			}
+			if err := s.Reset(); err != nil {
+				return err
+			}
+			return nil
+		}
+	} else {
+		for _, template := range resources.DefaultSchemaTemplates(cf, server.BaseSchemas, summaryCache, asl, server.controllers.K8s.Discovery(), server.controllers.Core.Namespace().Cache()) {
+			sf.AddTemplate(template)
+		}
+		onSchemasHandler = ccache.OnSchemas
 	}
 
 	schemas.SetupWatcher(ctx, server.BaseSchemas, asl, sf)
@@ -162,10 +234,10 @@ func setup(ctx context.Context, server *Server) error {
 		server.controllers.CRD.CustomResourceDefinition(),
 		server.controllers.API.APIService(),
 		server.controllers.K8s.AuthorizationV1().SelfSubjectAccessReviews(),
-		ccache,
+		onSchemasHandler,
 		sf)
 
-	apiServer, handler, err := handler.New(server.RESTConfig, sf, server.authMiddleware, server.next, server.router)
+	apiServer, handler, err := handler.New(server.RESTConfig, sf, server.authMiddleware, server.next, server.router, server.extensionAPIServer)
 	if err != nil {
 		return err
 	}
@@ -173,12 +245,18 @@ func setup(ctx context.Context, server *Server) error {
 	server.APIServer = apiServer
 	server.Handler = handler
 	server.SchemaFactory = sf
+
 	return nil
 }
 
 func (c *Server) start(ctx context.Context) error {
 	if c.needControllerStart {
 		if err := c.controllers.Start(ctx); err != nil {
+			return err
+		}
+	}
+	if c.extensionAPIServer != nil {
+		if err := c.extensionAPIServer.Run(ctx); err != nil {
 			return err
 		}
 	}
@@ -200,6 +278,9 @@ func (c *Server) ListenAndServe(ctx context.Context, httpsPort, httpPort int, op
 
 	c.StartAggregation(ctx)
 
+	if len(opts.TLSListenerConfig.SANs) == 0 {
+		opts.TLSListenerConfig.SANs = []string{"127.0.0.1"}
+	}
 	if err := server.ListenAndServe(ctx, httpsPort, httpPort, c, opts); err != nil {
 		return err
 	}

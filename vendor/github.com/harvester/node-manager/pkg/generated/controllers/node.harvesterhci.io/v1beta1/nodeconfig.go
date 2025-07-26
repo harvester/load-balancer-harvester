@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Rancher Labs, Inc.
+Copyright 2024 Rancher Labs, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,262 +20,54 @@ package v1beta1
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	v1beta1 "github.com/harvester/node-manager/pkg/apis/node.harvesterhci.io/v1beta1"
-	"github.com/rancher/lasso/pkg/client"
-	"github.com/rancher/lasso/pkg/controller"
-	"github.com/rancher/wrangler/pkg/apply"
-	"github.com/rancher/wrangler/pkg/condition"
-	"github.com/rancher/wrangler/pkg/generic"
-	"github.com/rancher/wrangler/pkg/kv"
+	"github.com/rancher/wrangler/v3/pkg/apply"
+	"github.com/rancher/wrangler/v3/pkg/condition"
+	"github.com/rancher/wrangler/v3/pkg/generic"
+	"github.com/rancher/wrangler/v3/pkg/kv"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/cache"
 )
 
-type NodeConfigHandler func(string, *v1beta1.NodeConfig) (*v1beta1.NodeConfig, error)
-
+// NodeConfigController interface for managing NodeConfig resources.
 type NodeConfigController interface {
-	generic.ControllerMeta
-	NodeConfigClient
-
-	OnChange(ctx context.Context, name string, sync NodeConfigHandler)
-	OnRemove(ctx context.Context, name string, sync NodeConfigHandler)
-	Enqueue(namespace, name string)
-	EnqueueAfter(namespace, name string, duration time.Duration)
-
-	Cache() NodeConfigCache
+	generic.ControllerInterface[*v1beta1.NodeConfig, *v1beta1.NodeConfigList]
 }
 
+// NodeConfigClient interface for managing NodeConfig resources in Kubernetes.
 type NodeConfigClient interface {
-	Create(*v1beta1.NodeConfig) (*v1beta1.NodeConfig, error)
-	Update(*v1beta1.NodeConfig) (*v1beta1.NodeConfig, error)
-	UpdateStatus(*v1beta1.NodeConfig) (*v1beta1.NodeConfig, error)
-	Delete(namespace, name string, options *metav1.DeleteOptions) error
-	Get(namespace, name string, options metav1.GetOptions) (*v1beta1.NodeConfig, error)
-	List(namespace string, opts metav1.ListOptions) (*v1beta1.NodeConfigList, error)
-	Watch(namespace string, opts metav1.ListOptions) (watch.Interface, error)
-	Patch(namespace, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.NodeConfig, err error)
+	generic.ClientInterface[*v1beta1.NodeConfig, *v1beta1.NodeConfigList]
 }
 
+// NodeConfigCache interface for retrieving NodeConfig resources in memory.
 type NodeConfigCache interface {
-	Get(namespace, name string) (*v1beta1.NodeConfig, error)
-	List(namespace string, selector labels.Selector) ([]*v1beta1.NodeConfig, error)
-
-	AddIndexer(indexName string, indexer NodeConfigIndexer)
-	GetByIndex(indexName, key string) ([]*v1beta1.NodeConfig, error)
+	generic.CacheInterface[*v1beta1.NodeConfig]
 }
 
-type NodeConfigIndexer func(obj *v1beta1.NodeConfig) ([]string, error)
-
-type nodeConfigController struct {
-	controller    controller.SharedController
-	client        *client.Client
-	gvk           schema.GroupVersionKind
-	groupResource schema.GroupResource
-}
-
-func NewNodeConfigController(gvk schema.GroupVersionKind, resource string, namespaced bool, controller controller.SharedControllerFactory) NodeConfigController {
-	c := controller.ForResourceKind(gvk.GroupVersion().WithResource(resource), gvk.Kind, namespaced)
-	return &nodeConfigController{
-		controller: c,
-		client:     c.Client(),
-		gvk:        gvk,
-		groupResource: schema.GroupResource{
-			Group:    gvk.Group,
-			Resource: resource,
-		},
-	}
-}
-
-func FromNodeConfigHandlerToHandler(sync NodeConfigHandler) generic.Handler {
-	return func(key string, obj runtime.Object) (ret runtime.Object, err error) {
-		var v *v1beta1.NodeConfig
-		if obj == nil {
-			v, err = sync(key, nil)
-		} else {
-			v, err = sync(key, obj.(*v1beta1.NodeConfig))
-		}
-		if v == nil {
-			return nil, err
-		}
-		return v, err
-	}
-}
-
-func (c *nodeConfigController) Updater() generic.Updater {
-	return func(obj runtime.Object) (runtime.Object, error) {
-		newObj, err := c.Update(obj.(*v1beta1.NodeConfig))
-		if newObj == nil {
-			return nil, err
-		}
-		return newObj, err
-	}
-}
-
-func UpdateNodeConfigDeepCopyOnChange(client NodeConfigClient, obj *v1beta1.NodeConfig, handler func(obj *v1beta1.NodeConfig) (*v1beta1.NodeConfig, error)) (*v1beta1.NodeConfig, error) {
-	if obj == nil {
-		return obj, nil
-	}
-
-	copyObj := obj.DeepCopy()
-	newObj, err := handler(copyObj)
-	if newObj != nil {
-		copyObj = newObj
-	}
-	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-		return client.Update(copyObj)
-	}
-
-	return copyObj, err
-}
-
-func (c *nodeConfigController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
-	c.controller.RegisterHandler(ctx, name, controller.SharedControllerHandlerFunc(handler))
-}
-
-func (c *nodeConfigController) AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler) {
-	c.AddGenericHandler(ctx, name, generic.NewRemoveHandler(name, c.Updater(), handler))
-}
-
-func (c *nodeConfigController) OnChange(ctx context.Context, name string, sync NodeConfigHandler) {
-	c.AddGenericHandler(ctx, name, FromNodeConfigHandlerToHandler(sync))
-}
-
-func (c *nodeConfigController) OnRemove(ctx context.Context, name string, sync NodeConfigHandler) {
-	c.AddGenericHandler(ctx, name, generic.NewRemoveHandler(name, c.Updater(), FromNodeConfigHandlerToHandler(sync)))
-}
-
-func (c *nodeConfigController) Enqueue(namespace, name string) {
-	c.controller.Enqueue(namespace, name)
-}
-
-func (c *nodeConfigController) EnqueueAfter(namespace, name string, duration time.Duration) {
-	c.controller.EnqueueAfter(namespace, name, duration)
-}
-
-func (c *nodeConfigController) Informer() cache.SharedIndexInformer {
-	return c.controller.Informer()
-}
-
-func (c *nodeConfigController) GroupVersionKind() schema.GroupVersionKind {
-	return c.gvk
-}
-
-func (c *nodeConfigController) Cache() NodeConfigCache {
-	return &nodeConfigCache{
-		indexer:  c.Informer().GetIndexer(),
-		resource: c.groupResource,
-	}
-}
-
-func (c *nodeConfigController) Create(obj *v1beta1.NodeConfig) (*v1beta1.NodeConfig, error) {
-	result := &v1beta1.NodeConfig{}
-	return result, c.client.Create(context.TODO(), obj.Namespace, obj, result, metav1.CreateOptions{})
-}
-
-func (c *nodeConfigController) Update(obj *v1beta1.NodeConfig) (*v1beta1.NodeConfig, error) {
-	result := &v1beta1.NodeConfig{}
-	return result, c.client.Update(context.TODO(), obj.Namespace, obj, result, metav1.UpdateOptions{})
-}
-
-func (c *nodeConfigController) UpdateStatus(obj *v1beta1.NodeConfig) (*v1beta1.NodeConfig, error) {
-	result := &v1beta1.NodeConfig{}
-	return result, c.client.UpdateStatus(context.TODO(), obj.Namespace, obj, result, metav1.UpdateOptions{})
-}
-
-func (c *nodeConfigController) Delete(namespace, name string, options *metav1.DeleteOptions) error {
-	if options == nil {
-		options = &metav1.DeleteOptions{}
-	}
-	return c.client.Delete(context.TODO(), namespace, name, *options)
-}
-
-func (c *nodeConfigController) Get(namespace, name string, options metav1.GetOptions) (*v1beta1.NodeConfig, error) {
-	result := &v1beta1.NodeConfig{}
-	return result, c.client.Get(context.TODO(), namespace, name, result, options)
-}
-
-func (c *nodeConfigController) List(namespace string, opts metav1.ListOptions) (*v1beta1.NodeConfigList, error) {
-	result := &v1beta1.NodeConfigList{}
-	return result, c.client.List(context.TODO(), namespace, result, opts)
-}
-
-func (c *nodeConfigController) Watch(namespace string, opts metav1.ListOptions) (watch.Interface, error) {
-	return c.client.Watch(context.TODO(), namespace, opts)
-}
-
-func (c *nodeConfigController) Patch(namespace, name string, pt types.PatchType, data []byte, subresources ...string) (*v1beta1.NodeConfig, error) {
-	result := &v1beta1.NodeConfig{}
-	return result, c.client.Patch(context.TODO(), namespace, name, pt, data, result, metav1.PatchOptions{}, subresources...)
-}
-
-type nodeConfigCache struct {
-	indexer  cache.Indexer
-	resource schema.GroupResource
-}
-
-func (c *nodeConfigCache) Get(namespace, name string) (*v1beta1.NodeConfig, error) {
-	obj, exists, err := c.indexer.GetByKey(namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(c.resource, name)
-	}
-	return obj.(*v1beta1.NodeConfig), nil
-}
-
-func (c *nodeConfigCache) List(namespace string, selector labels.Selector) (ret []*v1beta1.NodeConfig, err error) {
-
-	err = cache.ListAllByNamespace(c.indexer, namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.NodeConfig))
-	})
-
-	return ret, err
-}
-
-func (c *nodeConfigCache) AddIndexer(indexName string, indexer NodeConfigIndexer) {
-	utilruntime.Must(c.indexer.AddIndexers(map[string]cache.IndexFunc{
-		indexName: func(obj interface{}) (strings []string, e error) {
-			return indexer(obj.(*v1beta1.NodeConfig))
-		},
-	}))
-}
-
-func (c *nodeConfigCache) GetByIndex(indexName, key string) (result []*v1beta1.NodeConfig, err error) {
-	objs, err := c.indexer.ByIndex(indexName, key)
-	if err != nil {
-		return nil, err
-	}
-	result = make([]*v1beta1.NodeConfig, 0, len(objs))
-	for _, obj := range objs {
-		result = append(result, obj.(*v1beta1.NodeConfig))
-	}
-	return result, nil
-}
-
+// NodeConfigStatusHandler is executed for every added or modified NodeConfig. Should return the new status to be updated
 type NodeConfigStatusHandler func(obj *v1beta1.NodeConfig, status v1beta1.NodeConfigStatus) (v1beta1.NodeConfigStatus, error)
 
+// NodeConfigGeneratingHandler is the top-level handler that is executed for every NodeConfig event. It extends NodeConfigStatusHandler by a returning a slice of child objects to be passed to apply.Apply
 type NodeConfigGeneratingHandler func(obj *v1beta1.NodeConfig, status v1beta1.NodeConfigStatus) ([]runtime.Object, v1beta1.NodeConfigStatus, error)
 
+// RegisterNodeConfigStatusHandler configures a NodeConfigController to execute a NodeConfigStatusHandler for every events observed.
+// If a non-empty condition is provided, it will be updated in the status conditions for every handler execution
 func RegisterNodeConfigStatusHandler(ctx context.Context, controller NodeConfigController, condition condition.Cond, name string, handler NodeConfigStatusHandler) {
 	statusHandler := &nodeConfigStatusHandler{
 		client:    controller,
 		condition: condition,
 		handler:   handler,
 	}
-	controller.AddGenericHandler(ctx, name, FromNodeConfigHandlerToHandler(statusHandler.sync))
+	controller.AddGenericHandler(ctx, name, generic.FromObjectHandlerToHandler(statusHandler.sync))
 }
 
+// RegisterNodeConfigGeneratingHandler configures a NodeConfigController to execute a NodeConfigGeneratingHandler for every events observed, passing the returned objects to the provided apply.Apply.
+// If a non-empty condition is provided, it will be updated in the status conditions for every handler execution
 func RegisterNodeConfigGeneratingHandler(ctx context.Context, controller NodeConfigController, apply apply.Apply,
 	condition condition.Cond, name string, handler NodeConfigGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
 	statusHandler := &nodeConfigGeneratingHandler{
@@ -297,6 +89,7 @@ type nodeConfigStatusHandler struct {
 	handler   NodeConfigStatusHandler
 }
 
+// sync is executed on every resource addition or modification. Executes the configured handlers and sends the updated status to the Kubernetes API
 func (a *nodeConfigStatusHandler) sync(key string, obj *v1beta1.NodeConfig) (*v1beta1.NodeConfig, error) {
 	if obj == nil {
 		return obj, nil
@@ -342,8 +135,10 @@ type nodeConfigGeneratingHandler struct {
 	opts  generic.GeneratingHandlerOptions
 	gvk   schema.GroupVersionKind
 	name  string
+	seen  sync.Map
 }
 
+// Remove handles the observed deletion of a resource, cascade deleting every associated resource previously applied
 func (a *nodeConfigGeneratingHandler) Remove(key string, obj *v1beta1.NodeConfig) (*v1beta1.NodeConfig, error) {
 	if obj != nil {
 		return obj, nil
@@ -353,12 +148,17 @@ func (a *nodeConfigGeneratingHandler) Remove(key string, obj *v1beta1.NodeConfig
 	obj.Namespace, obj.Name = kv.RSplit(key, "/")
 	obj.SetGroupVersionKind(a.gvk)
 
+	if a.opts.UniqueApplyForResourceVersion {
+		a.seen.Delete(key)
+	}
+
 	return nil, generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
 		WithOwner(obj).
 		WithSetID(a.name).
 		ApplyObjects()
 }
 
+// Handle executes the configured NodeConfigGeneratingHandler and pass the resulting objects to apply.Apply, finally returning the new status of the resource
 func (a *nodeConfigGeneratingHandler) Handle(obj *v1beta1.NodeConfig, status v1beta1.NodeConfigStatus) (v1beta1.NodeConfigStatus, error) {
 	if !obj.DeletionTimestamp.IsZero() {
 		return status, nil
@@ -368,9 +168,41 @@ func (a *nodeConfigGeneratingHandler) Handle(obj *v1beta1.NodeConfig, status v1b
 	if err != nil {
 		return newStatus, err
 	}
+	if !a.isNewResourceVersion(obj) {
+		return newStatus, nil
+	}
 
-	return newStatus, generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
+	err = generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
 		WithOwner(obj).
 		WithSetID(a.name).
 		ApplyObjects(objs...)
+	if err != nil {
+		return newStatus, err
+	}
+	a.storeResourceVersion(obj)
+	return newStatus, nil
+}
+
+// isNewResourceVersion detects if a specific resource version was already successfully processed.
+// Only used if UniqueApplyForResourceVersion is set in generic.GeneratingHandlerOptions
+func (a *nodeConfigGeneratingHandler) isNewResourceVersion(obj *v1beta1.NodeConfig) bool {
+	if !a.opts.UniqueApplyForResourceVersion {
+		return true
+	}
+
+	// Apply once per resource version
+	key := obj.Namespace + "/" + obj.Name
+	previous, ok := a.seen.Load(key)
+	return !ok || previous != obj.ResourceVersion
+}
+
+// storeResourceVersion keeps track of the latest resource version of an object for which Apply was executed
+// Only used if UniqueApplyForResourceVersion is set in generic.GeneratingHandlerOptions
+func (a *nodeConfigGeneratingHandler) storeResourceVersion(obj *v1beta1.NodeConfig) {
+	if !a.opts.UniqueApplyForResourceVersion {
+		return
+	}
+
+	key := obj.Namespace + "/" + obj.Name
+	a.seen.Store(key, obj.ResourceVersion)
 }

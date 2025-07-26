@@ -2,6 +2,8 @@ package remotedialer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -17,15 +19,24 @@ type ConnectAuthorizer func(proto, address string) bool
 func ClientConnect(ctx context.Context, wsURL string, headers http.Header, dialer *websocket.Dialer,
 	auth ConnectAuthorizer, onConnect func(context.Context, *Session) error) error {
 	if err := ConnectToProxy(ctx, wsURL, headers, auth, dialer, onConnect); err != nil {
-		logrus.WithError(err).Error("Remotedialer proxy error")
-		time.Sleep(time.Duration(5) * time.Second)
+		if !errors.Is(err, context.Canceled) {
+			logrus.WithError(err).Error("Remotedialer proxy error")
+			time.Sleep(time.Duration(5) * time.Second)
+		}
 		return err
 	}
 	return nil
 }
 
-// ConnectToProxy connect to websocket server
+// ConnectToProxy connects to the websocket server.
+// Local connections on behalf of the remote host will be dialed using a default net.Dialer.
 func ConnectToProxy(rootCtx context.Context, proxyURL string, headers http.Header, auth ConnectAuthorizer, dialer *websocket.Dialer, onConnect func(context.Context, *Session) error) error {
+	return ConnectToProxyWithDialer(rootCtx, proxyURL, headers, auth, dialer, nil, onConnect)
+}
+
+// ConnectToProxyWithDialer connects to the websocket server.
+// Local connections on behalf of the remote host will be dialed using the provided Dialer function.
+func ConnectToProxyWithDialer(rootCtx context.Context, proxyURL string, headers http.Header, auth ConnectAuthorizer, dialer *websocket.Dialer, localDialer Dialer, onConnect func(context.Context, *Session) error) error {
 	logrus.WithField("url", proxyURL).Info("Connecting to proxy")
 
 	if dialer == nil {
@@ -34,7 +45,9 @@ func ConnectToProxy(rootCtx context.Context, proxyURL string, headers http.Heade
 	ws, resp, err := dialer.DialContext(rootCtx, proxyURL, headers)
 	if err != nil {
 		if resp == nil {
-			logrus.WithError(err).Errorf("Failed to connect to proxy. Empty dialer response")
+			if !errors.Is(err, context.Canceled) {
+				logrus.WithError(err).Errorf("Failed to connect to proxy. Empty dialer response")
+			}
 		} else {
 			rb, err2 := ioutil.ReadAll(resp.Body)
 			if err2 != nil {
@@ -51,8 +64,9 @@ func ConnectToProxy(rootCtx context.Context, proxyURL string, headers http.Heade
 
 	ctx, cancel := context.WithCancel(rootCtx)
 	defer cancel()
+	ctx = context.WithValue(ctx, ContextKeyCaller, fmt.Sprintf("ConnectToProxy: url: %s", proxyURL))
 
-	session := NewClientSession(auth, ws)
+	session := NewClientSessionWithDialer(auth, ws, localDialer)
 	defer session.Close()
 
 	if onConnect != nil {

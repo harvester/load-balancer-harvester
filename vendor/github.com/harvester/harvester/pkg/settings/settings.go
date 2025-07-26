@@ -2,8 +2,6 @@ package settings
 
 import (
 	"encoding/json"
-	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,43 +18,46 @@ var (
 	InjectDefaults string
 
 	AdditionalCA                           = NewSetting(AdditionalCASettingName, "")
-	APIUIVersion                           = NewSetting("api-ui-version", "1.1.9") // Please update the HARVESTER_API_UI_VERSION in package/Dockerfile when updating the version here.
-	ClusterRegistrationURL                 = NewSetting("cluster-registration-url", "")
-	ServerVersion                          = NewSetting("server-version", "dev")
+	APIUIVersion                           = NewSetting(APIUIVersionSettingName, "1.1.9") // Please update the HARVESTER_API_UI_VERSION in package/Dockerfile when updating the version here.
+	ClusterRegistrationURL                 = NewSetting(ClusterRegistrationURLSettingName, "")
+	ServerVersion                          = NewSetting(ServerVersionSettingName, "dev")
 	UIIndex                                = NewSetting(UIIndexSettingName, DefaultDashboardUIURL)
 	UIPath                                 = NewSetting(UIPathSettingName, "/usr/share/harvester/harvester")
 	UISource                               = NewSetting(UISourceSettingName, "auto") // Options are 'auto', 'external' or 'bundled'
 	UIPluginIndex                          = NewSetting(UIPluginIndexSettingName, DefaultUIPluginURL)
 	VolumeSnapshotClass                    = NewSetting(VolumeSnapshotClassSettingName, "longhorn")
 	BackupTargetSet                        = NewSetting(BackupTargetSettingName, "")
-	UpgradableVersions                     = NewSetting("upgradable-versions", "")
-	UpgradeCheckerEnabled                  = NewSetting("upgrade-checker-enabled", "true")
-	UpgradeCheckerURL                      = NewSetting("upgrade-checker-url", "https://harvester-upgrade-responder.rancher.io/v1/checkupgrade")
-	ReleaseDownloadURL                     = NewSetting("release-download-url", "https://releases.rancher.com/harvester")
-	LogLevel                               = NewSetting("log-level", "info") // options are info, debug and trace
+	UpgradableVersions                     = NewSetting(UpgradableVersionsSettingName, "")
+	UpgradeCheckerEnabled                  = NewSetting(UpgradeCheckerEnabledSettingName, "true")
+	UpgradeCheckerURL                      = NewSetting(UpgradeCheckerURLSettingName, "https://harvester-upgrade-responder.rancher.io/v1/checkupgrade")
+	ReleaseDownloadURL                     = NewSetting(ReleaseDownloadURLSettingName, "https://releases.rancher.com/harvester")
+	LogLevel                               = NewSetting(LogLevelSettingName, "info") // options are info, debug and trace
 	SSLCertificates                        = NewSetting(SSLCertificatesSettingName, "{}")
 	SSLParameters                          = NewSetting(SSLParametersName, "{}")
 	SupportBundleImage                     = NewSetting(SupportBundleImageName, "{}")
-	SupportBundleNamespaces                = NewSetting("support-bundle-namespaces", "")
+	SupportBundleNamespaces                = NewSetting(SupportBundleNamespacesSettingName, "")
 	SupportBundleTimeout                   = NewSetting(SupportBundleTimeoutSettingName, "10")                                                                  // Unit is minute. 0 means disable timeout.
 	SupportBundleExpiration                = NewSetting(SupportBundleExpirationSettingName, supportBundleUtil.SupportBundleExpirationDefaultStr)                // Unit is minute.
 	SupportBundleNodeCollectionTimeout     = NewSetting(SupportBundleNodeCollectionTimeoutName, supportBundleUtil.SupportBundleNodeCollectionTimeoutDefaultStr) // Unit is minute.
-	DefaultStorageClass                    = NewSetting("default-storage-class", "longhorn")
+	DefaultStorageClass                    = NewSetting(DefaultStorageClassSettingName, "longhorn")
 	HTTPProxy                              = NewSetting(HTTPProxySettingName, "{}")
 	VMForceResetPolicySet                  = NewSetting(VMForceResetPolicySettingName, InitVMForceResetPolicy())
 	OvercommitConfig                       = NewSetting(OvercommitConfigSettingName, `{"cpu":1600,"memory":150,"storage":200}`)
 	VipPools                               = NewSetting(VipPoolsConfigSettingName, "")
-	AutoDiskProvisionPaths                 = NewSetting("auto-disk-provision-paths", "")
+	AutoDiskProvisionPaths                 = NewSetting(AutoDiskProvisionPathsSettingName, "")
 	CSIDriverConfig                        = NewSetting(CSIDriverConfigSettingName, `{"driver.longhorn.io":{"volumeSnapshotClassName":"longhorn-snapshot","backupVolumeSnapshotClassName":"longhorn"}}`)
 	ContainerdRegistry                     = NewSetting(ContainerdRegistrySettingName, "")
 	StorageNetwork                         = NewSetting(StorageNetworkName, "")
 	DefaultVMTerminationGracePeriodSeconds = NewSetting(DefaultVMTerminationGracePeriodSecondsSettingName, "120")
 	AutoRotateRKE2CertsSet                 = NewSetting(AutoRotateRKE2CertsSettingName, InitAutoRotateRKE2Certs())
 	KubeconfigTTL                          = NewSetting(KubeconfigDefaultTokenTTLMinutesSettingName, "0") // "0" is default value to ensure token does not expire
+	LonghornV2DataEngineEnabled            = NewSetting(LonghornV2DataEngineSettingName, "false")
+	AdditionalGuestMemoryOverheadRatio     = NewSetting(AdditionalGuestMemoryOverheadRatioName, AdditionalGuestMemoryOverheadRatioDefault)
 	// HarvesterCSICCMVersion this is the chart version from https://github.com/harvester/charts instead of image versions
 	HarvesterCSICCMVersion = NewSetting(HarvesterCSICCMSettingName, `{"harvester-cloud-provider":">=0.0.1 <0.3.0","harvester-csi-provider":">=0.0.1 <0.3.0"}`)
 	NTPServers             = NewSetting(NTPServersSettingName, "")
-	WhiteListedSettings    = []string{"server-version", "default-storage-class", "harvester-csi-ccm-versions", "default-vm-termination-grace-period-seconds"}
+	WhiteListedSettings    = []string{ServerVersionSettingName, DefaultStorageClassSettingName, HarvesterCSICCMSettingName, DefaultVMTerminationGracePeriodSecondsSettingName}
+	UpgradeConfigSet       = NewSetting(UpgradeConfigSettingName, `{"imagePreloadOption":{"strategy":{"type":"sequential"}}, "restoreVM": false}`)
 )
 
 const (
@@ -70,7 +71,7 @@ const (
 	SSLParametersName                                 = "ssl-parameters"
 	VipPoolsConfigSettingName                         = "vip-pools"
 	VolumeSnapshotClassSettingName                    = "volume-snapshot-class"
-	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/release-harvester-v1.3/index.html"
+	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/release-harvester-v1.5/index.html"
 	SupportBundleImageName                            = "support-bundle-image"
 	CSIDriverConfigSettingName                        = "csi-driver-config"
 	UIIndexSettingName                                = "ui-index"
@@ -78,7 +79,7 @@ const (
 	UISourceSettingName                               = "ui-source"
 	UIPluginIndexSettingName                          = "ui-plugin-index"
 	UIPluginBundledVersionSettingName                 = "ui-plugin-bundled-version"
-	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-release-harvester-v1.3/harvester-release-harvester-v1.3.umd.min.js"
+	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-release-harvester-v1.5/harvester-release-harvester-v1.5.umd.min.js"
 	ContainerdRegistrySettingName                     = "containerd-registry"
 	HarvesterCSICCMSettingName                        = "harvester-csi-ccm-versions"
 	StorageNetworkName                                = "storage-network"
@@ -88,6 +89,24 @@ const (
 	AutoRotateRKE2CertsSettingName                    = "auto-rotate-rke2-certs"
 	KubeconfigDefaultTokenTTLMinutesSettingName       = "kubeconfig-default-token-ttl-minutes"
 	SupportBundleNodeCollectionTimeoutName            = "support-bundle-node-collection-timeout"
+	UpgradeConfigSettingName                          = "upgrade-config"
+	LonghornV2DataEngineSettingName                   = "longhorn-v2-data-engine-enabled"
+	LogLevelSettingName                               = "log-level"
+	AdditionalGuestMemoryOverheadRatioName            = "additional-guest-memory-overhead-ratio"
+	ClusterRegistrationURLSettingName                 = "cluster-registration-url"
+	AutoDiskProvisionPathsSettingName                 = "auto-disk-provision-paths"
+	APIUIVersionSettingName                           = "api-ui-version"
+	ServerVersionSettingName                          = "server-version"
+	UpgradableVersionsSettingName                     = "upgradable-versions"
+	UpgradeCheckerEnabledSettingName                  = "upgrade-checker-enabled"
+	UpgradeCheckerURLSettingName                      = "upgrade-checker-url"
+	ReleaseDownloadURLSettingName                     = "release-download-url"
+	SupportBundleNamespacesSettingName                = "support-bundle-namespaces"
+	DefaultStorageClassSettingName                    = "default-storage-class"
+
+	// settings have `default` and `value` string used in many places, replace them with const
+	KeywordDefault = "default"
+	KeywordValue   = "value"
 )
 
 func init() {
@@ -141,6 +160,10 @@ func (s Setting) Set(value string) error {
 	return nil
 }
 
+func (s Setting) GetDefault() string {
+	return s.Default
+}
+
 func (s Setting) Get() string {
 	if provider == nil {
 		s := settings[s.Name]
@@ -191,132 +214,12 @@ func GetEnvKey(key string) string {
 	return "HARVESTER_" + strings.ToUpper(strings.Replace(key, "-", "_", -1))
 }
 
+func GetEnvDefaultValueKey(key string) string {
+	return "HARVESTER_" + strings.ToUpper(strings.Replace(key, "-", "_", -1)) + "_DEFAULT_VALUE"
+}
+
 func IsRelease() bool {
 	return !strings.Contains(ServerVersion.Get(), "head") && releasePattern.MatchString(ServerVersion.Get())
 }
 
-type TargetType string
-
-const (
-	S3BackupType  TargetType = "s3"
-	NFSBackupType TargetType = "nfs"
-)
-
-type BackupTarget struct {
-	Type               TargetType `json:"type"`
-	Endpoint           string     `json:"endpoint"`
-	AccessKeyID        string     `json:"accessKeyId"`
-	SecretAccessKey    string     `json:"secretAccessKey"`
-	BucketName         string     `json:"bucketName"`
-	BucketRegion       string     `json:"bucketRegion"`
-	Cert               string     `json:"cert"`
-	VirtualHostedStyle bool       `json:"virtualHostedStyle"`
-}
-
-type VMForceResetPolicy struct {
-	Enable bool `json:"enable"`
-	// Period means how many seconds to wait for a node get back.
-	Period int64 `json:"period"`
-}
-
-func InitBackupTargetToString() string {
-	target := &BackupTarget{}
-	targetStr, err := json.Marshal(target)
-	if err != nil {
-		logrus.Errorf("failed to init %s, error: %s", BackupTargetSettingName, err.Error())
-	}
-	return string(targetStr)
-}
-
-func DecodeBackupTarget(value string) (*BackupTarget, error) {
-	target := &BackupTarget{}
-
-	if value != "" {
-		if err := json.Unmarshal([]byte(value), target); err != nil {
-			return nil, fmt.Errorf("unmarshal failed, error: %w, value: %s", err, value)
-		}
-	}
-
-	return target, nil
-}
-
-func (target *BackupTarget) IsDefaultBackupTarget() bool {
-	if target == nil || target.Type != "" {
-		return false
-	}
-
-	defaultTarget := &BackupTarget{}
-	return reflect.DeepEqual(target, defaultTarget)
-}
-
-func InitVMForceResetPolicy() string {
-	policy := &VMForceResetPolicy{
-		Enable: true,
-		Period: 5 * 60, // 5 minutes
-	}
-	policyStr, err := json.Marshal(policy)
-	if err != nil {
-		logrus.Errorf("failed to init %s, error: %s", VMForceResetPolicySettingName, err.Error())
-	}
-	return string(policyStr)
-}
-
-func DecodeVMForceResetPolicy(value string) (*VMForceResetPolicy, error) {
-	policy := &VMForceResetPolicy{}
-	if err := json.Unmarshal([]byte(value), policy); err != nil {
-		return nil, fmt.Errorf("unmarshal failed, error: %w, value: %s", err, value)
-	}
-
-	return policy, nil
-}
-
-type Overcommit struct {
-	CPU     int `json:"cpu"`
-	Memory  int `json:"memory"`
-	Storage int `json:"storage"`
-}
-
-type SSLCertificate struct {
-	CA                string `json:"ca"`
-	PublicCertificate string `json:"publicCertificate"`
-	PrivateKey        string `json:"privateKey"`
-}
-
-type SSLParameter struct {
-	Protocols string `json:"protocols"`
-	Ciphers   string `json:"ciphers"`
-}
-
-type CSIDriverInfo struct {
-	VolumeSnapshotClassName       string `json:"volumeSnapshotClassName"`
-	BackupVolumeSnapshotClassName string `json:"backupVolumeSnapshotClassName"`
-}
-
-type AutoRotateRKE2Certs struct {
-	Enable          bool `json:"enable"`
-	ExpiringInHours int  `json:"expiringInHours"`
-}
-
-func InitAutoRotateRKE2Certs() string {
-	autoRotateRKE2Certs := &AutoRotateRKE2Certs{
-		Enable:          false,
-		ExpiringInHours: 240, // 7 days
-	}
-	autoRotateRKE2CertsStr, err := json.Marshal(autoRotateRKE2Certs)
-	if err != nil {
-		logrus.WithField("name", AutoRotateRKE2CertsSettingName).WithError(err).Error("failed to init setting")
-	}
-	return string(autoRotateRKE2CertsStr)
-}
-
-func GetCSIDriverInfo(provisioner string) (*CSIDriverInfo, error) {
-	csiDriverConfig := make(map[string]*CSIDriverInfo)
-	if err := json.Unmarshal([]byte(CSIDriverConfig.Get()), &csiDriverConfig); err != nil {
-		return nil, err
-	}
-	csiDriverInfo, ok := csiDriverConfig[provisioner]
-	if !ok {
-		return nil, fmt.Errorf("can not find csi driver info for %s", provisioner)
-	}
-	return csiDriverInfo, nil
-}
+// move specific setting related things to settings_helper.go
