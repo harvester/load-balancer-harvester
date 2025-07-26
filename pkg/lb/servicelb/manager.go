@@ -10,7 +10,7 @@ import (
 	"time"
 
 	ctlkubevirtv1 "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io/v1"
-	ctlCorev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	ctlCorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"

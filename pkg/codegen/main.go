@@ -1,8 +1,8 @@
 package main
 
 import (
-	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
-	"github.com/rancher/wrangler/pkg/controller-gen/args"
+	controllergen "github.com/rancher/wrangler/v3/pkg/controller-gen"
+	"github.com/rancher/wrangler/v3/pkg/controller-gen/args"
 	v1 "k8s.io/api/discovery/v1"
 
 	lbv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"

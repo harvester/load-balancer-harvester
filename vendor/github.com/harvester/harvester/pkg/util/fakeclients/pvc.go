@@ -3,16 +3,14 @@ package fakeclients
 import (
 	"context"
 
-	ctlv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/v3/pkg/generic"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/harvester/harvester/pkg/indexeres"
-	"github.com/harvester/harvester/pkg/ref"
+	"k8s.io/client-go/rest"
 )
 
 type PersistentVolumeClaimClient func(string) v1.PersistentVolumeClaimInterface
@@ -49,6 +47,10 @@ func (c PersistentVolumeClaimClient) Patch(namespace, name string, pt types.Patc
 	return c(namespace).Patch(context.TODO(), name, pt, data, metav1.PatchOptions{}, subresources...)
 }
 
+func (c PersistentVolumeClaimClient) WithImpersonation(_ rest.ImpersonationConfig) (generic.ClientInterface[*corev1.PersistentVolumeClaim, *corev1.PersistentVolumeClaimList], error) {
+	panic("implement me")
+}
+
 type PersistentVolumeClaimCache func(string) v1.PersistentVolumeClaimInterface
 
 func (c PersistentVolumeClaimCache) Get(namespace, name string) (*corev1.PersistentVolumeClaim, error) {
@@ -59,24 +61,10 @@ func (c PersistentVolumeClaimCache) List(_ string, _ labels.Selector) ([]*corev1
 	panic("implement me")
 }
 
-func (c PersistentVolumeClaimCache) AddIndexer(_ string, _ ctlv1.PersistentVolumeClaimIndexer) {
+func (c PersistentVolumeClaimCache) AddIndexer(_ string, _ generic.Indexer[*corev1.PersistentVolumeClaim]) {
 	panic("implement me")
 }
 
-func (c PersistentVolumeClaimCache) GetByIndex(indexName, key string) ([]*corev1.PersistentVolumeClaim, error) {
-	switch indexName {
-	case indexeres.PVCByVMIndex:
-		vmNamespace, _ := ref.Parse(key)
-		pvcList, err := c(vmNamespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-		var pvcs []*corev1.PersistentVolumeClaim
-		for i := range pvcList.Items {
-			pvcs = append(pvcs, &pvcList.Items[i])
-		}
-		return pvcs, nil
-	default:
-		return nil, nil
-	}
+func (c PersistentVolumeClaimCache) GetByIndex(_, _ string) ([]*corev1.PersistentVolumeClaim, error) {
+	panic("implement me")
 }

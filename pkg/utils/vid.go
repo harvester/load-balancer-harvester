@@ -6,13 +6,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/harvester/harvester-network-controller/pkg/utils"
 	ctlcniv1 "github.com/harvester/harvester/pkg/generated/controllers/k8s.cni.cncf.io/v1"
 
 	lb "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io"
 )
 
-const KeyVid = lb.GroupName + "/vid"
+const (
+	KeyVid       = lb.GroupName + "/vid"
+	KeyVlanLabel = "network.harvesterhci.io/vlan-id"
+)
 
 // GetVid from the network attachment definition
 func GetVid(network string, nadCache ctlcniv1.NetworkAttachmentDefinitionCache) (int, error) {
@@ -30,7 +32,7 @@ func GetVid(network string, nadCache ctlcniv1.NetworkAttachmentDefinitionCache) 
 	}
 
 	// get the vid from the label network.harvesterhci.io/vlan-id
-	if vlanStr, ok := nad.Labels[utils.KeyVlanLabel]; ok {
+	if vlanStr, ok := nad.Labels[KeyVlanLabel]; ok {
 		vid, err := strconv.Atoi(vlanStr)
 		if err != nil {
 			return 0, fmt.Errorf("invalid vlan %s", vlanStr)

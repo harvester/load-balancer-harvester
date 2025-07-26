@@ -5,25 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	lhv1beta2 "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta2"
 	"github.com/rancher/steve/pkg/server"
 	corev1 "k8s.io/api/core/v1"
-	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	harvesterv1 "github.com/harvester/harvester/pkg/apis/harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester/pkg/config"
-	"github.com/harvester/harvester/pkg/ref"
 	"github.com/harvester/harvester/pkg/util"
+	indexeresutil "github.com/harvester/harvester/pkg/util/indexeres"
 )
 
 const (
-	PVCByVMIndex                       = "harvesterhci.io/pvc-by-vm-index"
 	PVCByDataSourceVolumeSnapshotIndex = "harvesterhci.io/pvc-by-data-source-volume-snapshot"
-	VMByNetworkIndex                   = "vm.harvesterhci.io/vm-by-network"
 	PodByNodeNameIndex                 = "harvesterhci.io/pod-by-nodename"
 	PodByPVCIndex                      = "harvesterhci.io/pod-by-pvc"
-	PodByVMNameIndex                   = "harvesterhci.io/pod-by-vmname"
 	VolumeByNodeIndex                  = "harvesterhci.io/volume-by-node"
 	VMBackupBySourceVMUIDIndex         = "harvesterhci.io/vmbackup-by-source-vm-uid"
 	VMBackupBySourceVMNameIndex        = "harvesterhci.io/vmbackup-by-source-vm-name"
@@ -36,13 +34,12 @@ func Setup(ctx context.Context, _ *server.Server, _ *server.Controllers, _ confi
 	management := scaled.Management
 
 	pvcInformer := management.CoreFactory.Core().V1().PersistentVolumeClaim().Cache()
-	pvcInformer.AddIndexer(PVCByVMIndex, pvcByVM)
 	pvcInformer.AddIndexer(PVCByDataSourceVolumeSnapshotIndex, pvcByDataSourceVolumeSnapshot)
 
 	podInformer := management.CoreFactory.Core().V1().Pod().Cache()
 	podInformer.AddIndexer(PodByNodeNameIndex, PodByNodeName)
 	podInformer.AddIndexer(PodByPVCIndex, PodByPVC)
-	podInformer.AddIndexer(PodByVMNameIndex, PodByVMName)
+	podInformer.AddIndexer(indexeresutil.PodByVMNameIndex, indexeresutil.PodByVMName)
 
 	volumeInformer := management.LonghornFactory.Longhorn().V1beta2().Volume().Cache()
 	volumeInformer.AddIndexer(VolumeByNodeIndex, VolumeByNodeName)
@@ -56,27 +53,13 @@ func Setup(ctx context.Context, _ *server.Server, _ *server.Controllers, _ confi
 
 	vmTemplateVersionInformer := management.HarvesterFactory.Harvesterhci().V1beta1().VirtualMachineTemplateVersion().Cache()
 	vmTemplateVersionInformer.AddIndexer(VMTemplateVersionByImageIDIndex, VMTemplateVersionByImageID)
+
+	vmInformer := management.VirtFactory.Kubevirt().V1().VirtualMachine().Cache()
+	vmInformer.AddIndexer(indexeresutil.VMByPVCIndex, indexeresutil.VMByPVC)
+
+	scInformer := management.StorageFactory.Storage().V1().StorageClass().Cache()
+	scInformer.AddIndexer(indexeresutil.StorageClassBySecretIndex, indexeresutil.StorageClassBySecret)
 	return nil
-}
-
-func pvcByVM(obj *corev1.PersistentVolumeClaim) ([]string, error) {
-	annotationSchemaOwners, err := ref.GetSchemaOwnersFromAnnotation(obj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get schema owners from PVC %s's annotation: %w", obj.Name, err)
-	}
-	return annotationSchemaOwners.List(kubevirtv1.VirtualMachineGroupVersionKind.GroupKind()), nil
-}
-
-func VMByNetwork(obj *kubevirtv1.VirtualMachine) ([]string, error) {
-	networks := obj.Spec.Template.Spec.Networks
-	networkNameList := make([]string, 0, len(networks))
-	for _, network := range networks {
-		if network.NetworkSource.Multus == nil {
-			continue
-		}
-		networkNameList = append(networkNameList, network.NetworkSource.Multus.NetworkName)
-	}
-	return networkNameList, nil
 }
 
 func PodByNodeName(obj *corev1.Pod) ([]string, error) {
@@ -91,14 +74,6 @@ func PodByPVC(obj *corev1.Pod) ([]string, error) {
 		}
 	}
 	return pvcNames, nil
-}
-
-func PodByVMName(obj *corev1.Pod) ([]string, error) {
-	vmName, ok := obj.Labels[util.LabelVMName]
-	if !ok {
-		return []string{}, nil
-	}
-	return []string{fmt.Sprintf("%s/%s", obj.Namespace, vmName)}, nil
 }
 
 func pvcByDataSourceVolumeSnapshot(obj *corev1.PersistentVolumeClaim) ([]string, error) {
@@ -127,7 +102,15 @@ func VMTemplateVersionByImageID(obj *harvesterv1.VirtualMachineTemplateVersion) 
 
 	var volumeClaimTemplates []corev1.PersistentVolumeClaim
 	if err := json.Unmarshal([]byte(volumeClaimTemplateStr), &volumeClaimTemplates); err != nil {
-		return []string{}, fmt.Errorf("can't unmarshal %s, err: %w", util.AnnotationVolumeClaimTemplates, err)
+		// an IndexFunc should never return an error as this would cause the cache
+		// to panic. Therefore we just log the error and return an empty result.
+		logrus.WithFields(logrus.Fields{
+			"annotation": util.AnnotationVolumeClaimTemplates,
+			"name":       obj.Name,
+			"namespace":  obj.Namespace,
+			"err":        err.Error(),
+		}).Error("can't unmarshal JSON data")
+		return []string{}, nil
 	}
 
 	imageIDs := []string{}

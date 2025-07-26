@@ -20,262 +20,54 @@ package v1beta1
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	v1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
-	"github.com/rancher/lasso/pkg/client"
-	"github.com/rancher/lasso/pkg/controller"
-	"github.com/rancher/wrangler/pkg/apply"
-	"github.com/rancher/wrangler/pkg/condition"
-	"github.com/rancher/wrangler/pkg/generic"
-	"github.com/rancher/wrangler/pkg/kv"
+	"github.com/rancher/wrangler/v3/pkg/apply"
+	"github.com/rancher/wrangler/v3/pkg/condition"
+	"github.com/rancher/wrangler/v3/pkg/generic"
+	"github.com/rancher/wrangler/v3/pkg/kv"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/cache"
 )
 
-type IPPoolHandler func(string, *v1beta1.IPPool) (*v1beta1.IPPool, error)
-
+// IPPoolController interface for managing IPPool resources.
 type IPPoolController interface {
-	generic.ControllerMeta
-	IPPoolClient
-
-	OnChange(ctx context.Context, name string, sync IPPoolHandler)
-	OnRemove(ctx context.Context, name string, sync IPPoolHandler)
-	Enqueue(name string)
-	EnqueueAfter(name string, duration time.Duration)
-
-	Cache() IPPoolCache
+	generic.NonNamespacedControllerInterface[*v1beta1.IPPool, *v1beta1.IPPoolList]
 }
 
+// IPPoolClient interface for managing IPPool resources in Kubernetes.
 type IPPoolClient interface {
-	Create(*v1beta1.IPPool) (*v1beta1.IPPool, error)
-	Update(*v1beta1.IPPool) (*v1beta1.IPPool, error)
-	UpdateStatus(*v1beta1.IPPool) (*v1beta1.IPPool, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	Get(name string, options metav1.GetOptions) (*v1beta1.IPPool, error)
-	List(opts metav1.ListOptions) (*v1beta1.IPPoolList, error)
-	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.IPPool, err error)
+	generic.NonNamespacedClientInterface[*v1beta1.IPPool, *v1beta1.IPPoolList]
 }
 
+// IPPoolCache interface for retrieving IPPool resources in memory.
 type IPPoolCache interface {
-	Get(name string) (*v1beta1.IPPool, error)
-	List(selector labels.Selector) ([]*v1beta1.IPPool, error)
-
-	AddIndexer(indexName string, indexer IPPoolIndexer)
-	GetByIndex(indexName, key string) ([]*v1beta1.IPPool, error)
+	generic.NonNamespacedCacheInterface[*v1beta1.IPPool]
 }
 
-type IPPoolIndexer func(obj *v1beta1.IPPool) ([]string, error)
-
-type iPPoolController struct {
-	controller    controller.SharedController
-	client        *client.Client
-	gvk           schema.GroupVersionKind
-	groupResource schema.GroupResource
-}
-
-func NewIPPoolController(gvk schema.GroupVersionKind, resource string, namespaced bool, controller controller.SharedControllerFactory) IPPoolController {
-	c := controller.ForResourceKind(gvk.GroupVersion().WithResource(resource), gvk.Kind, namespaced)
-	return &iPPoolController{
-		controller: c,
-		client:     c.Client(),
-		gvk:        gvk,
-		groupResource: schema.GroupResource{
-			Group:    gvk.Group,
-			Resource: resource,
-		},
-	}
-}
-
-func FromIPPoolHandlerToHandler(sync IPPoolHandler) generic.Handler {
-	return func(key string, obj runtime.Object) (ret runtime.Object, err error) {
-		var v *v1beta1.IPPool
-		if obj == nil {
-			v, err = sync(key, nil)
-		} else {
-			v, err = sync(key, obj.(*v1beta1.IPPool))
-		}
-		if v == nil {
-			return nil, err
-		}
-		return v, err
-	}
-}
-
-func (c *iPPoolController) Updater() generic.Updater {
-	return func(obj runtime.Object) (runtime.Object, error) {
-		newObj, err := c.Update(obj.(*v1beta1.IPPool))
-		if newObj == nil {
-			return nil, err
-		}
-		return newObj, err
-	}
-}
-
-func UpdateIPPoolDeepCopyOnChange(client IPPoolClient, obj *v1beta1.IPPool, handler func(obj *v1beta1.IPPool) (*v1beta1.IPPool, error)) (*v1beta1.IPPool, error) {
-	if obj == nil {
-		return obj, nil
-	}
-
-	copyObj := obj.DeepCopy()
-	newObj, err := handler(copyObj)
-	if newObj != nil {
-		copyObj = newObj
-	}
-	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-		return client.Update(copyObj)
-	}
-
-	return copyObj, err
-}
-
-func (c *iPPoolController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
-	c.controller.RegisterHandler(ctx, name, controller.SharedControllerHandlerFunc(handler))
-}
-
-func (c *iPPoolController) AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler) {
-	c.AddGenericHandler(ctx, name, generic.NewRemoveHandler(name, c.Updater(), handler))
-}
-
-func (c *iPPoolController) OnChange(ctx context.Context, name string, sync IPPoolHandler) {
-	c.AddGenericHandler(ctx, name, FromIPPoolHandlerToHandler(sync))
-}
-
-func (c *iPPoolController) OnRemove(ctx context.Context, name string, sync IPPoolHandler) {
-	c.AddGenericHandler(ctx, name, generic.NewRemoveHandler(name, c.Updater(), FromIPPoolHandlerToHandler(sync)))
-}
-
-func (c *iPPoolController) Enqueue(name string) {
-	c.controller.Enqueue("", name)
-}
-
-func (c *iPPoolController) EnqueueAfter(name string, duration time.Duration) {
-	c.controller.EnqueueAfter("", name, duration)
-}
-
-func (c *iPPoolController) Informer() cache.SharedIndexInformer {
-	return c.controller.Informer()
-}
-
-func (c *iPPoolController) GroupVersionKind() schema.GroupVersionKind {
-	return c.gvk
-}
-
-func (c *iPPoolController) Cache() IPPoolCache {
-	return &iPPoolCache{
-		indexer:  c.Informer().GetIndexer(),
-		resource: c.groupResource,
-	}
-}
-
-func (c *iPPoolController) Create(obj *v1beta1.IPPool) (*v1beta1.IPPool, error) {
-	result := &v1beta1.IPPool{}
-	return result, c.client.Create(context.TODO(), "", obj, result, metav1.CreateOptions{})
-}
-
-func (c *iPPoolController) Update(obj *v1beta1.IPPool) (*v1beta1.IPPool, error) {
-	result := &v1beta1.IPPool{}
-	return result, c.client.Update(context.TODO(), "", obj, result, metav1.UpdateOptions{})
-}
-
-func (c *iPPoolController) UpdateStatus(obj *v1beta1.IPPool) (*v1beta1.IPPool, error) {
-	result := &v1beta1.IPPool{}
-	return result, c.client.UpdateStatus(context.TODO(), "", obj, result, metav1.UpdateOptions{})
-}
-
-func (c *iPPoolController) Delete(name string, options *metav1.DeleteOptions) error {
-	if options == nil {
-		options = &metav1.DeleteOptions{}
-	}
-	return c.client.Delete(context.TODO(), "", name, *options)
-}
-
-func (c *iPPoolController) Get(name string, options metav1.GetOptions) (*v1beta1.IPPool, error) {
-	result := &v1beta1.IPPool{}
-	return result, c.client.Get(context.TODO(), "", name, result, options)
-}
-
-func (c *iPPoolController) List(opts metav1.ListOptions) (*v1beta1.IPPoolList, error) {
-	result := &v1beta1.IPPoolList{}
-	return result, c.client.List(context.TODO(), "", result, opts)
-}
-
-func (c *iPPoolController) Watch(opts metav1.ListOptions) (watch.Interface, error) {
-	return c.client.Watch(context.TODO(), "", opts)
-}
-
-func (c *iPPoolController) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (*v1beta1.IPPool, error) {
-	result := &v1beta1.IPPool{}
-	return result, c.client.Patch(context.TODO(), "", name, pt, data, result, metav1.PatchOptions{}, subresources...)
-}
-
-type iPPoolCache struct {
-	indexer  cache.Indexer
-	resource schema.GroupResource
-}
-
-func (c *iPPoolCache) Get(name string) (*v1beta1.IPPool, error) {
-	obj, exists, err := c.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(c.resource, name)
-	}
-	return obj.(*v1beta1.IPPool), nil
-}
-
-func (c *iPPoolCache) List(selector labels.Selector) (ret []*v1beta1.IPPool, err error) {
-
-	err = cache.ListAll(c.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.IPPool))
-	})
-
-	return ret, err
-}
-
-func (c *iPPoolCache) AddIndexer(indexName string, indexer IPPoolIndexer) {
-	utilruntime.Must(c.indexer.AddIndexers(map[string]cache.IndexFunc{
-		indexName: func(obj interface{}) (strings []string, e error) {
-			return indexer(obj.(*v1beta1.IPPool))
-		},
-	}))
-}
-
-func (c *iPPoolCache) GetByIndex(indexName, key string) (result []*v1beta1.IPPool, err error) {
-	objs, err := c.indexer.ByIndex(indexName, key)
-	if err != nil {
-		return nil, err
-	}
-	result = make([]*v1beta1.IPPool, 0, len(objs))
-	for _, obj := range objs {
-		result = append(result, obj.(*v1beta1.IPPool))
-	}
-	return result, nil
-}
-
+// IPPoolStatusHandler is executed for every added or modified IPPool. Should return the new status to be updated
 type IPPoolStatusHandler func(obj *v1beta1.IPPool, status v1beta1.IPPoolStatus) (v1beta1.IPPoolStatus, error)
 
+// IPPoolGeneratingHandler is the top-level handler that is executed for every IPPool event. It extends IPPoolStatusHandler by a returning a slice of child objects to be passed to apply.Apply
 type IPPoolGeneratingHandler func(obj *v1beta1.IPPool, status v1beta1.IPPoolStatus) ([]runtime.Object, v1beta1.IPPoolStatus, error)
 
+// RegisterIPPoolStatusHandler configures a IPPoolController to execute a IPPoolStatusHandler for every events observed.
+// If a non-empty condition is provided, it will be updated in the status conditions for every handler execution
 func RegisterIPPoolStatusHandler(ctx context.Context, controller IPPoolController, condition condition.Cond, name string, handler IPPoolStatusHandler) {
 	statusHandler := &iPPoolStatusHandler{
 		client:    controller,
 		condition: condition,
 		handler:   handler,
 	}
-	controller.AddGenericHandler(ctx, name, FromIPPoolHandlerToHandler(statusHandler.sync))
+	controller.AddGenericHandler(ctx, name, generic.FromObjectHandlerToHandler(statusHandler.sync))
 }
 
+// RegisterIPPoolGeneratingHandler configures a IPPoolController to execute a IPPoolGeneratingHandler for every events observed, passing the returned objects to the provided apply.Apply.
+// If a non-empty condition is provided, it will be updated in the status conditions for every handler execution
 func RegisterIPPoolGeneratingHandler(ctx context.Context, controller IPPoolController, apply apply.Apply,
 	condition condition.Cond, name string, handler IPPoolGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
 	statusHandler := &iPPoolGeneratingHandler{
@@ -297,6 +89,7 @@ type iPPoolStatusHandler struct {
 	handler   IPPoolStatusHandler
 }
 
+// sync is executed on every resource addition or modification. Executes the configured handlers and sends the updated status to the Kubernetes API
 func (a *iPPoolStatusHandler) sync(key string, obj *v1beta1.IPPool) (*v1beta1.IPPool, error) {
 	if obj == nil {
 		return obj, nil
@@ -342,8 +135,10 @@ type iPPoolGeneratingHandler struct {
 	opts  generic.GeneratingHandlerOptions
 	gvk   schema.GroupVersionKind
 	name  string
+	seen  sync.Map
 }
 
+// Remove handles the observed deletion of a resource, cascade deleting every associated resource previously applied
 func (a *iPPoolGeneratingHandler) Remove(key string, obj *v1beta1.IPPool) (*v1beta1.IPPool, error) {
 	if obj != nil {
 		return obj, nil
@@ -353,12 +148,17 @@ func (a *iPPoolGeneratingHandler) Remove(key string, obj *v1beta1.IPPool) (*v1be
 	obj.Namespace, obj.Name = kv.RSplit(key, "/")
 	obj.SetGroupVersionKind(a.gvk)
 
+	if a.opts.UniqueApplyForResourceVersion {
+		a.seen.Delete(key)
+	}
+
 	return nil, generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
 		WithOwner(obj).
 		WithSetID(a.name).
 		ApplyObjects()
 }
 
+// Handle executes the configured IPPoolGeneratingHandler and pass the resulting objects to apply.Apply, finally returning the new status of the resource
 func (a *iPPoolGeneratingHandler) Handle(obj *v1beta1.IPPool, status v1beta1.IPPoolStatus) (v1beta1.IPPoolStatus, error) {
 	if !obj.DeletionTimestamp.IsZero() {
 		return status, nil
@@ -368,9 +168,41 @@ func (a *iPPoolGeneratingHandler) Handle(obj *v1beta1.IPPool, status v1beta1.IPP
 	if err != nil {
 		return newStatus, err
 	}
+	if !a.isNewResourceVersion(obj) {
+		return newStatus, nil
+	}
 
-	return newStatus, generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
+	err = generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
 		WithOwner(obj).
 		WithSetID(a.name).
 		ApplyObjects(objs...)
+	if err != nil {
+		return newStatus, err
+	}
+	a.storeResourceVersion(obj)
+	return newStatus, nil
+}
+
+// isNewResourceVersion detects if a specific resource version was already successfully processed.
+// Only used if UniqueApplyForResourceVersion is set in generic.GeneratingHandlerOptions
+func (a *iPPoolGeneratingHandler) isNewResourceVersion(obj *v1beta1.IPPool) bool {
+	if !a.opts.UniqueApplyForResourceVersion {
+		return true
+	}
+
+	// Apply once per resource version
+	key := obj.Namespace + "/" + obj.Name
+	previous, ok := a.seen.Load(key)
+	return !ok || previous != obj.ResourceVersion
+}
+
+// storeResourceVersion keeps track of the latest resource version of an object for which Apply was executed
+// Only used if UniqueApplyForResourceVersion is set in generic.GeneratingHandlerOptions
+func (a *iPPoolGeneratingHandler) storeResourceVersion(obj *v1beta1.IPPool) {
+	if !a.opts.UniqueApplyForResourceVersion {
+		return
+	}
+
+	key := obj.Namespace + "/" + obj.Name
+	a.seen.Store(key, obj.ResourceVersion)
 }
