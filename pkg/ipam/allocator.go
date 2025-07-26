@@ -210,7 +210,7 @@ func (a *Allocator) Get(id string) (*current.IPConfig, error) {
 
 func CalculateCheckSum(ranges []lbv1.Range) string {
 	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%v", ranges)))
+	fmt.Fprintf(h, "%v", ranges)
 
 	return fmt.Sprintf("%x", h.Sum(nil))
 }

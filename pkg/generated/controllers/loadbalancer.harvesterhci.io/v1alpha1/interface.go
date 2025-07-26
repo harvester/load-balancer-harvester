@@ -21,7 +21,8 @@ package v1alpha1
 import (
 	v1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
 	"github.com/rancher/lasso/pkg/controller"
-	"github.com/rancher/wrangler/pkg/schemes"
+	"github.com/rancher/wrangler/v3/pkg/generic"
+	"github.com/rancher/wrangler/v3/pkg/schemes"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -43,6 +44,6 @@ type version struct {
 	controllerFactory controller.SharedControllerFactory
 }
 
-func (c *version) LoadBalancer() LoadBalancerController {
-	return NewLoadBalancerController(schema.GroupVersionKind{Group: "loadbalancer.harvesterhci.io", Version: "v1alpha1", Kind: "LoadBalancer"}, "loadbalancers", true, c.controllerFactory)
+func (v *version) LoadBalancer() LoadBalancerController {
+	return generic.NewController[*v1alpha1.LoadBalancer, *v1alpha1.LoadBalancerList](schema.GroupVersionKind{Group: "loadbalancer.harvesterhci.io", Version: "v1alpha1", Kind: "LoadBalancer"}, "loadbalancers", true, v.controllerFactory)
 }

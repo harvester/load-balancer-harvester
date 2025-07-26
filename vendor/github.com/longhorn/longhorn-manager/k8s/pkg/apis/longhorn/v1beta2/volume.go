@@ -96,6 +96,10 @@ type VolumeCloneStatus struct {
 	Snapshot string `json:"snapshot"`
 	// +optional
 	State VolumeCloneState `json:"state"`
+	// +optional
+	AttemptCount int `json:"attemptCount"`
+	// +optional
+	NextAllowedAttemptAt string `json:"nextAllowedAttemptAt"`
 }
 
 const (
@@ -160,6 +164,15 @@ const (
 	ReplicaDiskSoftAntiAffinityDisabled = ReplicaDiskSoftAntiAffinity("disabled")
 )
 
+// +kubebuilder:validation:Enum=ignored;enabled;disabled
+type FreezeFilesystemForSnapshot string
+
+const (
+	FreezeFilesystemForSnapshotDefault  = FreezeFilesystemForSnapshot("ignored")
+	FreezeFilesystemForSnapshotEnabled  = FreezeFilesystemForSnapshot("enabled")
+	FreezeFilesystemForSnapshotDisabled = FreezeFilesystemForSnapshot("disabled")
+)
+
 // Deprecated.
 type BackendStoreDriverType string
 
@@ -175,14 +188,6 @@ const (
 	DataEngineTypeV1  = DataEngineType("v1")
 	DataEngineTypeV2  = DataEngineType("v2")
 	DataEngineTypeAll = DataEngineType("all")
-)
-
-type OfflineReplicaRebuilding string
-
-const (
-	OfflineReplicaRebuildingIgnored  = OfflineReplicaRebuilding("ignored")
-	OfflineReplicaRebuildingEnabled  = OfflineReplicaRebuilding("enabled")
-	OfflineReplicaRebuildingDisabled = OfflineReplicaRebuilding("disabled")
 )
 
 type KubernetesStatus struct {
@@ -289,15 +294,17 @@ type VolumeSpec struct {
 	// +kubebuilder:validation:Enum=v1;v2
 	// +optional
 	DataEngine DataEngineType `json:"dataEngine"`
-	// OfflineReplicaRebuilding is used to determine if the offline replica rebuilding feature is enabled or not
-	// +kubebuilder:validation:Enum=ignored;disabled;enabled
-	// +optional
-	OfflineReplicaRebuilding OfflineReplicaRebuilding `json:"offlineReplicaRebuilding"`
 	// +optional
 	SnapshotMaxCount int `json:"snapshotMaxCount"`
 	// +kubebuilder:validation:Type=string
 	// +optional
 	SnapshotMaxSize int64 `json:"snapshotMaxSize,string"`
+	// Setting that freezes the filesystem on the root partition before a snapshot is created.
+	// +optional
+	FreezeFilesystemForSnapshot FreezeFilesystemForSnapshot `json:"freezeFilesystemForSnapshot"`
+	// The backup target name that the volume will be backed up to or is synced.
+	// +optional
+	BackupTargetName string `json:"backupTargetName"`
 }
 
 // VolumeStatus defines the observed state of the Longhorn volume
@@ -349,8 +356,6 @@ type VolumeStatus struct {
 	ShareEndpoint string `json:"shareEndpoint"`
 	// +optional
 	ShareState ShareManagerState `json:"shareState"`
-	// +optional
-	OfflineReplicaRebuildingRequired bool `json:"offlineReplicaRebuildingRequired"`
 }
 
 // +genclient

@@ -7,7 +7,7 @@ import (
 	ctlkubevirtv1 "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io/v1"
 	"github.com/harvester/webhook/pkg/server/admission"
 	rancherproject "github.com/rancher/rancher/pkg/project"
-	ctlcorev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	ctlcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -174,7 +174,7 @@ func (m *mutator) findProject(namespace string) (string, error) {
 		return "", fmt.Errorf("get namespace %s failed, error: %w", namespace, err)
 	}
 
-	return strings.Replace(ns.Annotations[rancherproject.ProjectIDAnn], ":", "/", 1), nil
+	return strings.Replace(ns.Annotations[rancherproject.ProjectIDAnnotation], ":", "/", 1), nil
 }
 
 // Find the first network where the guest cluster is running
@@ -193,8 +193,8 @@ func (m *mutator) findNetwork(namespace, clusterName string) (string, error) {
 	for _, vmi := range vmis {
 		if strings.HasPrefix(vmi.Name, clusterName) {
 			for _, network := range vmi.Spec.Networks {
-				if network.NetworkSource.Multus != nil {
-					return network.NetworkSource.Multus.NetworkName, nil
+				if network.Multus != nil {
+					return network.Multus.NetworkName, nil
 				}
 			}
 		}

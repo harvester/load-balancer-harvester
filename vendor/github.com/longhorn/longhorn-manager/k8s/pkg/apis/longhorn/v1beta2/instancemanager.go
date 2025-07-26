@@ -7,6 +7,7 @@ type InstanceType string
 const (
 	InstanceTypeEngine  = InstanceType("engine")
 	InstanceTypeReplica = InstanceType("replica")
+	InstanceTypeNone    = InstanceType("")
 )
 
 type InstanceManagerState string
@@ -133,11 +134,25 @@ type InstanceProcessStatus struct {
 	// +optional
 	PortStart int32 `json:"portStart"`
 	// +optional
+	TargetPortEnd int32 `json:"targetPortEnd"`
+	// +optional
+	TargetPortStart int32 `json:"targetPortStart"`
+	// +optional
 	State InstanceState `json:"state"`
 	// +optional
 	Type InstanceType `json:"type"`
 	// +optional
 	ResourceVersion int64 `json:"resourceVersion"`
+}
+
+type V2DataEngineSpec struct {
+	// +optional
+	CPUMask string `json:"cpuMask"`
+}
+
+type DataEngineSpec struct {
+	// +optional
+	V2 V2DataEngineSpec `json:"v2"`
 }
 
 // InstanceManagerSpec defines the desired state of the Longhorn instance manager
@@ -150,6 +165,18 @@ type InstanceManagerSpec struct {
 	Type InstanceManagerType `json:"type"`
 	// +optional
 	DataEngine DataEngineType `json:"dataEngine"`
+	// +optional
+	DataEngineSpec DataEngineSpec `json:"dataEngineSpec"`
+}
+
+type V2DataEngineStatus struct {
+	// +optional
+	CPUMask string `json:"cpuMask"`
+}
+
+type DataEngineStatus struct {
+	// +optional
+	V2 V2DataEngineStatus `json:"v2"`
 }
 
 // InstanceManagerStatus defines the observed state of the Longhorn instance manager
@@ -165,6 +192,9 @@ type InstanceManagerStatus struct {
 	// +nullable
 	InstanceReplicas map[string]InstanceProcess `json:"instanceReplicas,omitempty"`
 	// +optional
+	// +nullable
+	BackingImages map[string]BackingImageV2CopyInfo `json:"backingImages"`
+	// +optional
 	IP string `json:"ip"`
 	// +optional
 	APIMinVersion int `json:"apiMinVersion"`
@@ -174,6 +204,8 @@ type InstanceManagerStatus struct {
 	ProxyAPIMinVersion int `json:"proxyApiMinVersion"`
 	// +optional
 	ProxyAPIVersion int `json:"proxyApiVersion"`
+	// +optional
+	DataEngineStatus DataEngineStatus `json:"dataEngineStatus"`
 
 	// Deprecated: Replaced by InstanceEngines and InstanceReplicas
 	// +optional
