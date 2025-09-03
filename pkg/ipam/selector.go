@@ -1,6 +1,8 @@
 package ipam
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/labels"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
@@ -9,12 +11,16 @@ import (
 )
 
 const All = "*"
+const EmptySelector = ""
 
 type Selector struct {
 	ctllbv1.IPPoolCache
 }
 
-type Matcher lbv1.Selector
+type Matcher struct {
+	selector  lbv1.Selector
+	looseMode bool
+}
 
 type Requirement struct {
 	Network   string
@@ -30,17 +36,26 @@ func NewSelector(cache ctllbv1.IPPoolCache) *Selector {
 }
 
 func NewMatcher(poolSelector lbv1.Selector) *Matcher {
-	m := (Matcher)(poolSelector)
-	return &m
+	return &Matcher{
+		selector:  poolSelector,
+		looseMode: false,
+	}
+}
+
+func NewMatcherWithMode(poolSelector lbv1.Selector, looseMode bool) *Matcher {
+	return &Matcher{
+		selector:  poolSelector,
+		looseMode: looseMode,
+	}
 }
 
 func (m *Matcher) Matches(r *Requirement) bool {
-	if m.Network != r.Network {
+	if m.selector.Network != r.Network {
 		return false
 	}
 
-	for i := range m.Scope {
-		if isMatch(&m.Scope[i], r) {
+	for i := range m.selector.Scope {
+		if isMatch(&m.selector.Scope[i], r, m.looseMode) {
 			return true
 		}
 	}
@@ -52,7 +67,10 @@ func (m *Matcher) Matches(r *Requirement) bool {
 // Priority:
 // 1. the pool that matches the requirement and has the highest priority
 // 2. the global pool
-func (s *Selector) Select(r *Requirement) (*lbv1.IPPool, error) {
+func (s *Selector) Select(r *Requirement, looseMode bool) (*lbv1.IPPool, error) {
+	if r == nil {
+		return nil, fmt.Errorf("the requirement to select a pool can't be empty")
+	}
 	pools, err := s.List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -66,7 +84,7 @@ func (s *Selector) Select(r *Requirement) (*lbv1.IPPool, error) {
 			continue
 		}
 		// If the priority is not zero, every pool has different priority value.
-		if NewMatcher(pool.Spec.Selector).Matches(r) && pool.Spec.Selector.Priority >= priority {
+		if NewMatcherWithMode(pool.Spec.Selector, looseMode).Matches(r) && pool.Spec.Selector.Priority >= priority {
 			selectedPool = pool
 			priority = pool.Spec.Selector.Priority
 		}
@@ -78,11 +96,25 @@ func (s *Selector) Select(r *Requirement) (*lbv1.IPPool, error) {
 	return globalPool, nil
 }
 
-func isMatch(t *lbv1.Tuple, r *Requirement) bool {
-	// if the value of requirement is *, we think it matches any value.
-	if (t.Project == All || r.Project == All || t.Project == r.Project) &&
+func isMatch(t *lbv1.Tuple, r *Requirement, looseMode bool) bool {
+	// by default, the strict match is used
+	if !looseMode {
+		// if the value of requirement is *, we think it matches any value.
+		if (t.Project == All || r.Project == All || t.Project == r.Project) &&
+			(t.Namespace == All || r.Namespace == All || t.Namespace == r.Namespace) &&
+			(t.GuestCluster == All || r.Cluster == All || t.GuestCluster == r.Cluster) {
+			return true
+		}
+
+		return false
+	}
+
+	// is loose mode, pool scope `Project` and `GuestCluster` are processed specially
+	// the EmptySelector ("") means matching all
+	// as they are not exposed on UI for user to set
+	if (t.Project == All || r.Project == All || t.Project == r.Project || t.Project == EmptySelector) &&
 		(t.Namespace == All || r.Namespace == All || t.Namespace == r.Namespace) &&
-		(t.GuestCluster == All || r.Cluster == All || t.GuestCluster == r.Cluster) {
+		(t.GuestCluster == All || r.Cluster == All || t.GuestCluster == r.Cluster || t.GuestCluster == EmptySelector) {
 		return true
 	}
 
