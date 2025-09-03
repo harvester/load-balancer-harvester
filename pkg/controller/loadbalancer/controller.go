@@ -339,7 +339,8 @@ func (h *Handler) requestIP(lb *lbv1.LoadBalancer, pool string) (*lbv1.Allocated
 	// the ip is booked on pool when successfully Get()
 	ipConfig, err := allocator.Get(fmt.Sprintf("%s/%s", lb.Namespace, lb.Name))
 	if err != nil {
-		return nil, err
+		// if failed, log the pool name
+		return nil, fmt.Errorf("fail to get ip from pool %s, error: %w", pool, err)
 	}
 
 	return &lbv1.AllocatedAddress{
@@ -360,15 +361,27 @@ func (h *Handler) selectIPPool(lb *lbv1.LoadBalancer) (string, error) {
 	if r.Namespace == "" {
 		r.Namespace = lb.Namespace
 	}
-	pool, err := ipam.NewSelector(h.ipPoolCache).Select(r)
+	pool, err := ipam.NewSelector(h.ipPoolCache).Select(r, false)
 	if err != nil {
 		return "", fmt.Errorf("%w with selector, error: %w", errNoMatchedIPPool, err)
 	}
-	if pool == nil {
-		return "", fmt.Errorf("%w with requirement %+v", errNoMatchedIPPool, r)
+	if pool != nil {
+		return pool.Name, nil
 	}
 
-	return pool.Name, nil
+	// for Cluster type LB, re-try in loose moe
+	if lb.Spec.WorkloadType == lbv1.Cluster {
+		pool, err := ipam.NewSelector(h.ipPoolCache).Select(r, true)
+		if err != nil {
+			return "", fmt.Errorf("%w with selector, error: %w", errNoMatchedIPPool, err)
+		}
+		if pool != nil {
+			return pool.Name, nil
+		}
+		// pool is still not found
+	}
+
+	return "", fmt.Errorf("%w with requirement %+v", errNoMatchedIPPool, r)
 }
 
 func (h *Handler) releaseIP(lb *lbv1.LoadBalancer) error {

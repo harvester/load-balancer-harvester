@@ -122,7 +122,29 @@ func (m *mutator) getHealthyCheckPatch(lb *lbv1.LoadBalancer) (admission.Patch, 
 	return nil, nil
 }
 
-func (m *mutator) getAnnotationsPatch(lb *lbv1.LoadBalancer) (admission.Patch, error) {
+// for VM type LB, it does not expose the concept of Project, Network
+func (m *mutator) getAnnotationsPatchVM(lb *lbv1.LoadBalancer) (admission.Patch, error) {
+	// already patched
+	if lb.Annotations[utils.AnnotationKeyNamespace] == lb.Namespace {
+		return nil, nil
+	}
+
+	annotations := lb.Annotations
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[utils.AnnotationKeyNamespace] = lb.Namespace
+	return []admission.PatchOp{
+		{
+			Op:    admission.PatchOpReplace,
+			Path:  "/metadata/annotations",
+			Value: annotations,
+		},
+	}, nil
+}
+
+// for Cluster type LB
+func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.Patch, error) {
 	project, err := m.findProject(lb.Namespace)
 	if err != nil {
 		return nil, err
@@ -151,6 +173,13 @@ func (m *mutator) getAnnotationsPatch(lb *lbv1.LoadBalancer) (admission.Patch, e
 			Value: annotations,
 		},
 	}, nil
+}
+
+func (m *mutator) getAnnotationsPatch(lb *lbv1.LoadBalancer) (admission.Patch, error) {
+	if lb.Spec.WorkloadType == lbv1.VM {
+		return m.getAnnotationsPatchVM(lb)
+	}
+	return m.getAnnotationsPatchCluster(lb)
 }
 
 func (m *mutator) Resource() admission.Resource {
