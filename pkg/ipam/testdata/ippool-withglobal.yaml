@@ -29,3 +29,29 @@ spec:
       - guestCluster: '*'
         namespace: '*'
         project: '*'
+---        
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: default-vlan10-no-scope-set
+spec:
+  ranges:
+    - subnet: 172.19.110.192/27
+  selector:
+    network: default/vlan10
+    scope:
+      - namespace: "" # when user sets no scope on UI
+---
+apiVersion: loadbalancer.harvesterhci.io/v1beta1
+kind: IPPool
+metadata:
+  name: default-vlan20
+spec:
+  ranges:
+    - subnet: 172.19.110.192/27
+  selector:
+    network: default/vlan20
+    scope:
+      - guestCluster: cluster1
+        namespace: default
+        project: project1
