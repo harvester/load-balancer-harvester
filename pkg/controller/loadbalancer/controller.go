@@ -339,7 +339,8 @@ func (h *Handler) requestIP(lb *lbv1.LoadBalancer, pool string) (*lbv1.Allocated
 	// the ip is booked on pool when successfully Get()
 	ipConfig, err := allocator.Get(fmt.Sprintf("%s/%s", lb.Namespace, lb.Name))
 	if err != nil {
-		return nil, err
+		// if failed, log the pool name
+		return nil, fmt.Errorf("fail to get ip from pool %s, error: %w", pool, err)
 	}
 
 	return &lbv1.AllocatedAddress{
