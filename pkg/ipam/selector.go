@@ -1,6 +1,8 @@
 package ipam
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/labels"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
@@ -54,7 +56,11 @@ func (m *Matcher) MatchesAllowEmpty(r *Requirement) bool {
 		return false
 	}
 
-	// other scope allows empty to match all
+	// if none of the scope is defined (all empty) allows match all
+	if len(m.Scope) == 0 {
+		return true
+	}
+
 	for i := range m.Scope {
 		if isMatchAllowEmpty(&m.Scope[i], r) {
 			return true
@@ -69,6 +75,9 @@ func (m *Matcher) MatchesAllowEmpty(r *Requirement) bool {
 // 1. the pool that matches the requirement and has the highest priority
 // 2. the global pool
 func (s *Selector) Select(r *Requirement) (*lbv1.IPPool, error) {
+	if r == nil {
+		return nil, fmt.Errorf("the requirement to select a pool can't be empty")
+	}
 	pools, err := s.List(labels.Everything())
 	if err != nil {
 		return nil, err
