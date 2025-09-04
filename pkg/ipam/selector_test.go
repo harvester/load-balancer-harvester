@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	rootDir = "./testdata/"
-
 	defaultNamespace = "default"
 
 	defaultPoolName         = "default"
