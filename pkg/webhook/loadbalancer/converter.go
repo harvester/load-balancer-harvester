@@ -147,8 +147,10 @@ func (c *converter) convertFromV1beta1ToV1alpha1(obj *unstructured.Unstructured)
 	}
 
 	// BackendServers
-	status := obj.Object[keyStatus].(map[string]interface{})
-	spec[keyBackendServers] = status[keyBackendServers]
+	if obj.Object[keyStatus] != nil {
+		status := obj.Object[keyStatus].(map[string]interface{})
+		spec[keyBackendServers] = status[keyBackendServers]
+	}
 
 	obj.Object[keySpec] = spec
 
