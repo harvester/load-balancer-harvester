@@ -5,41 +5,41 @@ go 1.24.5
 replace (
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20250106182855-361e35fd82e5
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20250106104058-89709a455e2a
-	github.com/rancher/lasso => github.com/rancher/lasso v0.0.0-20241202185148-04649f379358
-	github.com/rancher/rancher => github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d
+	github.com/rancher/lasso => github.com/rancher/lasso v0.2.4
+	github.com/rancher/rancher => github.com/rancher/rancher v0.63.1
 	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20240919204204-3da2ae0cabd1
-	github.com/rancher/steve => github.com/rancher/steve v0.5.6
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0
-	k8s.io/api => k8s.io/api v0.31.5
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.31.5
-	k8s.io/apimachinery => k8s.io/apimachinery v0.31.5
-	k8s.io/apiserver => k8s.io/apiserver v0.31.5
-	k8s.io/client-go => k8s.io/client-go v0.31.5
-	k8s.io/code-generator => k8s.io/code-generator v0.31.5
-	k8s.io/component-base => k8s.io/component-base v0.31.5
+	github.com/rancher/steve => github.com/rancher/steve v0.7.15
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0
+	k8s.io/api => k8s.io/api v0.34.1
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.34.1
+	k8s.io/apimachinery => k8s.io/apimachinery v0.34.1
+	k8s.io/apiserver => k8s.io/apiserver v0.34.1
+	k8s.io/client-go => k8s.io/client-go v0.34.1
+	k8s.io/code-generator => k8s.io/code-generator v0.34.1
+	k8s.io/component-base => k8s.io/component-base v0.34.1
 	k8s.io/gengo/v2 => k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.31.5
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.34.1
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340
-	kubevirt.io/client-go => kubevirt.io/client-go v1.5.1
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.19.4
+	kubevirt.io/client-go => kubevirt.io/client-go v1.6.0
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.22.1
 )
 
 require (
-	github.com/containernetworking/cni v1.2.0
-	github.com/containernetworking/plugins v1.5.0
-	github.com/harvester/harvester v1.5.1
+	github.com/containernetworking/cni v1.3.0
+	github.com/containernetworking/plugins v1.8.0
+	github.com/harvester/harvester v1.6.0
 	github.com/harvester/webhook v0.1.5
 	github.com/rancher/lasso v0.2.3
-	github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d
+	github.com/rancher/rancher v0.63.1
 	github.com/rancher/rancher/pkg/apis v0.0.0
 	github.com/rancher/wrangler/v3 v3.2.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
 	github.com/urfave/cli v1.22.16
-	k8s.io/api v0.33.2
-	k8s.io/apimachinery v0.33.2
+	k8s.io/api v0.34.1
+	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v12.0.0+incompatible
-	kubevirt.io/api v1.5.1
+	kubevirt.io/api v1.6.0
 )
 
 require (
