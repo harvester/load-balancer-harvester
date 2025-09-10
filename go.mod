@@ -8,11 +8,11 @@ replace (
 	github.com/docker/docker => github.com/docker/docker v20.10.9+incompatible // oras dep requires a replace is set
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.7
 
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20191219222812-2987a591a72c
-	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200521150516-05eb9880269c
+	github.com/openshift/api => github.com/openshift/api e515d9c65abd
+	github.com/openshift/client-go => github.com/openshift/client-go 6193816ae379
 	github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190128024246-5eb7ae5bdb7a
-	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20230124173128-2207cfed1803
-	github.com/rancher/rancher/pkg/client => github.com/rancher/rancher/pkg/client v0.0.0-20230124173128-2207cfed1803
+	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis 58abf492671b
+	github.com/rancher/rancher/pkg/client => github.com/rancher/rancher/pkg/client 58abf492671b
 
 	helm.sh/helm/v3 => github.com/rancher/helm/v3 v3.9.0-rancher1
 	k8s.io/api => k8s.io/api v0.26.13
@@ -34,7 +34,7 @@ replace (
 
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.26.13
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.26.13
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a
+	k8s.io/kube-openapi => k8s.io/kube-openapi 589584f1c912
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.26.13
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.26.13
 	k8s.io/kubectl => k8s.io/kubectl v0.26.13
@@ -56,18 +56,18 @@ require (
 	github.com/containernetworking/plugins v1.1.1
 	github.com/harvester/harvester v1.3.0-dev-20240105
 	github.com/harvester/harvester-network-controller v0.3.2
-	github.com/harvester/webhook v0.1.4
+	github.com/harvester/webhook v0.1.5
 	github.com/rancher/lasso v0.0.0-20230830164424-d684fdeb6f29
 	github.com/rancher/rancher v0.0.0-20230124173128-2207cfed1803
 	github.com/rancher/rancher/pkg/apis v0.0.0
-	github.com/rancher/wrangler v1.1.1
+	github.com/rancher/wrangler v1.1.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
-	github.com/urfave/cli v1.22.13
+	github.com/tevino/tcp-shaker 0d2151ffed43
+	github.com/urfave/cli v1.22.17
 	k8s.io/api v0.28.5
 	k8s.io/apimachinery v0.28.5
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106
+	k8s.io/utils 0af2bda4dd1d
 	kubevirt.io/api v1.1.0
 )
 
