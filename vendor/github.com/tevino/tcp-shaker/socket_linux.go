@@ -3,17 +3,19 @@ package tcp
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
+	"github.com/tevino/tcp-shaker/internal"
 	"golang.org/x/sys/unix"
 )
 
 const maxEpollEvents = 32
 
 // createSocket creates a socket with necessary options set.
-func createSocketZeroLinger(zeroLinger bool) (fd int, err error) {
+func createSocketZeroLinger(family int, zeroLinger bool) (fd int, err error) {
 	// Create socket
-	fd, err = _createNonBlockingSocket()
+	fd, err = _createNonBlockingSocket(family)
 	if err == nil {
 		if zeroLinger {
 			err = _setZeroLinger(fd)
@@ -23,9 +25,9 @@ func createSocketZeroLinger(zeroLinger bool) (fd int, err error) {
 }
 
 // createNonBlockingSocket creates a non-blocking socket with necessary options all set.
-func _createNonBlockingSocket() (int, error) {
+func _createNonBlockingSocket(family int) (int, error) {
 	// Create socket
-	fd, err := _createSocket()
+	fd, err := _createSocket(family)
 	if err != nil {
 		return 0, err
 	}
@@ -38,8 +40,8 @@ func _createNonBlockingSocket() (int, error) {
 }
 
 // createSocket creates a socket with CloseOnExec set
-func _createSocket() (int, error) {
-	fd, err := unix.Socket(unix.AF_INET, unix.SOCK_STREAM, 0)
+func _createSocket(family int) (int, error) {
+	fd, err := unix.Socket(family, unix.SOCK_STREAM, 0)
 	unix.CloseOnExec(fd)
 	return fd, err
 }
@@ -79,7 +81,7 @@ func registerEvents(pollerFd int, fd int) error {
 	return nil
 }
 
-func pollEvents(pollerFd int, timeout time.Duration) ([]event, error) {
+func pollEvents(pollerFd int, timeout time.Duration) ([]internal.Event, error) {
 	var timeoutMS = int(timeout.Nanoseconds() / 1000000)
 	var epollEvents [maxEpollEvents]unix.EpollEvent
 	nEvents, err := unix.EpollWait(pollerFd, epollEvents[:], timeoutMS)
@@ -90,11 +92,11 @@ func pollEvents(pollerFd int, timeout time.Duration) ([]event, error) {
 		return nil, os.NewSyscallError("epoll_wait", err)
 	}
 
-	var events = make([]event, 0, nEvents)
+	var events = make([]internal.Event, 0, nEvents)
 
 	for i := 0; i < nEvents; i++ {
 		var fd = int(epollEvents[i].Fd)
-		var evt = event{Fd: fd, Err: nil}
+		var evt = internal.Event{Fd: fd, Err: nil}
 
 		errCode, err := unix.GetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_ERROR)
 		if err != nil {
@@ -106,4 +108,37 @@ func pollEvents(pollerFd int, timeout time.Duration) ([]event, error) {
 		events = append(events, evt)
 	}
 	return events, nil
+}
+
+// connect calls the connect syscall with error handled.
+func connect(fd int, addr unix.Sockaddr) (success bool, err error) {
+	switch serr := unix.Connect(fd, addr); serr {
+	case unix.EALREADY, unix.EINPROGRESS, unix.EINTR:
+		// Connection could not be made immediately but asynchronously.
+		success = false
+		err = nil
+	case nil, unix.EISCONN:
+		// The specified socket is already connected.
+		success = true
+		err = nil
+	case unix.EINVAL:
+		// On Solaris we can see EINVAL if the socket has
+		// already been accepted and closed by the server.
+		// Treat this as a successful connection--writes to
+		// the socket will see EOF.  For details and a test
+		// case in C see https://golang.org/issue/6828.
+		if runtime.GOOS == "solaris" { //nolint:staticcheck
+			success = true
+			err = nil
+		} else {
+			// error must be reported
+			success = false
+			err = serr
+		}
+	default:
+		// Connect error.
+		success = false
+		err = serr
+	}
+	return success, err
 }
