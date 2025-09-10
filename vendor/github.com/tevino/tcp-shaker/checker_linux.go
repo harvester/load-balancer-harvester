@@ -2,22 +2,24 @@ package tcp
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/tevino/tcp-shaker/internal"
 	"golang.org/x/sys/unix"
 )
 
-// Checker contains an epoll instance for TCP handshake checking
+// Checker contains an epoll instance for TCP handshake checking.
+// NOTE: Ideally only one instance of Checker should be created within a process.
 type Checker struct {
-	pipePool
-	resultPipes
-	pollerLock sync.Mutex
-	_pollerFd  int32
-	zeroLinger bool
-	isReady    chan struct{}
+	pipePool    internal.PipePool
+	resultPipes internal.ResultPipes
+	pollerLock  sync.Mutex
+	_pollerFd   int32
+	zeroLinger  bool
+	isReady     chan struct{}
 }
 
 // NewChecker creates a Checker with linger set to zero.
@@ -28,8 +30,8 @@ func NewChecker() *Checker {
 // NewCheckerZeroLinger creates a Checker with zeroLinger set to given value.
 func NewCheckerZeroLinger(zeroLinger bool) *Checker {
 	return &Checker{
-		pipePool:    newPipePoolSyncPool(),
-		resultPipes: newResultPipesSyncMap(),
+		pipePool:    internal.NewPipePoolSyncPool(),
+		resultPipes: internal.NewResultPipesSyncMap(),
 		_pollerFd:   -1,
 		zeroLinger:  zeroLinger,
 		isReady:     make(chan struct{}),
@@ -41,9 +43,11 @@ func NewCheckerZeroLinger(zeroLinger bool) *Checker {
 func (c *Checker) CheckingLoop(ctx context.Context) error {
 	pollerFd, err := c.createPoller()
 	if err != nil {
-		return errors.Wrap(err, "error creating poller")
+		return fmt.Errorf("error creating poller: %w", err)
 	}
-	defer c.closePoller()
+	defer func() {
+		_ = c.closePoller()
+	}()
 
 	c.setReady()
 	defer c.resetReady()
@@ -99,7 +103,7 @@ func (c *Checker) pollingLoop(ctx context.Context, pollerFd int) error {
 			evts, err := pollEvents(pollerFd, pollerTimeout)
 			if err != nil {
 				// fatal error
-				return errors.Wrap(err, "error during polling loop")
+				return fmt.Errorf("error during polling loop: %w", err)
 			}
 
 			c.handlePollerEvents(evts)
@@ -107,9 +111,9 @@ func (c *Checker) pollingLoop(ctx context.Context, pollerFd int) error {
 	}
 }
 
-func (c *Checker) handlePollerEvents(evts []event) {
+func (c *Checker) handlePollerEvents(evts []internal.Event) {
 	for _, e := range evts {
-		if pipe, exists := c.resultPipes.popResultPipe(e.Fd); exists {
+		if pipe, exists := c.resultPipes.PopResultPipe(e.Fd); exists {
 			pipe <- e.Err
 		}
 		// error pipe not found
@@ -141,12 +145,12 @@ func (c *Checker) CheckAddrZeroLinger(addr string, timeout time.Duration, zeroLi
 	deadline := time.Now().Add(timeout)
 
 	// Parse address
-	rAddr, err := parseSockAddr(addr)
+	rAddr, family, err := parseSockAddr(addr)
 	if err != nil {
 		return err
 	}
 	// Create socket with options set
-	fd, err := createSocketZeroLinger(zeroLinger)
+	fd, err := createSocketZeroLinger(family, zeroLinger)
 	if err != nil {
 		return err
 	}
@@ -162,19 +166,20 @@ func (c *Checker) CheckAddrZeroLinger(addr string, timeout time.Duration, zeroLi
 		return nil
 	}
 	// Otherwise wait for the result of connect.
-	return c.waitConnectResult(fd, deadline.Sub(time.Now()))
+
+	return c.waitConnectResult(fd, time.Until((deadline)))
 }
 
 func (c *Checker) waitConnectResult(fd int, timeout time.Duration) error {
 	// get a pipe of connect result
-	resultPipe := c.getPipe()
+	resultPipe := c.pipePool.GetPipe()
 	defer func() {
-		c.resultPipes.deregisterResultPipe(fd)
-		c.putBackPipe(resultPipe)
+		c.resultPipes.DeRegisterResultPipe(fd)
+		c.pipePool.PutBackPipe(resultPipe)
 	}()
 
 	// this must be done before registerEvents
-	c.resultPipes.registerResultPipe(fd, resultPipe)
+	c.resultPipes.RegisterResultPipe(fd, resultPipe)
 	// Register to epoll for later error checking
 	if err := registerEvents(c.pollerFD(), fd); err != nil {
 		return err
