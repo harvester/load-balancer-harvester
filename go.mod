@@ -6,23 +6,23 @@ replace (
 	golang.org/x/net => golang.org/x/net v0.17.0
 	golang.org/x/text => golang.org/x/text v0.3.8
 
-	k8s.io/api => k8s.io/api v0.25.4
-	k8s.io/apimachinery => k8s.io/apimachinery v0.25.4
-	k8s.io/client-go => k8s.io/client-go v0.25.4
-	k8s.io/cloud-provider => k8s.io/cloud-provider v0.25.4
-	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.25.4
-	k8s.io/code-generator => k8s.io/code-generator v0.25.4
-	k8s.io/controller-manager => k8s.io/controller-manager v0.25.4
-	k8s.io/cri-api => k8s.io/cri-api v0.25.4
-	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.25.4
-	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.25.4
-	k8s.io/kube-proxy => k8s.io/kube-proxy v0.25.4
-	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.25.4
-	k8s.io/kubelet => k8s.io/kubelet v0.25.4
+	k8s.io/api => k8s.io/api v0.34.1
+	k8s.io/apimachinery => k8s.io/apimachinery v0.34.1
+	k8s.io/client-go => k8s.io/client-go v0.34.1
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.34.1
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.34.1
+	k8s.io/code-generator => k8s.io/code-generator v0.34.1
+	k8s.io/controller-manager => k8s.io/controller-manager v0.34.1
+	k8s.io/cri-api => k8s.io/cri-api v0.34.1
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.34.1
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.34.1
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.34.1
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.34.1
+	k8s.io/kubelet => k8s.io/kubelet v0.34.1
 	k8s.io/kubernetes => k8s.io/kubernetes v0.25.4
-	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.25.4
-	k8s.io/mount-utils => k8s.io/mount-utils v0.25.4
-	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.25.4
+	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.30.14
+	k8s.io/mount-utils => k8s.io/mount-utils v0.34.1
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.34.1
 )
 
 require (
@@ -30,8 +30,8 @@ require (
 	github.com/rancher/wrangler v1.1.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
-	k8s.io/api v0.25.4
-	k8s.io/apimachinery v0.25.4
+	k8s.io/api v0.34.1
+	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog/v2 v2.70.1
 )
