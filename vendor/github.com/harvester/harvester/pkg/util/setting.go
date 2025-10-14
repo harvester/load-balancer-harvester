@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	ctlharvesterv1 "github.com/harvester/harvester/pkg/generated/controllers/harvesterhci.io/v1beta1"
-
 	"github.com/harvester/harvester/pkg/settings"
 )
 
@@ -41,7 +40,7 @@ func GetAdditionalGuestMemoryOverheadRatioWithoutError(settingCache ctlharvester
 func GetAdditionalGuestMemoryOverheadRatio(settingCache ctlharvesterv1.SettingCache) (*string, error) {
 	value := ""
 	if settingCache == nil {
-		return nil, fmt.Errorf("The settingCache is empty, can't get the setting")
+		return nil, fmt.Errorf("the settingCache is empty, can't get the setting")
 	}
 	s, err := settingCache.Get(settings.AdditionalGuestMemoryOverheadRatioName)
 	if err != nil {
@@ -60,4 +59,25 @@ func GetAdditionalGuestMemoryOverheadRatio(settingCache ctlharvesterv1.SettingCa
 	}
 	value = agmorc.Value()
 	return &value, nil
+}
+
+func IsRestoreVM(settingCache ctlharvesterv1.SettingCache) (bool, error) {
+	value := ""
+	if settingCache == nil {
+		return false, fmt.Errorf("the settingCache is empty, can't get the setting")
+	}
+	s, err := settingCache.Get(settings.UpgradeConfigSettingName)
+	if err != nil {
+		return false, err
+	}
+	value = s.Value
+	if value == "" {
+		value = s.Default
+	}
+
+	upgradeConfig, err := settings.DecodeConfig[settings.UpgradeConfig](value)
+	if err != nil || upgradeConfig == nil {
+		return false, err
+	}
+	return upgradeConfig.RestoreVM, nil
 }

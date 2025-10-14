@@ -42,6 +42,7 @@ import (
 	ctlsnapshotv1 "github.com/harvester/harvester/pkg/generated/controllers/snapshot.storage.k8s.io/v1"
 	"github.com/harvester/harvester/pkg/settings"
 	"github.com/harvester/harvester/pkg/util"
+	backuputil "github.com/harvester/harvester/pkg/util/backup"
 )
 
 const (
@@ -208,7 +209,7 @@ func (h *Handler) OnBackupRemove(_ string, vmBackup *harvesterv1.VirtualMachineB
 	// when we delete VM Backup and its backup target is not same as current backup target,
 	// VolumeSnapshot and VolumeSnapshotContent may not be deleted immediately.
 	// We should force delete them to avoid that users re-config backup target back and associated LH Backup may be deleted.
-	if !util.IsBackupTargetSame(vmBackup.Status.BackupTarget, target) {
+	if !backuputil.IsBackupTargetSame(vmBackup.Status.BackupTarget, target) {
 		if err := h.forceDeleteVolumeSnapshotAndContent(vmBackup.Namespace, vmBackup.Status.VolumeBackups); err != nil {
 			return nil, err
 		}
@@ -612,12 +613,20 @@ func (h *Handler) reconcileVolumeSnapshots(vmBackup *harvesterv1.VirtualMachineB
 			}
 		}
 
+		shouldSkip, err := h.shouldSkipVolumeSnapshotUpdate(vmBackup, volumeBackup)
+		if err != nil {
+			return err
+		}
+
+		if shouldSkip {
+			continue
+		}
+
 		if volumeSnapshot.Status != nil {
 			vmBackupCpy.Status.VolumeBackups[i].ReadyToUse = volumeSnapshot.Status.ReadyToUse
 			vmBackupCpy.Status.VolumeBackups[i].CreationTime = volumeSnapshot.Status.CreationTime
 			vmBackupCpy.Status.VolumeBackups[i].Error = translateError(volumeSnapshot.Status.Error)
 		}
-
 	}
 
 	if !reflect.DeepEqual(vmBackup.Status, vmBackupCpy.Status) {
@@ -811,11 +820,11 @@ func (h *Handler) deleteVMBackupMetadata(vmBackup *harvesterv1.VirtualMachineBac
 		return nil
 	}
 
-	if !util.IsBackupTargetSame(vmBackup.Status.BackupTarget, target) {
+	if !backuputil.IsBackupTargetSame(vmBackup.Status.BackupTarget, target) {
 		return nil
 	}
 
-	bsDriver, err := util.GetBackupStoreDriver(h.secretCache, target)
+	bsDriver, err := backuputil.GetBackupStoreDriver(h.secretCache, target)
 	if err != nil {
 		return err
 	}
@@ -846,11 +855,11 @@ func (h *Handler) uploadVMBackupMetadata(vmBackup *harvesterv1.VirtualMachineBac
 		return nil
 	}
 
-	if !util.IsBackupTargetSame(vmBackup.Status.BackupTarget, target) {
+	if !backuputil.IsBackupTargetSame(vmBackup.Status.BackupTarget, target) {
 		return nil
 	}
 
-	bsDriver, err := util.GetBackupStoreDriver(h.secretCache, target)
+	bsDriver, err := backuputil.GetBackupStoreDriver(h.secretCache, target)
 	if err != nil {
 		return err
 	}
@@ -1027,4 +1036,83 @@ func (h *Handler) configureCSIDriverVolumeSnapshotClassNames(vmBackup *harvester
 		return nil, err
 	}
 	return h.vmBackups.Update(vmBackupCpy)
+}
+
+// shouldSkipVolumeSnapshotUpdate checks if the Longhorn backup is ready and if the volume is in the backup target.
+// The check is needed when a VMBackup changes from ready to non-ready state.
+// We would like to avoid the controller change the VMBackup to ready again blindly,
+// because related volume snapshot status doesn't really reflect backup state.
+func (h *Handler) shouldSkipVolumeSnapshotUpdate(vmBackup *harvesterv1.VirtualMachineBackup, volumeBackup harvesterv1.VolumeBackup) (bool, error) {
+	isChangedBackToNonReady := false
+	for _, condition := range vmBackup.Status.Conditions {
+		if condition.Type == harvesterv1.BackupConditionReady && condition.Message == changeToNonReadyMessage {
+			isChangedBackToNonReady = true
+			break
+		}
+	}
+
+	if volumeBackup.LonghornBackupName == nil || !isChangedBackToNonReady {
+		return false, nil
+	}
+
+	conditionMsg, err := checkLHBackup(h.lhbackupCache, *volumeBackup.LonghornBackupName)
+	if apierrors.IsNotFound(err) {
+		// Don't return not found error here, because it changes the VMBackup status message and there will not have "Change back to non-ready" message.
+		// In the next reconcile, the shouldSkipVolumeSnapshotUpdate will return false, so the volume backup will get updated from VolumeSnapshot.
+		return true, nil
+	}
+
+	if err != nil {
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"name":           vmBackup.Name,
+			"namespace":      vmBackup.Namespace,
+			"volumeBackup":   *volumeBackup.Name,
+			"longhornBackup": *volumeBackup.LonghornBackupName,
+		}).Warn("cannot check longhorn backup")
+		return true, err
+	}
+
+	if conditionMsg != "" {
+		logrus.WithFields(logrus.Fields{
+			"name":           vmBackup.Name,
+			"namespace":      vmBackup.Namespace,
+			"volumeBackup":   *volumeBackup.Name,
+			"longhornBackup": *volumeBackup.LonghornBackupName,
+			logrus.ErrorKey:  conditionMsg,
+		}).Infof("longhorn backup is not ready")
+		return true, nil
+	}
+
+	backupTargetValue := settings.BackupTargetSet.Get()
+	target, err := settings.DecodeBackupTarget(backupTargetValue)
+	if err != nil {
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"name":      vmBackup.Name,
+			"namespace": vmBackup.Namespace,
+		}).Warnf("failed to decode backup target %s", backupTargetValue)
+		return true, err
+	}
+
+	conditionMsg, err = checkVolumeInBackupTarget(vmBackup, &volumeBackup, target)
+	if err != nil {
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"name":           vmBackup.Name,
+			"namespace":      vmBackup.Namespace,
+			"volumeBackup":   *volumeBackup.Name,
+			"longhornBackup": *volumeBackup.LonghornBackupName,
+		}).Warnf("failed to check volume in backup target")
+		return true, err
+	}
+
+	if conditionMsg != "" {
+		logrus.WithFields(logrus.Fields{
+			"name":           vmBackup.Name,
+			"namespace":      vmBackup.Namespace,
+			"volumeBackup":   *volumeBackup.Name,
+			"longhornBackup": *volumeBackup.LonghornBackupName,
+			logrus.ErrorKey:  conditionMsg,
+		}).Infof("volume is not in backup target")
+		return true, nil
+	}
+	return false, nil
 }

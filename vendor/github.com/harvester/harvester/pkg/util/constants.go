@@ -27,11 +27,14 @@ const (
 	LabelSVMBackupUID                   = prefix + "/svmbackupUID"
 	LabelSVMBackupTimestamp             = prefix + "/svmbackupTimestamp"
 	LabelVMCreator                      = prefix + "/creator"
+	LabelVMimported                     = "migration.harvesterhci.io/imported"
 	LabelNodeNameKey                    = "kubevirt.io/nodeName"
 	AnnotationStorageClassName          = prefix + "/storageClassName"
 	AnnotationStorageProvisioner        = prefix + "/storageProvisioner"
 	AnnotationIsDefaultStorageClassName = "storageclass.kubernetes.io/is-default-class"
 	AnnotationLastRefreshTime           = prefix + "/lastRefreshTime"
+	AnnotationMacAddressName            = prefix + "/mac-address"
+	AnnotationEnableCPUAndMemoryHotplug = prefix + "/enableCPUAndMemoryHotplug"
 
 	AnnotationSkipRancherLoggingAddonWebhookCheck = prefix + "/skipRancherLoggingAddonWebhookCheck"
 
@@ -88,6 +91,7 @@ const (
 	RancherMonitoringAlertmanager       = "rancher-monitoring-alertmanager"
 	RancherMonitoring                   = "rancher-monitoring"
 	RancherMonitoringGrafana            = "rancher-monitoring-grafana"
+	RancherClusterConfigSecretName      = "rancher-cluster-config"
 	CattleLoggingSystemNamespaceName    = "cattle-logging-system"
 	HarvesterUpgradeImageRepository     = "rancher/harvester-upgrade"
 	GrafanaPVCName                      = "rancher-monitoring-grafana"
@@ -97,6 +101,7 @@ const (
 	// kubevirt create a CRD object automatically: type kubevirt, name kubevirt, namespace: harvester-system
 	// this object stores all kubevirt related configuration
 	KubeVirtObjectName = "kubevirt"
+	CDIObjectName      = "cdi"
 
 	HTTPProxyEnv  = "HTTP_PROXY"
 	HTTPSProxyEnv = "HTTPS_PROXY"
@@ -215,4 +220,20 @@ const (
 	HarvesterManagedChart            = "harvester"
 	RancherLoggingCRDManagedChart    = "rancher-logging-crd"
 	RancherMonitoringCRDManagedChart = "rancher-monitoring-crd"
+
+	RestoreVMConfigMap = "restore-vm"
+
+	HarvesterNodeRoleLabelPrefix = "node-role.harvesterhci.io/"
+	HarvesterWitnessNodeLabelKey = HarvesterNodeRoleLabelPrefix + "witness"
+	HarvesterMgmtNodeLabelKey    = HarvesterNodeRoleLabelPrefix + "management"
+	HarvesterWorkerNodeLabelKey  = HarvesterNodeRoleLabelPrefix + "worker"
+
+	// CDI storage class annotations
+	AnnotationCDIPrefix                           = "cdi.harvesterhci.io"
+	AnnotationCDIFSOverhead                       = AnnotationCDIPrefix + "/filesystemOverhead"
+	AnnotationStorageProfileCloneStrategy         = AnnotationCDIPrefix + "/storageProfileCloneStrategy"
+	AnnotationStorageProfileSnapshotClass         = AnnotationCDIPrefix + "/storageProfileVolumeSnapshotClass"
+	AnnotationStorageProfileVolumeModeAccessModes = AnnotationCDIPrefix + "/storageProfileVolumeModeAccessModes"
+	FSOverheadRegex                               = `^(0(?:\.\d{1,3})?|1)$`
+	PVCExpandErrorPrefix                          = "PVC_EXPAND"
 )
