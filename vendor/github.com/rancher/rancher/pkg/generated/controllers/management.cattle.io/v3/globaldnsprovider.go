@@ -23,17 +23,17 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/generic"
 )
 
-// PreferenceController interface for managing Preference resources.
-type PreferenceController interface {
-	generic.ControllerInterface[*v3.Preference, *v3.PreferenceList]
+// GlobalDnsProviderController interface for managing GlobalDnsProvider resources.
+type GlobalDnsProviderController interface {
+	generic.ControllerInterface[*v3.GlobalDnsProvider, *v3.GlobalDnsProviderList]
 }
 
-// PreferenceClient interface for managing Preference resources in Kubernetes.
-type PreferenceClient interface {
-	generic.ClientInterface[*v3.Preference, *v3.PreferenceList]
+// GlobalDnsProviderClient interface for managing GlobalDnsProvider resources in Kubernetes.
+type GlobalDnsProviderClient interface {
+	generic.ClientInterface[*v3.GlobalDnsProvider, *v3.GlobalDnsProviderList]
 }
 
-// PreferenceCache interface for retrieving Preference resources in memory.
-type PreferenceCache interface {
-	generic.CacheInterface[*v3.Preference]
+// GlobalDnsProviderCache interface for retrieving GlobalDnsProvider resources in memory.
+type GlobalDnsProviderCache interface {
+	generic.CacheInterface[*v3.GlobalDnsProvider]
 }

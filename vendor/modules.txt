@@ -649,8 +649,8 @@ github.com/rancher/norman/types/convert
 github.com/rancher/norman/types/definition
 github.com/rancher/norman/types/slice
 github.com/rancher/norman/types/values
-# github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d => github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d
-## explicit; go 1.22.0
+# github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d => github.com/rancher/rancher v0.0.0-20250827213702-1daa918b630b
+## explicit; go 1.23.0
 github.com/rancher/rancher/pkg/generated/controllers/catalog.cattle.io
 github.com/rancher/rancher/pkg/generated/controllers/catalog.cattle.io/v1
 github.com/rancher/rancher/pkg/generated/controllers/fleet.cattle.io
@@ -663,8 +663,8 @@ github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io
 github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1
 github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3
 github.com/rancher/rancher/pkg/project
-# github.com/rancher/rancher/pkg/apis v0.0.0 => github.com/rancher/rancher/pkg/apis v0.0.0-20240919204204-3da2ae0cabd1
-## explicit; go 1.22.0
+# github.com/rancher/rancher/pkg/apis v0.0.0 => github.com/rancher/rancher/pkg/apis v0.0.0-20250827213702-1daa918b630b
+## explicit; go 1.23.0
 github.com/rancher/rancher/pkg/apis/catalog.cattle.io
 github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1
 github.com/rancher/rancher/pkg/apis/management.cattle.io
@@ -2200,8 +2200,8 @@ sigs.k8s.io/yaml/goyaml.v2
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20250106104058-89709a455e2a
 # github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring => github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.68.0
 # github.com/rancher/lasso => github.com/rancher/lasso v0.0.0-20241202185148-04649f379358
-# github.com/rancher/rancher => github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d
-# github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20240919204204-3da2ae0cabd1
+# github.com/rancher/rancher => github.com/rancher/rancher v0.0.0-20250827213702-1daa918b630b
+# github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20250827213702-1daa918b630b
 # github.com/rancher/steve => github.com/rancher/steve v0.6.17
 # go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0
 # k8s.io/api => k8s.io/api v0.32.5

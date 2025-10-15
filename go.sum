@@ -408,10 +408,10 @@ github.com/rancher/lasso v0.0.0-20241202185148-04649f379358 h1:pJwgJXPt4fi0ysXsJ
 github.com/rancher/lasso v0.0.0-20241202185148-04649f379358/go.mod h1:IxgTBO55lziYhTEETyVKiT8/B5Rg92qYiRmcIIYoPgI=
 github.com/rancher/norman v0.7.0 h1:duBZxekBj13k/2RTyWKZgV/ntXkIXm0sRKqwFO8ui+I=
 github.com/rancher/norman v0.7.0/go.mod h1:IOQn3CNCms6UK72QHujesLKedqZh4+SP8/FDEFc+7Ns=
-github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d h1:lF/PobfIj+0heLOOZhS3j46tiHKJTOddf6VIKOXOOc8=
-github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d/go.mod h1:iwW9bODi2UHH4Ugn7mV0KXMA5IPadejiz3Szl+zRJQg=
-github.com/rancher/rancher/pkg/apis v0.0.0-20240919204204-3da2ae0cabd1 h1:2WvEEhTGpeuDQDfbeC0pHZBGrDJpo7kHmp8udxgIwDc=
-github.com/rancher/rancher/pkg/apis v0.0.0-20240919204204-3da2ae0cabd1/go.mod h1:npd+q1ySuNMlQ8B1+2Pt917wNDytCJKkNZQG+QcevuI=
+github.com/rancher/rancher v0.0.0-20250827213702-1daa918b630b h1:Arz35p/Ka5DNY7rETuJBwYC2A+mXtP0m26nRPDpdJuc=
+github.com/rancher/rancher v0.0.0-20250827213702-1daa918b630b/go.mod h1:Z3lGg1SHhn/h2zo6WXzw5uXT9j8FZx4pg5ZtKmXDXG0=
+github.com/rancher/rancher/pkg/apis v0.0.0-20250827213702-1daa918b630b h1:YiC+WlyyaJdUd1V56g6P1wM3hxAeeI66OVnCvBf6IAY=
+github.com/rancher/rancher/pkg/apis v0.0.0-20250827213702-1daa918b630b/go.mod h1:v9Y9Oe4buQqWXVNkl9EFsFKX4JUm18ytSl3LaxlSjkA=
 github.com/rancher/remotedialer v0.5.0 h1:4H1o9ZBdA1nboaMPBvy03EQlFWXXzwcdMAXLmafop54=
 github.com/rancher/remotedialer v0.5.0/go.mod h1:hpx8oaoxXyy8yHMWH5Iv8GcdVlYEYYzgVNjeXZrhv8E=
 github.com/rancher/rke v1.8.0-rc.4 h1:jowVyaF3LsJonC7vNsAwWf3MONHAtEFUD/j3UzNSE5U=
