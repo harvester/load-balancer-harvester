@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	harvesterv1 "github.com/harvester/harvester/pkg/apis/harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester/pkg/config"
@@ -32,11 +33,13 @@ import (
 	ctllonghornv1 "github.com/harvester/harvester/pkg/generated/controllers/longhorn.io/v1beta2"
 	"github.com/harvester/harvester/pkg/settings"
 	"github.com/harvester/harvester/pkg/util"
+	backuputil "github.com/harvester/harvester/pkg/util/backup"
 )
 
 const (
 	vmBackupMetadataFolderPath   = "harvester/vmbackups/"
 	backupMetadataControllerName = "harvester-backup-metadata-controller"
+	changeToNonReadyMessage      = "Change back to non-ready"
 )
 
 type VirtualMachineImageMetadata struct {
@@ -152,6 +155,12 @@ func (h *MetadataHandler) OnBackupTargetChange(_ string, setting *harvesterv1.Se
 		return nil, nil
 	}
 
+	contextLogger.Info("check existing vm backup...")
+	if err = h.checkExistingVMBackup(target); err != nil {
+		contextLogger.WithError(err).Errorf("can't check existing vm backup")
+		h.settings.EnqueueAfter(setting.Name, 5*time.Second)
+		return nil, nil
+	}
 	return h.renewBackupTarget(setting)
 }
 
@@ -170,7 +179,13 @@ func (h *MetadataHandler) shouldRefresh(setting *harvesterv1.Setting, refreshInt
 			return true
 		}
 	}
-	if getBackupTargetHash(setting.Value) == setting.Annotations[util.AnnotationHash] {
+	targetHash, err := getBackupTargetHash(setting.Value)
+	if err != nil {
+		// giving another try, because the only error here comes from io.Copy
+		logrus.WithError(err).Errorf("failed to get backup target hash")
+		return true
+	}
+	if targetHash == setting.Annotations[util.AnnotationHash] {
 		if refreshIntervalInSeconds == 0 {
 			return false
 		}
@@ -203,7 +218,12 @@ func (h *MetadataHandler) renewBackupTarget(setting *harvesterv1.Setting) (*harv
 		settingCopy.Annotations = map[string]string{}
 	}
 
-	settingCopy.Annotations[util.AnnotationHash] = getBackupTargetHash(setting.Value)
+	targetHash, err := getBackupTargetHash(setting.Value)
+	if err != nil {
+		logrus.WithError(err).Errorf("failed to get backup target hash")
+		return setting, err
+	}
+	settingCopy.Annotations[util.AnnotationHash] = targetHash
 	settingCopy.Annotations[util.AnnotationLastRefreshTime] = time.Now().Format(time.RFC3339)
 	if !reflect.DeepEqual(setting, settingCopy) {
 		return h.settings.Update(settingCopy)
@@ -213,23 +233,23 @@ func (h *MetadataHandler) renewBackupTarget(setting *harvesterv1.Setting) (*harv
 }
 
 func (h *MetadataHandler) syncVMImage(target *settings.BackupTarget) error {
-	bsDriver, err := util.GetBackupStoreDriver(h.secretCache, target)
+	bsDriver, err := backuputil.GetBackupStoreDriver(h.secretCache, target)
 	if err != nil {
 		return err
 	}
 
-	namespaceFolders, err := bsDriver.List(filepath.Join(util.VMImageMetadataFolderPath))
+	namespaceFolders, err := bsDriver.List(filepath.Join(backuputil.VMImageMetadataFolderPath))
 	if err != nil {
 		return err
 	}
 
 	for _, namespaceFolder := range namespaceFolders {
-		fileNames, err := bsDriver.List(filepath.Join(util.VMImageMetadataFolderPath, namespaceFolder))
+		fileNames, err := bsDriver.List(filepath.Join(backuputil.VMImageMetadataFolderPath, namespaceFolder))
 		if err != nil {
 			return err
 		}
 		for _, fileName := range fileNames {
-			imageMetadata, err := loadVMImageMetadataInBackupTarget(filepath.Join(util.VMImageMetadataFolderPath, namespaceFolder, fileName), bsDriver)
+			imageMetadata, err := loadVMImageMetadataInBackupTarget(filepath.Join(backuputil.VMImageMetadataFolderPath, namespaceFolder, fileName), bsDriver)
 			if err != nil {
 				return err
 			}
@@ -345,7 +365,7 @@ func (h *MetadataHandler) createVMImageIfNotExist(imageMetadata VirtualMachineIm
 }
 
 func (h *MetadataHandler) syncVMBackup(target *settings.BackupTarget) error {
-	bsDriver, err := util.GetBackupStoreDriver(h.secretCache, target)
+	bsDriver, err := backuputil.GetBackupStoreDriver(h.secretCache, target)
 	if err != nil {
 		return err
 	}
@@ -513,7 +533,7 @@ func (h *MetadataHandler) checkDependentLonghornBackupExist(target *settings.Bac
 
 		volumeName := vb.PersistentVolumeClaim.Spec.VolumeName
 		// check whether data is in the backup target
-		volumes, err := backupstore.List(volumeName, util.ConstructEndpoint(target), false)
+		volumes, err := backupstore.List(volumeName, backuputil.ConstructEndpoint(target), false)
 		if err != nil || volumes[volumeName] == nil {
 			logrus.WithError(err).WithFields(logrus.Fields{
 				"namespace": backupMetadata.Namespace,
@@ -615,4 +635,108 @@ func loadBackupMetadataInBackupTarget(filePath string, bsDriver backupstore.Back
 		return nil, err
 	}
 	return backupMetadata, nil
+}
+
+func (h *MetadataHandler) checkExistingVMBackup(target *settings.BackupTarget) error {
+	vmBackups, err := h.vmBackupCache.List("", labels.NewSelector())
+	if err != nil {
+		return err
+	}
+
+	return h.checkReadyVMBackup(vmBackups, target)
+}
+
+func (h *MetadataHandler) checkReadyVMBackup(vmBackups []*harvesterv1.VirtualMachineBackup, target *settings.BackupTarget) error {
+	for _, vmBackup := range vmBackups {
+		if vmBackup.Spec.Type == harvesterv1.Snapshot || vmBackup.Status.ReadyToUse == nil || !*vmBackup.Status.ReadyToUse {
+			continue
+		}
+
+		vmBackupCopy := vmBackup.DeepCopy()
+		status := vmBackupCopy.Status
+		volBackups := status.VolumeBackups
+		vmBackupIsHealthy := true
+		message := ""
+		for _, volumeBackup := range volBackups {
+			conditionMsg, err := h.checkReadyVMBackupVolume(vmBackup, &volumeBackup, target)
+			if err != nil {
+				return err
+			}
+			if conditionMsg != "" {
+				vmBackupIsHealthy = false
+				message = conditionMsg
+			}
+		}
+
+		if !vmBackupIsHealthy {
+			logrus.WithFields(logrus.Fields{
+				"namespace": vmBackup.Namespace,
+				"name":      vmBackup.Name,
+			}).Warn("VMBackup is not healthy, change the VMBackup to not ready")
+			status.ReadyToUse = ptr.To(false)
+			updateBackupCondition(vmBackupCopy, newReadyCondition(corev1.ConditionFalse, message, changeToNonReadyMessage))
+			if _, err := h.vmBackups.Update(vmBackupCopy); err != nil {
+				logrus.WithError(err).WithFields(logrus.Fields{
+					"namespace": vmBackup.Namespace,
+					"name":      vmBackup.Name,
+				}).Error("cannot update VMBackup status")
+			}
+		}
+	}
+	return nil
+}
+
+// checkReadyVMBackupVolume checks a single volumeBackup and updates its ReadyToUse field if needed.
+// Returns (healthy, message) for this volume.
+func (h *MetadataHandler) checkReadyVMBackupVolume(vmBackup *harvesterv1.VirtualMachineBackup, volumeBackup *harvesterv1.VolumeBackup, target *settings.BackupTarget) (string, error) {
+	if conditionMsg, err := h.checkVolumeStorageClass(vmBackup, volumeBackup); conditionMsg != "" || err != nil {
+		return conditionMsg, err
+	}
+	if volumeBackup.LonghornBackupName == nil {
+		return "", nil
+	}
+	if conditionMsg, err := checkVolumeInBackupTarget(vmBackup, volumeBackup, target); conditionMsg != "" || err != nil {
+		return conditionMsg, err
+	}
+	if conditionMsg, err := h.checkLonghornBackupReady(vmBackup, volumeBackup); conditionMsg != "" || err != nil {
+		return conditionMsg, err
+	}
+	return "", nil
+}
+
+func (h *MetadataHandler) checkVolumeStorageClass(vmBackup *harvesterv1.VirtualMachineBackup, volumeBackup *harvesterv1.VolumeBackup) (string, error) {
+	storageClassName := volumeBackup.PersistentVolumeClaim.Spec.StorageClassName
+	if storageClassName == nil {
+		return "", nil
+	}
+	if err := checkStorageClass(h.storageClassCache, *storageClassName); err != nil {
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"namespace":     vmBackup.Namespace,
+			"name":          vmBackup.Name,
+			"storageClasss": *storageClassName,
+		}).Warn("cannot find storage class for a ready VMBackup, change the VMBackup to not ready")
+		volumeBackup.ReadyToUse = ptr.To(false)
+		return fmt.Sprintf("cannot find storage class %s", *storageClassName), err
+	}
+	return "", nil
+}
+
+func (h *MetadataHandler) checkLonghornBackupReady(vmBackup *harvesterv1.VirtualMachineBackup, volumeBackup *harvesterv1.VolumeBackup) (string, error) {
+	conditionMsg, err := checkLHBackup(h.longhornBackupCache, *volumeBackup.LonghornBackupName)
+	if err != nil {
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"namespace":      vmBackup.Namespace,
+			"name":           vmBackup.Name,
+			"volumeBackup":   volumeBackup.Name,
+			"longhornBackup": *volumeBackup.LonghornBackupName,
+		}).Warn("longhorn backup is not ready, change the VMBackup to not ready")
+		volumeBackup.ReadyToUse = ptr.To(false)
+		return fmt.Sprintf("longhorn backup %s is not ready", *volumeBackup.LonghornBackupName), err
+	}
+
+	if conditionMsg != "" {
+		volumeBackup.ReadyToUse = ptr.To(false)
+		return conditionMsg, nil
+	}
+	return "", nil
 }

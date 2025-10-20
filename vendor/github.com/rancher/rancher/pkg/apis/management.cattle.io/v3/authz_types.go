@@ -21,6 +21,8 @@ var (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:printcolumn:name="BACKINGNAMESPACE",type="string",JSONPath=".status.backingNamespace"
+// +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Project is a group of namespaces.
 // Projects are used to create a multi-tenant environment within a Kubernetes cluster by managing namespace operations,
@@ -46,11 +48,23 @@ func (p *Project) ObjClusterName() string {
 	return p.Spec.ObjClusterName()
 }
 
+// GetProjectBackingNamespace returns the namespace a project uses in the local cluster to store PRTBs and Project Scoped Secrets.
+func (p *Project) GetProjectBackingNamespace() string {
+	if p.Status.BackingNamespace != "" {
+		return p.Status.BackingNamespace
+	}
+	return p.Name
+}
+
 // ProjectStatus represents the most recently observed status of the project.
 type ProjectStatus struct {
 	// Conditions are a set of indicators about aspects of the project.
 	// +optional
 	Conditions []ProjectCondition `json:"conditions,omitempty"`
+
+	// BackingNamespace is the name of the namespace that contains resources associated with the project.
+	// +optional
+	BackingNamespace string `json:"backingNamespace,omitempty"`
 }
 
 // ProjectCondition is the status of an aspect of the project.

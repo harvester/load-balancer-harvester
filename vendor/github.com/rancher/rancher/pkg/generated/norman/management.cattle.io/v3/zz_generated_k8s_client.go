@@ -49,6 +49,8 @@ type Interface interface {
 	ClusterCatalogsGetter
 	MultiClusterAppsGetter
 	MultiClusterAppRevisionsGetter
+	GlobalDnsesGetter
+	GlobalDnsProvidersGetter
 	KontainerDriversGetter
 	EtcdBackupsGetter
 	CloudCredentialsGetter
@@ -621,6 +623,34 @@ func (c *Client) MultiClusterAppRevisions(namespace string) MultiClusterAppRevis
 	sharedClient := c.clientFactory.ForResourceKind(MultiClusterAppRevisionGroupVersionResource, MultiClusterAppRevisionGroupVersionKind.Kind, true)
 	objectClient := objectclient.NewObjectClient(namespace, sharedClient, &MultiClusterAppRevisionResource, MultiClusterAppRevisionGroupVersionKind, multiClusterAppRevisionFactory{})
 	return &multiClusterAppRevisionClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type GlobalDnsesGetter interface {
+	GlobalDnses(namespace string) GlobalDnsInterface
+}
+
+func (c *Client) GlobalDnses(namespace string) GlobalDnsInterface {
+	sharedClient := c.clientFactory.ForResourceKind(GlobalDnsGroupVersionResource, GlobalDnsGroupVersionKind.Kind, true)
+	objectClient := objectclient.NewObjectClient(namespace, sharedClient, &GlobalDnsResource, GlobalDnsGroupVersionKind, globalDnsFactory{})
+	return &globalDnsClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type GlobalDnsProvidersGetter interface {
+	GlobalDnsProviders(namespace string) GlobalDnsProviderInterface
+}
+
+func (c *Client) GlobalDnsProviders(namespace string) GlobalDnsProviderInterface {
+	sharedClient := c.clientFactory.ForResourceKind(GlobalDnsProviderGroupVersionResource, GlobalDnsProviderGroupVersionKind.Kind, true)
+	objectClient := objectclient.NewObjectClient(namespace, sharedClient, &GlobalDnsProviderResource, GlobalDnsProviderGroupVersionKind, globalDnsProviderFactory{})
+	return &globalDnsProviderClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,

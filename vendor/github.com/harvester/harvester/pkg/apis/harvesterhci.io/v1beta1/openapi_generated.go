@@ -46,12 +46,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.LinkMonitorStatus":                     schema_pkg_apis_networkharvesterhciio_v1beta1_LinkMonitorStatus(ref),
 		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.LinkStatus":                            schema_pkg_apis_networkharvesterhciio_v1beta1_LinkStatus(ref),
 		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.LocalArea":                             schema_pkg_apis_networkharvesterhciio_v1beta1_LocalArea(ref),
-		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NetworkInterface":                      schema_pkg_apis_networkharvesterhciio_v1beta1_NetworkInterface(ref),
-		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetwork":                           schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetwork(ref),
-		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkLinkStatus":                 schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkLinkStatus(ref),
-		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkList":                       schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkList(ref),
-		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkSpec":                       schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkSpec(ref),
-		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkStatus":                     schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkStatus(ref),
 		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.TargetLinkRule":                        schema_pkg_apis_networkharvesterhciio_v1beta1_TargetLinkRule(ref),
 		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.Uplink":                                schema_pkg_apis_networkharvesterhciio_v1beta1_Uplink(ref),
 		"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.VlStatus":                              schema_pkg_apis_networkharvesterhciio_v1beta1_VlStatus(ref),
@@ -560,6 +554,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"kubevirt.io/api/core/v1.ConfigMapVolumeSource":                                              schema_kubevirtio_api_core_v1_ConfigMapVolumeSource(ref),
 		"kubevirt.io/api/core/v1.ContainerDiskInfo":                                                  schema_kubevirtio_api_core_v1_ContainerDiskInfo(ref),
 		"kubevirt.io/api/core/v1.ContainerDiskSource":                                                schema_kubevirtio_api_core_v1_ContainerDiskSource(ref),
+		"kubevirt.io/api/core/v1.ControllerRevisionRef":                                              schema_kubevirtio_api_core_v1_ControllerRevisionRef(ref),
 		"kubevirt.io/api/core/v1.CustomBlockSize":                                                    schema_kubevirtio_api_core_v1_CustomBlockSize(ref),
 		"kubevirt.io/api/core/v1.CustomProfile":                                                      schema_kubevirtio_api_core_v1_CustomProfile(ref),
 		"kubevirt.io/api/core/v1.CustomizeComponents":                                                schema_kubevirtio_api_core_v1_CustomizeComponents(ref),
@@ -578,6 +573,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"kubevirt.io/api/core/v1.DisableSerialConsoleLog":                                            schema_kubevirtio_api_core_v1_DisableSerialConsoleLog(ref),
 		"kubevirt.io/api/core/v1.Disk":                                                               schema_kubevirtio_api_core_v1_Disk(ref),
 		"kubevirt.io/api/core/v1.DiskDevice":                                                         schema_kubevirtio_api_core_v1_DiskDevice(ref),
+		"kubevirt.io/api/core/v1.DiskIOThreads":                                                      schema_kubevirtio_api_core_v1_DiskIOThreads(ref),
 		"kubevirt.io/api/core/v1.DiskTarget":                                                         schema_kubevirtio_api_core_v1_DiskTarget(ref),
 		"kubevirt.io/api/core/v1.DiskVerification":                                                   schema_kubevirtio_api_core_v1_DiskVerification(ref),
 		"kubevirt.io/api/core/v1.DomainMemoryDumpInfo":                                               schema_kubevirtio_api_core_v1_DomainMemoryDumpInfo(ref),
@@ -618,6 +614,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"kubevirt.io/api/core/v1.Input":                                                              schema_kubevirtio_api_core_v1_Input(ref),
 		"kubevirt.io/api/core/v1.InstancetypeConfiguration":                                          schema_kubevirtio_api_core_v1_InstancetypeConfiguration(ref),
 		"kubevirt.io/api/core/v1.InstancetypeMatcher":                                                schema_kubevirtio_api_core_v1_InstancetypeMatcher(ref),
+		"kubevirt.io/api/core/v1.InstancetypeStatusRef":                                              schema_kubevirtio_api_core_v1_InstancetypeStatusRef(ref),
 		"kubevirt.io/api/core/v1.Interface":                                                          schema_kubevirtio_api_core_v1_Interface(ref),
 		"kubevirt.io/api/core/v1.InterfaceBindingMethod":                                             schema_kubevirtio_api_core_v1_InterfaceBindingMethod(ref),
 		"kubevirt.io/api/core/v1.InterfaceBindingMigration":                                          schema_kubevirtio_api_core_v1_InterfaceBindingMigration(ref),
@@ -859,7 +856,8 @@ func schema_pkg_apis_networkharvesterhciio_v1beta1_BondOptions(ref common.Refere
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "reference: https://www.kernel.org/doc/Documentation/networking/bonding.txt",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"mode": {
 						SchemaProps: spec.SchemaProps{
@@ -1340,363 +1338,6 @@ func schema_pkg_apis_networkharvesterhciio_v1beta1_LocalArea(ref common.Referenc
 				Required: []string{"vlanID"},
 			},
 		},
-	}
-}
-
-func schema_pkg_apis_networkharvesterhciio_v1beta1_NetworkInterface(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"index": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Index of the NIC",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"masterIndex": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Index of the NIC's master",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the NIC",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Interface type of the NIC",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"state": {
-						SchemaProps: spec.SchemaProps{
-							Description: "State of the NIC, up/down/unknown",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"usedByManagementNetwork": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Specify whether used by management network or not",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"usedByVlanNetwork": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Specify whether used by VLAN network or not",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"index", "name", "type", "state"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetwork(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkSpec"),
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkStatus"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkSpec", "github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetworkStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkLinkStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"index": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
-						},
-					},
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"mac": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"promiscuous": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
-					"state": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"ipv4Address": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"masterIndex": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
-						},
-					},
-					"routes": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"conditions": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.Condition"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.Condition"},
-	}
-}
-
-func schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "NodeNetworkList is a list of NodeNetwork resources",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetwork"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"metadata", "items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NodeNetwork", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"description": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"nodeName": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"nic": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"nodeName"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_networkharvesterhciio_v1beta1_NodeNetworkStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"networkIDs": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: 0,
-										Type:    []string{"integer"},
-										Format:  "int32",
-									},
-								},
-							},
-						},
-					},
-					"networkLinkStatus": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.LinkStatus"),
-									},
-								},
-							},
-						},
-					},
-					"nics": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NetworkInterface"),
-									},
-								},
-							},
-						},
-					},
-					"conditions": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.Condition"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.Condition", "github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.LinkStatus", "github.com/harvester/harvester-network-controller/pkg/apis/network.harvesterhci.io/v1beta1.NetworkInterface"},
 	}
 }
 
@@ -3425,6 +3066,41 @@ func schema_pkg_apis_harvesterhciio_v1beta1_SupportBundleSpec(ref common.Referen
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
+						},
+					},
+					"extraCollectionNamespaces": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"timeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Number of minutes Harvester allows for the completion of the support bundle generation process. Zero means no timeout.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"expiration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Number of minutes Harvester waits before deleting a support bundle that has been packaged but not downloaded (either deliberately or unsuccessfully) or retained.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"nodeTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Number of minutes Harvester allows for collection of logs and configurations (Harvester) on the nodes for the support bundle.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},
@@ -28059,6 +27735,25 @@ func schema_kubevirtio_api_core_v1_ContainerDiskSource(ref common.ReferenceCallb
 	}
 }
 
+func schema_kubevirtio_api_core_v1_ControllerRevisionRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the ControllerRevision",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kubevirtio_api_core_v1_CustomBlockSize(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -28286,7 +27981,7 @@ func schema_kubevirtio_api_core_v1_DataVolumeSource(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name of both the DataVolume and the PVC in the same namespace. After PVC population the DataVolume is garbage collected by default.",
+							Description: "Name of both the DataVolume and the PVC in the same namespace.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -28877,6 +28572,25 @@ func schema_kubevirtio_api_core_v1_DiskDevice(ref common.ReferenceCallback) comm
 	}
 }
 
+func schema_kubevirtio_api_core_v1_DiskIOThreads(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"supplementalPoolThreadCount": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SupplementalPoolThreadCount specifies how many iothreads are allocated for the supplementalPool policy.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kubevirtio_api_core_v1_DiskTarget(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -29035,6 +28749,12 @@ func schema_kubevirtio_api_core_v1_DomainSpec(ref common.ReferenceCallback) comm
 							Format:      "",
 						},
 					},
+					"ioThreads": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IOThreads specifies the IOThreads options.",
+							Ref:         ref("kubevirt.io/api/core/v1.DiskIOThreads"),
+						},
+					},
 					"chassis": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Chassis specifies the chassis info passed to the domain.",
@@ -29052,7 +28772,7 @@ func schema_kubevirtio_api_core_v1_DomainSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"kubevirt.io/api/core/v1.CPU", "kubevirt.io/api/core/v1.Chassis", "kubevirt.io/api/core/v1.Clock", "kubevirt.io/api/core/v1.Devices", "kubevirt.io/api/core/v1.Features", "kubevirt.io/api/core/v1.Firmware", "kubevirt.io/api/core/v1.LaunchSecurity", "kubevirt.io/api/core/v1.Machine", "kubevirt.io/api/core/v1.Memory", "kubevirt.io/api/core/v1.ResourceRequirements"},
+			"kubevirt.io/api/core/v1.CPU", "kubevirt.io/api/core/v1.Chassis", "kubevirt.io/api/core/v1.Clock", "kubevirt.io/api/core/v1.Devices", "kubevirt.io/api/core/v1.DiskIOThreads", "kubevirt.io/api/core/v1.Features", "kubevirt.io/api/core/v1.Firmware", "kubevirt.io/api/core/v1.LaunchSecurity", "kubevirt.io/api/core/v1.Machine", "kubevirt.io/api/core/v1.Memory", "kubevirt.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -30158,6 +29878,54 @@ func schema_kubevirtio_api_core_v1_InstancetypeMatcher(ref common.ReferenceCallb
 	}
 }
 
+func schema_kubevirtio_api_core_v1_InstancetypeStatusRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the name of resource",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind specifies the kind of resource",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"controllerRevisionRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ControllerRef specifies the ControllerRevision storing a copy of the object captured when it is first seen by the VirtualMachine controller",
+							Ref:         ref("kubevirt.io/api/core/v1.ControllerRevisionRef"),
+						},
+					},
+					"inferFromVolume": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InferFromVolume lists the name of a volume that should be used to infer or discover the resource",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"inferFromVolumeFailurePolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InferFromVolumeFailurePolicy controls what should happen on failure when inferring the resource",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"kubevirt.io/api/core/v1.ControllerRevisionRef"},
+	}
+}
+
 func schema_kubevirtio_api_core_v1_Interface(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -30275,7 +30043,7 @@ func schema_kubevirtio_api_core_v1_Interface(ref common.ReferenceCallback) commo
 					},
 					"state": {
 						SchemaProps: spec.SchemaProps{
-							Description: "State represents the requested operational state of the interface. The (only) value supported is `absent`, expressing a request to remove the interface.",
+							Description: "State represents the requested operational state of the interface. The supported values are: `absent`, expressing a request to remove the interface. `down`, expressing a request to set the link down. `up`, expressing a request to set the link up. Empty value functions as `up`.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -30946,7 +30714,7 @@ func schema_kubevirtio_api_core_v1_KubeVirtConfiguration(ref common.ReferenceCal
 					},
 					"vmStateStorageClass": {
 						SchemaProps: spec.SchemaProps{
-							Description: "VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM. The storage class must support RWX in filesystem mode.",
+							Description: "VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -30976,7 +30744,7 @@ func schema_kubevirtio_api_core_v1_KubeVirtConfiguration(ref common.ReferenceCal
 					},
 					"vmRolloutStrategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "VMRolloutStrategy defines how changes to a VM object propagate to its VMI",
+							Description: "VMRolloutStrategy defines how live-updatable fields, like CPU sockets, memory, tolerations, and affinity, are propagated from a VM to its VMI.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -31870,7 +31638,7 @@ func schema_kubevirtio_api_core_v1_MigrationConfiguration(ref common.ReferenceCa
 					},
 					"completionTimeoutPerGiB": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CompletionTimeoutPerGiB is the maximum number of seconds per GiB a migration is allowed to take. If a live-migration takes longer to migrate than this value multiplied by the size of the VMI, the migration will be cancelled, unless AllowPostCopy is true. Defaults to 150",
+							Description: "CompletionTimeoutPerGiB is the maximum number of seconds per GiB a migration is allowed to take. If the timeout is reached, the migration will be either paused, switched to post-copy or cancelled depending on other settings. Defaults to 150",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -31892,6 +31660,13 @@ func schema_kubevirtio_api_core_v1_MigrationConfiguration(ref common.ReferenceCa
 					"allowPostCopy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AllowPostCopy enables post-copy live migrations. Such migrations allow even the busiest VMIs to successfully live-migrate. However, events like a network failure can cause a VMI crash. If set to true, migrations will still start in pre-copy, but switch to post-copy when CompletionTimeoutPerGiB triggers. Defaults to false",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"allowWorkloadDisruption": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowWorkloadDisruption indicates that the migration shouldn't be canceled after acceptableCompletionTime is exceeded. Instead, if permitted, migration will be switched to post-copy or the VMI will be paused to allow the migration to complete",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -35460,6 +35235,13 @@ func schema_kubevirtio_api_core_v1_VirtualMachineInstanceNetworkInterface(ref co
 							Format:      "int32",
 						},
 					},
+					"linkState": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LinkState Reports the current operational link state`. values: up, down.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -36790,11 +36572,23 @@ func schema_kubevirtio_api_core_v1_VirtualMachineStatus(ref common.ReferenceCall
 							Ref:         ref("kubevirt.io/api/core/v1.VolumeUpdateState"),
 						},
 					},
+					"instancetypeRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InstancetypeRef captures the state of any referenced instance type from the VirtualMachine",
+							Ref:         ref("kubevirt.io/api/core/v1.InstancetypeStatusRef"),
+						},
+					},
+					"preferenceRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PreferenceRef captures the state of any referenced preference from the VirtualMachine",
+							Ref:         ref("kubevirt.io/api/core/v1.InstancetypeStatusRef"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"kubevirt.io/api/core/v1.VirtualMachineCondition", "kubevirt.io/api/core/v1.VirtualMachineMemoryDumpRequest", "kubevirt.io/api/core/v1.VirtualMachineStartFailure", "kubevirt.io/api/core/v1.VirtualMachineStateChangeRequest", "kubevirt.io/api/core/v1.VirtualMachineVolumeRequest", "kubevirt.io/api/core/v1.VolumeSnapshotStatus", "kubevirt.io/api/core/v1.VolumeUpdateState"},
+			"kubevirt.io/api/core/v1.InstancetypeStatusRef", "kubevirt.io/api/core/v1.VirtualMachineCondition", "kubevirt.io/api/core/v1.VirtualMachineMemoryDumpRequest", "kubevirt.io/api/core/v1.VirtualMachineStartFailure", "kubevirt.io/api/core/v1.VirtualMachineStateChangeRequest", "kubevirt.io/api/core/v1.VirtualMachineVolumeRequest", "kubevirt.io/api/core/v1.VolumeSnapshotStatus", "kubevirt.io/api/core/v1.VolumeUpdateState"},
 	}
 }
 

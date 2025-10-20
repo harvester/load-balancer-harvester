@@ -36,7 +36,7 @@ var (
 	SSLParameters                          = NewSetting(SSLParametersName, "{}")
 	SupportBundleImage                     = NewSetting(SupportBundleImageName, "{}")
 	SupportBundleNamespaces                = NewSetting(SupportBundleNamespacesSettingName, "")
-	SupportBundleTimeout                   = NewSetting(SupportBundleTimeoutSettingName, "10")                                                                  // Unit is minute. 0 means disable timeout.
+	SupportBundleTimeout                   = NewSetting(SupportBundleTimeoutSettingName, supportBundleUtil.SupportBundleTimeoutDefaultStr)                      // Unit is minute. 0 means disable timeout.
 	SupportBundleExpiration                = NewSetting(SupportBundleExpirationSettingName, supportBundleUtil.SupportBundleExpirationDefaultStr)                // Unit is minute.
 	SupportBundleNodeCollectionTimeout     = NewSetting(SupportBundleNodeCollectionTimeoutName, supportBundleUtil.SupportBundleNodeCollectionTimeoutDefaultStr) // Unit is minute.
 	DefaultStorageClass                    = NewSetting(DefaultStorageClassSettingName, "longhorn")
@@ -46,6 +46,7 @@ var (
 	VipPools                               = NewSetting(VipPoolsConfigSettingName, "")
 	AutoDiskProvisionPaths                 = NewSetting(AutoDiskProvisionPathsSettingName, "")
 	CSIDriverConfig                        = NewSetting(CSIDriverConfigSettingName, `{"driver.longhorn.io":{"volumeSnapshotClassName":"longhorn-snapshot","backupVolumeSnapshotClassName":"longhorn"}}`)
+	CSIOnlineExpandValidation              = NewSetting(CSIOnlineExpandValidationSettingName, `{"driver.longhorn.io":true}`)
 	ContainerdRegistry                     = NewSetting(ContainerdRegistrySettingName, "")
 	StorageNetwork                         = NewSetting(StorageNetworkName, "")
 	DefaultVMTerminationGracePeriodSeconds = NewSetting(DefaultVMTerminationGracePeriodSecondsSettingName, "120")
@@ -53,11 +54,14 @@ var (
 	KubeconfigTTL                          = NewSetting(KubeconfigDefaultTokenTTLMinutesSettingName, "0") // "0" is default value to ensure token does not expire
 	LonghornV2DataEngineEnabled            = NewSetting(LonghornV2DataEngineSettingName, "false")
 	AdditionalGuestMemoryOverheadRatio     = NewSetting(AdditionalGuestMemoryOverheadRatioName, AdditionalGuestMemoryOverheadRatioDefault)
+	RancherCluster                         = NewSetting(RancherClusterSettingName, "{}")
 	// HarvesterCSICCMVersion this is the chart version from https://github.com/harvester/charts instead of image versions
 	HarvesterCSICCMVersion = NewSetting(HarvesterCSICCMSettingName, `{"harvester-cloud-provider":">=0.0.1 <0.3.0","harvester-csi-provider":">=0.0.1 <0.3.0"}`)
 	NTPServers             = NewSetting(NTPServersSettingName, "")
 	WhiteListedSettings    = []string{ServerVersionSettingName, DefaultStorageClassSettingName, HarvesterCSICCMSettingName, DefaultVMTerminationGracePeriodSecondsSettingName}
 	UpgradeConfigSet       = NewSetting(UpgradeConfigSettingName, `{"imagePreloadOption":{"strategy":{"type":"sequential"}}, "restoreVM": false}`)
+	MaxHotplugRatio        = NewSetting(MaxHotplugRatioSettingName, "4")
+	VMMigrationNetwork     = NewSetting(VMMigrationNetworkSettingName, "")
 )
 
 const (
@@ -71,15 +75,16 @@ const (
 	SSLParametersName                                 = "ssl-parameters"
 	VipPoolsConfigSettingName                         = "vip-pools"
 	VolumeSnapshotClassSettingName                    = "volume-snapshot-class"
-	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/release-harvester-v1.5/index.html"
+	DefaultDashboardUIURL                             = "https://releases.rancher.com/harvester-ui/dashboard/latest/index.html"
 	SupportBundleImageName                            = "support-bundle-image"
 	CSIDriverConfigSettingName                        = "csi-driver-config"
+	CSIOnlineExpandValidationSettingName              = "csi-online-expand-validation"
 	UIIndexSettingName                                = "ui-index"
 	UIPathSettingName                                 = "ui-path"
 	UISourceSettingName                               = "ui-source"
 	UIPluginIndexSettingName                          = "ui-plugin-index"
 	UIPluginBundledVersionSettingName                 = "ui-plugin-bundled-version"
-	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-release-harvester-v1.5/harvester-release-harvester-v1.5.umd.min.js"
+	DefaultUIPluginURL                                = "https://releases.rancher.com/harvester-ui/plugin/harvester-latest/harvester-latest.umd.min.js"
 	ContainerdRegistrySettingName                     = "containerd-registry"
 	HarvesterCSICCMSettingName                        = "harvester-csi-ccm-versions"
 	StorageNetworkName                                = "storage-network"
@@ -103,6 +108,9 @@ const (
 	ReleaseDownloadURLSettingName                     = "release-download-url"
 	SupportBundleNamespacesSettingName                = "support-bundle-namespaces"
 	DefaultStorageClassSettingName                    = "default-storage-class"
+	MaxHotplugRatioSettingName                        = "max-hotplug-ratio"
+	VMMigrationNetworkSettingName                     = "vm-migration-network"
+	RancherClusterSettingName                         = "rancher-cluster"
 
 	// settings have `default` and `value` string used in many places, replace them with const
 	KeywordDefault = "default"
@@ -211,11 +219,11 @@ func NewSetting(name, def string) Setting {
 }
 
 func GetEnvKey(key string) string {
-	return "HARVESTER_" + strings.ToUpper(strings.Replace(key, "-", "_", -1))
+	return "HARVESTER_" + strings.ToUpper(strings.ReplaceAll(key, "-", "_"))
 }
 
 func GetEnvDefaultValueKey(key string) string {
-	return "HARVESTER_" + strings.ToUpper(strings.Replace(key, "-", "_", -1)) + "_DEFAULT_VALUE"
+	return "HARVESTER_" + strings.ToUpper(strings.ReplaceAll(key, "-", "_")) + "_DEFAULT_VALUE"
 }
 
 func IsRelease() bool {

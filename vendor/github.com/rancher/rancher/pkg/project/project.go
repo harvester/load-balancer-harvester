@@ -13,8 +13,8 @@ const (
 )
 
 const (
-	SystemImageVersionAnnotation = "field.cattle.io/systemImageVersion"
-	ProjectIDAnnotation          = "field.cattle.io/projectId"
+	SystemImageVersionAnn = "field.cattle.io/systemImageVersion"
+	ProjectIDAnn          = "field.cattle.io/projectId"
 )
 
 var (

@@ -203,7 +203,7 @@ func (m *mutator) findProject(namespace string) (string, error) {
 		return "", fmt.Errorf("get namespace %s failed, error: %w", namespace, err)
 	}
 
-	return strings.Replace(ns.Annotations[rancherproject.ProjectIDAnnotation], ":", "/", 1), nil
+	return strings.Replace(ns.Annotations[rancherproject.ProjectIDAnn], ":", "/", 1), nil
 }
 
 // Find the first network where the guest cluster is running
