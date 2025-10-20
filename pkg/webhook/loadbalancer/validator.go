@@ -121,9 +121,9 @@ func checkListeners(lb *lbv1.LoadBalancer) error {
 			return fmt.Errorf("listener port %v must >= 1", listener.Port)
 		}
 		if listener.BackendPort > maxPort {
-			return fmt.Errorf("listener backend port %v must <= %v", listener.Port, maxPort)
+			return fmt.Errorf("listener backend port %v must <= %v", listener.BackendPort, maxPort)
 		} else if listener.BackendPort < 1 {
-			return fmt.Errorf("listener backend port %v must >= 1", listener.Port)
+			return fmt.Errorf("listener backend port %v must >= 1", listener.BackendPort)
 		}
 	}
 

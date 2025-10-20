@@ -1,6 +1,7 @@
 package loadbalancer
 
 import (
+	"strings"
 	"testing"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
@@ -9,9 +10,10 @@ import (
 
 func TestCheckListeners(t *testing.T) {
 	tests := []struct {
-		name    string
-		lb      *lbv1.LoadBalancer
-		wantErr bool
+		name     string
+		lb       *lbv1.LoadBalancer
+		wantErr  bool
+		errorKey string
 	}{
 		{
 			name: "duplicate name",
@@ -54,48 +56,48 @@ func TestCheckListeners(t *testing.T) {
 			lb: &lbv1.LoadBalancer{
 				Spec: lbv1.LoadBalancerSpec{
 					Listeners: []lbv1.Listener{
-						{Name: "a", Port: -1},
-						{Name: "b", Port: 80},
+						{Name: "a", Port: -1, BackendPort: 80},
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:  true,
+			errorKey: "listener port",
 		},
 		{
 			name: "port > 65535",
 			lb: &lbv1.LoadBalancer{
 				Spec: lbv1.LoadBalancerSpec{
 					Listeners: []lbv1.Listener{
-						{Name: "a", Port: 80},
-						{Name: "b", Port: 8000},
+						{Name: "b", Port: 800000, BackendPort: 80},
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:  true,
+			errorKey: "listener port",
 		},
 		{
 			name: "backend port < 1",
 			lb: &lbv1.LoadBalancer{
 				Spec: lbv1.LoadBalancerSpec{
 					Listeners: []lbv1.Listener{
-						{Name: "a", BackendPort: 0},
-						{Name: "b", BackendPort: 80},
+						{Name: "a", Port: 80, BackendPort: 0},
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:  true,
+			errorKey: "backend port",
 		},
 		{
 			name: "backend port > 65535",
 			lb: &lbv1.LoadBalancer{
 				Spec: lbv1.LoadBalancerSpec{
 					Listeners: []lbv1.Listener{
-						{Name: "a", BackendPort: 65536},
-						{Name: "b", BackendPort: 80},
+						{Name: "a", Port: 80, BackendPort: 65536},
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:  true,
+			errorKey: "backend port",
 		},
 		{
 			name: "right case",
@@ -510,8 +512,12 @@ func TestCheckListeners(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if err := checkListeners(tt.lb); (err != nil) != tt.wantErr {
+		err := checkListeners(tt.lb)
+		if (err != nil) != tt.wantErr {
 			t.Errorf("%q. checkListeners() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		if tt.wantErr && tt.errorKey != "" && !strings.Contains(err.Error(), tt.errorKey) {
+			t.Errorf("%q, the return error %v does not include the keyword '%s'", tt.name, err, tt.errorKey)
 		}
 	}
 
