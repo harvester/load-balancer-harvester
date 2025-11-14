@@ -38,6 +38,7 @@ var (
 	errNoAvailableIP               = errors.New("no available IP")
 	errNoRunningBackendServer      = errors.New("no running backend servers")
 	errAllBackendServersNotHealthy = errors.New("running backend servers are not probed as healthy")
+	errAllBackendServersNoIP       = errors.New("running backend servers have no IP")
 )
 
 type Handler struct {
@@ -145,7 +146,7 @@ func (h *Handler) handleError(lbCopy, lb *lbv1.LoadBalancer, err error) (*lbv1.L
 	if errors.Is(err, errNoMatchedIPPool) || errors.Is(err, errNoAvailableIP) || errors.Is(err, lbpkg.ErrWaitExternalIP) {
 		h.lbController.EnqueueAfter(lb.Namespace, lb.Name, 1*time.Second)
 		return h.updateStatusNotReturnError(lbCopy, lb, err)
-	} else if errors.Is(err, errNoRunningBackendServer) || errors.Is(err, errAllBackendServersNotHealthy) {
+	} else if errors.Is(err, errNoRunningBackendServer) || errors.Is(err, errAllBackendServersNotHealthy) || errors.Is(err, errAllBackendServersNoIP) {
 		// stop reconciler, wait vmi controller Enqueue() lb / health check go thread Enqueue()
 		return h.updateStatusNotReturnError(lbCopy, lb, err)
 	}
@@ -175,9 +176,13 @@ func (h *Handler) ensureVMLoadBalancer(lbCopy, lb *lbv1.LoadBalancer) (*lbv1.Loa
 	if err != nil {
 		return lb, err
 	}
-	lbCopy.Status.BackendServers = getServerAddress(servers)
+	lbCopy.Status.BackendServers = getServerAddress(servers.GetBackendServers())
 	if len(lbCopy.Status.BackendServers) == 0 {
-		return lb, errNoRunningBackendServer
+		if servers.GetMatchedBackendServerCount() == 0 {
+			return lb, errNoRunningBackendServer
+		}
+		// there are matched backend servers, but none of them have IP
+		return lb, errAllBackendServersNoIP
 	}
 
 	if lb.Spec.HealthCheck != nil && lb.Spec.HealthCheck.Port != 0 {

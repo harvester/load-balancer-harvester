@@ -19,9 +19,11 @@ type Manager interface {
 	EnsureLoadBalancerServiceIP(lb *lbv1.LoadBalancer) (string, error)
 
 	// Step 3. Ensure service backend servers
-	EnsureBackendServers(lb *lbv1.LoadBalancer) ([]BackendServer, error)
+	EnsureBackendServers(lb *lbv1.LoadBalancer) (*BackendServers, error)
 
-	ListBackendServers(lb *lbv1.LoadBalancer) ([]BackendServer, error)
+	// []BackendServer: the matched backend servers (not onDeleting, have IPv4 address)
+	// uint32: the matched backend servers count (not onDeleting)
+	ListBackendServers(lb *lbv1.LoadBalancer) (*BackendServers, error)
 
 	// return the count of endpoints which are probed as Ready
 	// if probe is disabled, then return the count of all endpoints
@@ -36,6 +38,12 @@ type BackendServer interface {
 	GetNamespace() string
 	GetName() string
 	GetAddress() (string, bool)
+}
+
+type BackendServers struct {
+	servers                          []BackendServer
+	matchedRunningBackendServerCount int // the matched backend server count
+	withAddressBackendServerCount    int // = len(Servers) for now, but can be other value if the Servers are further filtered
 }
 
 var (
