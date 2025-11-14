@@ -196,7 +196,7 @@ func (m *Manager) DeleteLoadBalancer(lb *lbv1.LoadBalancer) error {
 }
 
 // get the qualified backend servers of one LB
-func (m *Manager) getServiceBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendServer, error) {
+func (m *Manager) getServiceBackendServers(lb *lbv1.LoadBalancer) (*pkglb.BackendServers, error) {
 	// if user does not set the selector, then return nil
 	if len(lb.Spec.BackendServerSelector) == 0 {
 		return nil, nil
@@ -211,22 +211,26 @@ func (m *Manager) getServiceBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.Backe
 		return nil, fmt.Errorf("fail to list vmi per selector, error: %w", err)
 	}
 
-	servers := make([]pkglb.BackendServer, 0, len(vmis))
-
-	// skip being-deleted vmi, no-address vmi
+	servers := pkglb.NewBackendServers(len(vmis))
+	matchedCnt := 0
+	qualifiedCnt := 0
 	for _, vmi := range vmis {
 		if vmi.DeletionTimestamp != nil {
 			continue
 		}
-		server := &Server{VirtualMachineInstance: vmi}
-		if _, ok := server.GetAddress(); ok {
-			servers = append(servers, server)
+		matchedCnt += 1
+		newServer := &Server{VirtualMachineInstance: vmi}
+		if _, ok := newServer.GetAddress(); ok {
+			servers.Append(newServer)
+			qualifiedCnt += 1
 		}
 	}
+	servers.SetMatchedBackendServerCount(matchedCnt)
+	servers.SetWithAddressBackendServerCount(qualifiedCnt)
 	return servers, nil
 }
 
-func (m *Manager) EnsureBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendServer, error) {
+func (m *Manager) EnsureBackendServers(lb *lbv1.LoadBalancer) (*pkglb.BackendServers, error) {
 	// ensure service is existing
 	if svc, err := m.getService(lb); err != nil {
 		return nil, err
@@ -248,7 +252,7 @@ func (m *Manager) EnsureBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendSe
 		return nil, err
 	}
 
-	epsNew, err := m.constructEndpointSliceFromBackendServers(eps, lb, servers)
+	epsNew, err := m.constructEndpointSliceFromBackendServers(eps, lb, servers.GetBackendServers())
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +304,7 @@ func (m *Manager) EnsureLoadBalancerServiceIP(lb *lbv1.LoadBalancer) (string, er
 	return "", pkglb.ErrWaitExternalIP
 }
 
-func (m *Manager) ListBackendServers(lb *lbv1.LoadBalancer) ([]pkglb.BackendServer, error) {
+func (m *Manager) ListBackendServers(lb *lbv1.LoadBalancer) (*pkglb.BackendServers, error) {
 	return m.getServiceBackendServers(lb)
 }
 
