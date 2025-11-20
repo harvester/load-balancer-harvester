@@ -26,7 +26,6 @@ func (c ConfigmapClient) Update(configMap *v1.ConfigMap) (*v1.ConfigMap, error) 
 }
 
 func (c ConfigmapClient) UpdateStatus(_ *v1.ConfigMap) (*v1.ConfigMap, error) {
-	//TODO implement me
 	panic("implement me")
 }
 
