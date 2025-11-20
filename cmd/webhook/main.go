@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	ctlcni "github.com/harvester/harvester/pkg/generated/controllers/k8s.cni.cncf.io"
-	ctlkubevirt "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io"
 	"github.com/harvester/webhook/pkg/config"
 	"github.com/harvester/webhook/pkg/server"
 	ctlcore "github.com/rancher/wrangler/v3/pkg/generated/controllers/core"
@@ -17,6 +15,8 @@ import (
 	"github.com/urfave/cli"
 	"k8s.io/client-go/rest"
 
+	ctlcni "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/k8s.cni.cncf.io"
+	ctlkubevirt "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/kubevirt.io"
 	ctllb "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
 	"github.com/harvester/harvester-load-balancer/pkg/webhook/ippool"
