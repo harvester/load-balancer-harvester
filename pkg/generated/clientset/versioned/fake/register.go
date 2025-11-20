@@ -21,12 +21,14 @@ package fake
 import (
 	loadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
 	loadbalancerv1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
+	k8scnicncfiov1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 )
 
 var scheme = runtime.NewScheme()
@@ -34,6 +36,8 @@ var codecs = serializer.NewCodecFactory(scheme)
 
 var localSchemeBuilder = runtime.SchemeBuilder{
 	discoveryv1.AddToScheme,
+	k8scnicncfiov1.AddToScheme,
+	kubevirtv1.AddToScheme,
 	loadbalancerv1beta1.AddToScheme,
 	loadbalancerv1alpha1.AddToScheme,
 }
