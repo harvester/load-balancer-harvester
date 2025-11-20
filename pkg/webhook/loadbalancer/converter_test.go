@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"testing"
 
-	harvesterfake "github.com/harvester/harvester/pkg/generated/clientset/versioned/fake"
-	harvesterfakeclients "github.com/harvester/harvester/pkg/util/fakeclients"
 	"github.com/harvester/webhook/pkg/server/conversion"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,7 +29,7 @@ func TestConverter_Convert(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	virtualMachineInstanceCache := harvesterfakeclients.VirtualMachineInstanceCache(harvesterfake.NewSimpleClientset(vmis...).KubevirtV1().VirtualMachineInstances)
+	virtualMachineInstanceCache := fakeclients.VirtualMachineInstanceCache(fake.NewSimpleClientset(vmis...).KubevirtV1().VirtualMachineInstances)
 	ippoolCache := fakeclients.IPPoolCache(fake.NewSimpleClientset(pools...).LoadbalancerV1beta1().IPPools)
 	converter := NewConverter(virtualMachineInstanceCache, ippoolCache)
 	cases, err := utils.GetSubdirectories(converterCaseDirectory)

@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/harvester/harvester/pkg/util/fakeclients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corefake "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/fake"
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
+	"github.com/harvester/harvester-load-balancer/pkg/utils/fakeclients"
 )
 
 func TestConvertFromKubevipConfigMap(t *testing.T) {

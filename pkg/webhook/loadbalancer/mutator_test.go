@@ -4,15 +4,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	harvesterfake "github.com/harvester/harvester/pkg/generated/clientset/versioned/fake"
-	harvesterfakeclients "github.com/harvester/harvester/pkg/util/fakeclients"
 	corefake "k8s.io/client-go/kubernetes/fake"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/fake"
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
+	"github.com/harvester/harvester-load-balancer/pkg/utils/fakeclients"
 )
 
 const mutatorCaseDirectory = "./testdata/mutator/"
@@ -26,7 +26,7 @@ func TestFindProject(t *testing.T) {
 	// create a new mutator
 	coreclientset := corefake.NewSimpleClientset(namespaces...)
 	m := &mutator{
-		namespaceCache: harvesterfakeclients.NamespaceCache(coreclientset.CoreV1().Namespaces),
+		namespaceCache: fakeclients.NamespaceCache(coreclientset.CoreV1().Namespaces),
 	}
 
 	tests := []struct {
@@ -137,10 +137,10 @@ func TestFindNetwork(t *testing.T) {
 		t.Error(err)
 	}
 
-	harvesterclientset := harvesterfake.NewSimpleClientset(vmis...)
+	clientset := fake.NewSimpleClientset(vmis...)
 
 	m := &mutator{
-		vmiCache: harvesterfakeclients.VirtualMachineInstanceCache(harvesterclientset.KubevirtV1().VirtualMachineInstances),
+		vmiCache: fakeclients.VirtualMachineInstanceCache(clientset.KubevirtV1().VirtualMachineInstances),
 	}
 
 	tests := []struct {
