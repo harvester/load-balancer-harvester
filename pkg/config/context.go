@@ -3,14 +3,14 @@ package config
 import (
 	"context"
 
-	ctlcni "github.com/harvester/harvester/pkg/generated/controllers/k8s.cni.cncf.io"
-	ctlkubevirt "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io"
 	ctlapiext "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiextensions.k8s.io"
 	ctlcore "github.com/rancher/wrangler/v3/pkg/generated/controllers/core"
 	"github.com/rancher/wrangler/v3/pkg/start"
 	"k8s.io/client-go/rest"
 
 	ctldiscovery "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io"
+	ctlcni "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/k8s.cni.cncf.io"
+	ctlkubevirt "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/kubevirt.io"
 	ctllb "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io"
 	"github.com/harvester/harvester-load-balancer/pkg/ipam"
 	"github.com/harvester/harvester-load-balancer/pkg/lb"

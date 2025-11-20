@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	ctlcniv1 "github.com/harvester/harvester/pkg/generated/controllers/k8s.cni.cncf.io/v1"
-	ctlkubevirtv1 "github.com/harvester/harvester/pkg/generated/controllers/kubevirt.io/v1"
 	ctlcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester-load-balancer/pkg/config"
 	ctldiscoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/discovery.k8s.io/v1"
+	ctlcniv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/k8s.cni.cncf.io/v1"
+	ctlkubevirtv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/kubevirt.io/v1"
 	ctllbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester-load-balancer/pkg/ipam"
 	lbpkg "github.com/harvester/harvester-load-balancer/pkg/lb"

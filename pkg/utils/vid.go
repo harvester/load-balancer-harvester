@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	ctlcniv1 "github.com/harvester/harvester/pkg/generated/controllers/k8s.cni.cncf.io/v1"
+	ctlcniv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/k8s.cni.cncf.io/v1"
 
 	lb "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io"
 )
