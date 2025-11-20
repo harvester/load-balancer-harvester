@@ -22,6 +22,10 @@ import (
 	clientset "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned"
 	discoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1"
 	fakediscoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1/fake"
+	k8scnicncfiov1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/k8s.cni.cncf.io/v1"
+	fakek8scnicncfiov1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/k8s.cni.cncf.io/v1/fake"
+	kubevirtv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/kubevirt.io/v1"
+	fakekubevirtv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/kubevirt.io/v1/fake"
 	loadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1"
 	fakeloadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1/fake"
 	loadbalancerv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1beta1"
@@ -90,6 +94,16 @@ var (
 // DiscoveryV1 retrieves the DiscoveryV1Client
 func (c *Clientset) DiscoveryV1() discoveryv1.DiscoveryV1Interface {
 	return &fakediscoveryv1.FakeDiscoveryV1{Fake: &c.Fake}
+}
+
+// K8sCniCncfIoV1 retrieves the K8sCniCncfIoV1Client
+func (c *Clientset) K8sCniCncfIoV1() k8scnicncfiov1.K8sCniCncfIoV1Interface {
+	return &fakek8scnicncfiov1.FakeK8sCniCncfIoV1{Fake: &c.Fake}
+}
+
+// KubevirtV1 retrieves the KubevirtV1Client
+func (c *Clientset) KubevirtV1() kubevirtv1.KubevirtV1Interface {
+	return &fakekubevirtv1.FakeKubevirtV1{Fake: &c.Fake}
 }
 
 // LoadbalancerV1beta1 retrieves the LoadbalancerV1beta1Client
