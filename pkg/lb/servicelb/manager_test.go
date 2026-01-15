@@ -5,12 +5,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	harvesterfake "github.com/harvester/harvester/pkg/generated/clientset/versioned/fake"
-	harvesterfakeclients "github.com/harvester/harvester/pkg/util/fakeclients"
-
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
+	"github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/fake"
+	"github.com/harvester/harvester-load-balancer/pkg/utils/fakeclients"
 )
 
 const (
@@ -161,9 +160,9 @@ func TestGetBackendServer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			clientset := harvesterfake.NewSimpleClientset()
+			clientset := fake.NewSimpleClientset()
 			lbManager := Manager{
-				vmiCache: harvesterfakeclients.VirtualMachineInstanceCache(clientset.KubevirtV1().VirtualMachineInstances),
+				vmiCache: fakeclients.VirtualMachineInstanceCache(clientset.KubevirtV1().VirtualMachineInstances),
 			}
 			if tt.vmi != nil {
 				err := clientset.Tracker().Add(tt.vmi)
