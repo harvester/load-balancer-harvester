@@ -16,11 +16,6 @@ import (
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
 
-const (
-	keyCreator          = "harvesterhci.io/creator"
-	harvesterNodeDriver = "docker-machine-driver-harvester"
-)
-
 type mutator struct {
 	admission.DefaultMutator
 
@@ -212,7 +207,7 @@ func (m *mutator) findProject(namespace string) (string, error) {
 func (m *mutator) findNetwork(namespace, clusterName string) (string, error) {
 	// list all the vmi instance in the same namespace of the load balancer
 	vmis, err := m.vmiCache.List(namespace, labels.Set(map[string]string{
-		keyCreator: harvesterNodeDriver,
+		utils.LabelKeyHarvesterCreator: utils.GuestClusterHarvesterNodeDriver,
 	}).AsSelector())
 	if err != nil {
 		return "", fmt.Errorf("list vmis failed, error: %w", err)

@@ -6,19 +6,24 @@ import (
 	"github.com/harvester/webhook/pkg/server/admission"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
+	ctlkubevirtv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/kubevirt.io/v1"
+	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
 
 type validator struct {
 	admission.DefaultValidator
+
+	vmiCache ctlkubevirtv1.VirtualMachineInstanceCache
 }
 
 var _ admission.Validator = &validator{}
 
-func NewValidator() admission.Validator {
-	return &validator{}
+func NewValidator(vmiCache ctlkubevirtv1.VirtualMachineInstanceCache) admission.Validator {
+	return &validator{vmiCache: vmiCache}
 }
 
 func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
@@ -32,6 +37,12 @@ func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
 		return fmt.Errorf("create loadbalancer %s/%s failed with healthyCheck: %w", lb.Namespace, lb.Name, err)
 	}
 
+	// when a guest-cluster is on remove, Harvester controller deletes all its LBs automatically
+	// but the guest-cluster side might try to recreate them
+	// this check blocks the recreation
+	if err := v.checkGuestClusterIsOnRemove(lb); err != nil {
+		return fmt.Errorf("create loadbalancer %s/%s failed with guest cluster check: %w", lb.Namespace, lb.Name, err)
+	}
 	return nil
 }
 
@@ -187,6 +198,32 @@ func checkIPAM(oldLb, newLb *lbv1.LoadBalancer) error {
 func checkWorkloadType(oldLb, newLb *lbv1.LoadBalancer) error {
 	if (oldLb.Spec.WorkloadType != lbv1.Cluster && newLb.Spec.WorkloadType == lbv1.Cluster) || (oldLb.Spec.WorkloadType == lbv1.Cluster && newLb.Spec.WorkloadType != lbv1.Cluster) {
 		return fmt.Errorf("can't change the WorkloadType from %v to %v", oldLb.Spec.WorkloadType, newLb.Spec.WorkloadType)
+	}
+
+	return nil
+}
+
+func (v *validator) checkGuestClusterIsOnRemove(lb *lbv1.LoadBalancer) error {
+	if lb.Spec.WorkloadType != lbv1.Cluster {
+		return nil
+	}
+
+	// list all the vmi instance in the same namespace of the load balancer
+	vmis, err := v.vmiCache.List(lb.Namespace, labels.Set(map[string]string{
+		utils.LabelKeyHarvesterCreator: utils.GuestClusterHarvesterNodeDriver,
+	}).AsSelector())
+	if err != nil {
+		return fmt.Errorf("list vmis failed, error: %w", err)
+	}
+
+	if len(vmis) == 0 {
+		return fmt.Errorf("it has no running vmis")
+	}
+
+	for _, vmi := range vmis {
+		if utils.IsVmiWithGuestClusterOnRemoveAnnotation(vmi){
+			return fmt.Errorf("the vmi %s/%s shows guest cluster is on remove", vmi.Namespace, vmi.Name)
+		}
 	}
 
 	return nil

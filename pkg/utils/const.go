@@ -17,4 +17,12 @@ const (
 	AnnotationKeyManuallyReleaseIP = lb.GroupName + "/manuallyReleaseIP"
 
 	DuplicateAllocationKeyWord = "duplicate allocation is not allowed"
+
+	// refer https://github.com/rancher/rancher/blob/e5d419fce68de6dc631a818a2e7e206f2221ebc3/pkg/controllers/provisioningv2/harvestercleanup/controller.go#L29
+	// redefine following annotation for LB usage
+	//   removedAllPVCsAnnotationKey             = "harvesterhci.io/removeAllPersistentVolumeClaims"
+	AnnotationKeyGuestClusterOnRemove = "harvesterhci.io/removeAllPersistentVolumeClaims"
+
+	LabelKeyHarvesterCreator        = "harvesterhci.io/creator"
+	GuestClusterHarvesterNodeDriver = "docker-machine-driver-harvester"
 )
