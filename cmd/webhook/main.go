@@ -119,13 +119,13 @@ func run(ctx context.Context, cfg *rest.Config, options *config.Options) error {
 	webhookServer := server.NewWebhookServer(ctx, cfg, name, options)
 
 	if err := webhookServer.RegisterValidators(ippool.NewIPPoolValidator(poolCache),
-		loadbalancer.NewValidator()); err != nil {
-		return fmt.Errorf("failed to register ip pool validator: %w", err)
+		loadbalancer.NewValidator(vmiCache)); err != nil {
+		return fmt.Errorf("failed to register ip pool and loadbalancer validator: %w", err)
 	}
 
 	if err := webhookServer.RegisterMutators(ippool.NewIPPoolMutator(nadCache),
 		loadbalancer.NewMutator(namespaceCache, vmiCache)); err != nil {
-		return fmt.Errorf("failed to register ip pool mutator: %w", err)
+		return fmt.Errorf("failed to register ip pool and loadbalancer mutator: %w", err)
 	}
 
 	if err := webhookServer.RegisterConverters(loadbalancer.NewConverter(vmiCache, poolCache)); err != nil {
