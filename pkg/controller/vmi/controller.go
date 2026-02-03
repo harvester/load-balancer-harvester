@@ -116,12 +116,9 @@ func (h *Handler) CleanGuestClusterLBs(_ string, vmi *kubevirtv1.VirtualMachineI
 			lastError = err
 		}
 	}
-
-	logrus.Infof("detect guest cluster vm %s/%s has annotation %s, delete %v lbs on this namespace, and failed to delete %v, laste error:%w ", vmi.Namespace, vmi.Name, AnnotationKeyGuestClusterOnRemove, len(lbs), errCount, err)
-
+	logrus.Infof("detect guest cluster vm %s/%s has annotation %s, delete %v lbs on this namespace, and failed to delete %v, laste error:%v ", vmi.Namespace, vmi.Name, utils.AnnotationKeyGuestClusterOnRemove, len(lbs), errCount, err.Error())
 	if errCount != 0 {
 		return nil, lastError
 	}
-
 	return vmi, nil
 }

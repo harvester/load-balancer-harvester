@@ -34,3 +34,18 @@ spec:
     - multus:
         networkName: default/vlan100
       name: nic-0
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  name: k3s-pool2-0092bbbc-wab7a
+  namespace: removing
+  labels:
+    harvesterhci.io/creator: "docker-machine-driver-harvester"
+  annotations:
+    harvesterhci.io/removeAllPersistentVolumeClaims: "true" # the whole guest cluster is on remove
+spec:
+  networks:
+    - multus:
+        networkName: removing/vlan100
+      name: nic-0
