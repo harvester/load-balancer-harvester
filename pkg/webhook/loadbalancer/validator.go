@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/harvester/webhook/pkg/server/admission"
+	"github.com/sirupsen/logrus"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -41,7 +42,9 @@ func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
 	// but the guest-cluster side might try to recreate them
 	// this check blocks the recreation
 	if err := v.checkGuestClusterIsOnRemove(lb); err != nil {
-		return fmt.Errorf("create loadbalancer %s/%s failed with guest cluster check: %w", lb.Namespace, lb.Name, err)
+		err := fmt.Errorf("create loadbalancer %s/%s failed with guest cluster check: %w", lb.Namespace, lb.Name, err)
+		logrus.Infof("%v", err.Error())
+		return err
 	}
 	return nil
 }
@@ -221,7 +224,7 @@ func (v *validator) checkGuestClusterIsOnRemove(lb *lbv1.LoadBalancer) error {
 	}
 
 	for _, vmi := range vmis {
-		if utils.IsVmiWithGuestClusterOnRemoveAnnotation(vmi){
+		if utils.IsVmiWithGuestClusterOnRemoveAnnotation(vmi) {
 			return fmt.Errorf("the vmi %s/%s shows guest cluster is on remove", vmi.Namespace, vmi.Name)
 		}
 	}
