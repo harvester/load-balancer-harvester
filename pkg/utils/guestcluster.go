@@ -9,7 +9,7 @@ func IsGuestClusterVMI(vmi *kubevirtv1.VirtualMachineInstance) bool {
 	return vmi.Labels[LabelKeyHarvesterCreator] == GuestClusterHarvesterNodeDriver
 }
 
-func IsVmiWithGuestClusterOnRemoveAnnotation (vmi *kubevirtv1.VirtualMachineInstance) bool {
+func IsVmiWithGuestClusterOnRemoveAnnotation(vmi *kubevirtv1.VirtualMachineInstance) bool {
 	if vmi == nil {
 		return false
 	}
