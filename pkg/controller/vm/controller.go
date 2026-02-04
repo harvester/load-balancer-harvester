@@ -72,7 +72,6 @@ func (h *Handler) CleanGuestClusterLBs(_ string, vm *kubevirtv1.VirtualMachine) 
 			continue
 		}
 		count += 1
-		// skip the cluster LB or the LB whose server selector is empty
 		if lb.DeletionTimestamp != nil {
 			continue
 		}
