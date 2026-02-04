@@ -44,7 +44,7 @@ func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
 
 	// when a guest-cluster is on remove, Harvester controller deletes all its LBs automatically
 	// but the guest-cluster side might try to recreate them
-	// this check blocks the recreation
+	// this check blocks the recreation until the guest-cluster if fully gone
 	if err := v.checkGuestClusterIsOnRemove(lb); err != nil {
 		err := fmt.Errorf("create loadbalancer %s/%s failed with guest cluster check: %w", lb.Namespace, lb.Name, err)
 		logrus.Infof("%v", err.Error())
