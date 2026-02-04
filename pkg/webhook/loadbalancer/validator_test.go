@@ -1,13 +1,14 @@
 package loadbalancer
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	"github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/fake"
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
@@ -547,60 +548,84 @@ func TestCheckListeners(t *testing.T) {
 }
 
 func Test_BlockNewLBWhenGuestClusterIsOnRemove(t *testing.T) {
-	vmis, err := utils.ParseFromFile(filepath.Join(mutatorCaseDirectory + "vmi.yaml"))
-	if err != nil {
-		t.Error(err)
-	}
-
-	clientset := fake.NewSimpleClientset(vmis...)
-
-	v := &validator{
-		vmiCache: fakeclients.VirtualMachineInstanceCache(clientset.KubevirtV1().VirtualMachineInstances),
-	}
 
 	tests := []struct {
 		name     string
 		lb       *lbv1.LoadBalancer
+		vm       *kubevirtv1.VirtualMachine
 		wantErr  bool
 		errorKey string
 	}{
 		{
-			name: "guest cluster is on remove with related vmi, can't create new lb",
+			name: "guest cluster is on remove with related vm, can't create new lb",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "removing",
 					Name:      "lb1",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnLB: "gc1",
+					},
 				},
 				Spec: lbv1.LoadBalancerSpec{
 					WorkloadType: lbv1.Cluster,
+				},
+			},
+			vm: &kubevirtv1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "removing",
+					Name:      "vm1",
+					Labels: map[string]string{
+						utils.LabelKeyHarvesterCreator:     utils.GuestClusterHarvesterNodeDriver,
+						utils.LabelKeyGuestClusterNameOnVM: "gc1",
+					},
+					Annotations: map[string]string{
+						utils.AnnotationKeyGuestClusterOnRemove: "true",
+					},
 				},
 			},
 			wantErr:  true,
 			errorKey: "guest cluster is on remove",
 		},
 		{
-			name: "guest cluster has no vmi, can't create new lb",
+			name: "guest cluster has no vm, can't create new lb",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "non-existing",
 					Name:      "lb2",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnLB: "gc1",
+					},
 				},
 				Spec: lbv1.LoadBalancerSpec{
 					WorkloadType: lbv1.Cluster,
 				},
 			},
+			vm:       &kubevirtv1.VirtualMachine{},
 			wantErr:  true,
-			errorKey: "has no running vmis",
+			errorKey: "has no running vm",
 		},
 		{
-			name: "guest cluster has normal vmi, can create new lb",
+			name: "guest cluster has normal vm, can create new lb",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Name:      "lb3",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnLB: "gc1",
+					},
 				},
 				Spec: lbv1.LoadBalancerSpec{
 					WorkloadType: lbv1.Cluster,
+				},
+			},
+			vm: &kubevirtv1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "vm1",
+					Labels: map[string]string{
+						utils.LabelKeyHarvesterCreator:     utils.GuestClusterHarvesterNodeDriver,
+						utils.LabelKeyGuestClusterNameOnVM: "gc1",
+					},
 				},
 			},
 			wantErr:  false,
@@ -608,9 +633,15 @@ func Test_BlockNewLBWhenGuestClusterIsOnRemove(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		objs := []runtime.Object{tt.vm, tt.lb}
+		clientset := fake.NewSimpleClientset(objs...)
+		v := &validator{
+			vmCache:  fakeclients.VirtualMachineCache(clientset.KubevirtV1().VirtualMachines),
+			vmiCache: fakeclients.VirtualMachineInstanceCache(clientset.KubevirtV1().VirtualMachineInstances),
+		}
 		err := v.Create(nil, tt.lb)
 		if (err != nil) != tt.wantErr {
-			t.Errorf("%q. checkListeners() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			t.Errorf("%q. Create() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 		if tt.wantErr && tt.errorKey != "" && !strings.Contains(err.Error(), tt.errorKey) {
 			t.Errorf("%q, the return error %v does not include the keyword '%s'", tt.name, err, tt.errorKey)
