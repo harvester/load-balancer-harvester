@@ -22,10 +22,7 @@ replace (
 	k8s.io/client-go => k8s.io/client-go v0.32.5
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.32.5
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.32.5
-	// k8s.io/code-generator still remains v0.31.5 due to kubevirt v1.6.0.
-	// kubevirt v1.6.0 is still using v0.31.1 code generator, but v0.32.5 code generator has a big change about fake clientset.
-	// Check more details in https://github.com/harvester/harvester/issues/8719#issue-3251235542.
-	k8s.io/code-generator => k8s.io/code-generator v0.31.5
+	k8s.io/code-generator => k8s.io/code-generator v0.32.5
 	k8s.io/component-base => k8s.io/component-base v0.32.5
 	k8s.io/component-helpers => k8s.io/component-helpers v0.32.5
 	k8s.io/controller-manager => k8s.io/controller-manager v0.32.5
@@ -63,10 +60,10 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
 	github.com/urfave/cli v1.22.16
-	k8s.io/api v0.33.2
-	k8s.io/apimachinery v0.33.2
+	k8s.io/api v0.33.5
+	k8s.io/apimachinery v0.33.5
 	k8s.io/client-go v12.0.0+incompatible
-	kubevirt.io/api v1.6.0
+	kubevirt.io/api v1.7.0
 )
 
 require (
@@ -112,10 +109,9 @@ require (
 	github.com/rancher/gke-operator v1.12.0 // indirect
 	github.com/rancher/norman v0.7.0 // indirect
 	github.com/rancher/rke v1.8.0-rc.4 // indirect
-	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/safchain/ethtool v0.4.0 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
+	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/vishvananda/netlink v1.3.1-0.20250206174618-62fb240731fa // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
@@ -138,10 +134,10 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.33.1 // indirect
-	k8s.io/apiserver v0.33.2 // indirect
-	k8s.io/code-generator v0.33.2 // indirect
-	k8s.io/component-base v0.33.2 // indirect
+	k8s.io/apiextensions-apiserver v0.33.5 // indirect
+	k8s.io/apiserver v0.33.1 // indirect
+	k8s.io/code-generator v0.33.1 // indirect
+	k8s.io/component-base v0.33.1 // indirect
 	k8s.io/gengo v0.0.0-20250130153323-76c5745d3511 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
 	k8s.io/klog v1.0.0 // indirect
@@ -150,7 +146,7 @@ require (
 	k8s.io/kube-openapi v0.31.9 // indirect
 	k8s.io/kubernetes v1.33.1 // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
-	kubevirt.io/containerized-data-importer-api v1.61.0 // indirect
+	kubevirt.io/containerized-data-importer-api v1.63.1 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.0.0-20220329064328-f3cc58c6ed90 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
