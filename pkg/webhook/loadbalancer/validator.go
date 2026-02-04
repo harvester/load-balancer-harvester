@@ -18,13 +18,17 @@ import (
 type validator struct {
 	admission.DefaultValidator
 
+	vmCache  ctlkubevirtv1.VirtualMachineCache
 	vmiCache ctlkubevirtv1.VirtualMachineInstanceCache
 }
 
 var _ admission.Validator = &validator{}
 
-func NewValidator(vmiCache ctlkubevirtv1.VirtualMachineInstanceCache) admission.Validator {
-	return &validator{vmiCache: vmiCache}
+func NewValidator(vmCache ctlkubevirtv1.VirtualMachineCache, vmiCache ctlkubevirtv1.VirtualMachineInstanceCache) admission.Validator {
+	return &validator{
+		vmCache:  vmCache,
+		vmiCache: vmiCache,
+	}
 }
 
 func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
@@ -211,21 +215,29 @@ func (v *validator) checkGuestClusterIsOnRemove(lb *lbv1.LoadBalancer) error {
 		return nil
 	}
 
-	// list all the vmi instance in the same namespace of the load balancer
-	vmis, err := v.vmiCache.List(lb.Namespace, labels.Set(map[string]string{
-		utils.LabelKeyHarvesterCreator: utils.GuestClusterHarvesterNodeDriver,
+	gcName, ok := utils.GetGuestClusterNameFromLB(lb)
+	if !ok {
+		logrus.Warnf("can't get the guest cluster name from lb %s/%s, skip checking of if guest cluster is on remove", lb.Namespace, lb.Name)
+		return nil
+	}
+
+	// list all the vm instance in the same namespace of the load balancer
+	// the guestcluster name is also required as multi guest cluster might coexist on a namespace
+	vms, err := v.vmCache.List(lb.Namespace, labels.Set(map[string]string{
+		utils.LabelKeyHarvesterCreator:     utils.GuestClusterHarvesterNodeDriver,
+		utils.LabelKeyGuestClusterNameOnVM: gcName,
 	}).AsSelector())
 	if err != nil {
-		return fmt.Errorf("list vmis failed, error: %w", err)
+		return fmt.Errorf("list vm from %s failed, error: %w", lb.Namespace, err)
 	}
 
-	if len(vmis) == 0 {
-		return fmt.Errorf("it has no running vmis")
+	if len(vms) == 0 {
+		return fmt.Errorf("it has no running vm")
 	}
 
-	for _, vmi := range vmis {
-		if utils.IsVmiWithGuestClusterOnRemoveAnnotation(vmi) {
-			return fmt.Errorf("the vmi %s/%s shows guest cluster is on remove", vmi.Namespace, vmi.Name)
+	for _, vm := range vms {
+		if utils.IsVmWithGuestClusterOnRemoveAnnotation(vm) {
+			return fmt.Errorf("the vm %s/%s shows guest cluster is on remove", vm.Namespace, vm.Name)
 		}
 	}
 

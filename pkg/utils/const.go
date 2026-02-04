@@ -25,4 +25,10 @@ const (
 
 	LabelKeyHarvesterCreator        = "harvesterhci.io/creator"
 	GuestClusterHarvesterNodeDriver = "docker-machine-driver-harvester"
+
+	// guest cluster used VM has such label: guestcluster.harvesterhci.io/name: gc3
+	LabelKeyGuestClusterNameOnVM = "guestcluster.harvesterhci.io/name"
+
+	// guest cluster create LB has such label: cloudprovider.harvesterhci.io/cluster: gc3
+	LabelKeyGuestClusterNameOnLB = "cloudprovider.harvesterhci.io/cluster"
 )

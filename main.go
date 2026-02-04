@@ -19,6 +19,7 @@ import (
 	"github.com/harvester/harvester-load-balancer/pkg/config"
 	"github.com/harvester/harvester-load-balancer/pkg/controller/ippool"
 	"github.com/harvester/harvester-load-balancer/pkg/controller/loadbalancer"
+	"github.com/harvester/harvester-load-balancer/pkg/controller/vm"
 	"github.com/harvester/harvester-load-balancer/pkg/controller/vmi"
 	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
@@ -85,6 +86,9 @@ func run(ctx context.Context, cfg *rest.Config) {
 		}
 		if err := vmi.Register(ctx, management); err != nil {
 			logrus.Fatalf("error register vmi controller: %s", err.Error())
+		}
+		if err := vm.Register(ctx, management); err != nil {
+			logrus.Fatalf("error register vm controller: %s", err.Error())
 		}
 		// Start all the controllers
 		if err := management.Start(threadiness); err != nil {
