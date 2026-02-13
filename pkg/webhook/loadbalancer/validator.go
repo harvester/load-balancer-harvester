@@ -4,21 +4,31 @@ import (
 	"fmt"
 
 	"github.com/harvester/webhook/pkg/server/admission"
+	"github.com/sirupsen/logrus"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
+	ctlkubevirtv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/kubevirt.io/v1"
+	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
 
 type validator struct {
 	admission.DefaultValidator
+
+	vmCache  ctlkubevirtv1.VirtualMachineCache
+	vmiCache ctlkubevirtv1.VirtualMachineInstanceCache
 }
 
 var _ admission.Validator = &validator{}
 
-func NewValidator() admission.Validator {
-	return &validator{}
+func NewValidator(vmCache ctlkubevirtv1.VirtualMachineCache, vmiCache ctlkubevirtv1.VirtualMachineInstanceCache) admission.Validator {
+	return &validator{
+		vmCache:  vmCache,
+		vmiCache: vmiCache,
+	}
 }
 
 func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
@@ -32,6 +42,14 @@ func (v *validator) Create(_ *admission.Request, newObj runtime.Object) error {
 		return fmt.Errorf("create loadbalancer %s/%s failed with healthyCheck: %w", lb.Namespace, lb.Name, err)
 	}
 
+	// when a guest-cluster is on remove, Harvester controller deletes all its LBs automatically
+	// but the guest-cluster side might try to recreate them
+	// this check blocks the recreation until the guest-cluster if fully gone
+	if err := v.checkGuestClusterIsOnRemove(lb); err != nil {
+		err := fmt.Errorf("create loadbalancer %s/%s failed with guest cluster check: %w", lb.Namespace, lb.Name, err)
+		logrus.Infof("%v", err.Error())
+		return err
+	}
 	return nil
 }
 
@@ -187,6 +205,40 @@ func checkIPAM(oldLb, newLb *lbv1.LoadBalancer) error {
 func checkWorkloadType(oldLb, newLb *lbv1.LoadBalancer) error {
 	if (oldLb.Spec.WorkloadType != lbv1.Cluster && newLb.Spec.WorkloadType == lbv1.Cluster) || (oldLb.Spec.WorkloadType == lbv1.Cluster && newLb.Spec.WorkloadType != lbv1.Cluster) {
 		return fmt.Errorf("can't change the WorkloadType from %v to %v", oldLb.Spec.WorkloadType, newLb.Spec.WorkloadType)
+	}
+
+	return nil
+}
+
+func (v *validator) checkGuestClusterIsOnRemove(lb *lbv1.LoadBalancer) error {
+	if lb.Spec.WorkloadType != lbv1.Cluster {
+		return nil
+	}
+
+	gcName, ok := utils.GetGuestClusterNameFromLB(lb)
+	if !ok {
+		logrus.Warnf("can't get the guest cluster name from lb %s/%s, skip checking of if guest cluster is on remove", lb.Namespace, lb.Name)
+		return nil
+	}
+
+	// list all the vm instance in the same namespace of the load balancer
+	// the guestcluster name is also required as multi guest cluster might coexist on a namespace
+	vms, err := v.vmCache.List(lb.Namespace, labels.Set(map[string]string{
+		utils.LabelKeyHarvesterCreator:     utils.GuestClusterHarvesterNodeDriver,
+		utils.LabelKeyGuestClusterNameOnVM: gcName,
+	}).AsSelector())
+	if err != nil {
+		return fmt.Errorf("list vm from %s failed, error: %w", lb.Namespace, err)
+	}
+
+	if len(vms) == 0 {
+		return fmt.Errorf("it has no running vm")
+	}
+
+	for _, vm := range vms {
+		if utils.IsVmWithGuestClusterOnRemoveAnnotation(vm) {
+			return fmt.Errorf("the vm %s/%s shows guest cluster is on remove", vm.Namespace, vm.Name)
+		}
 	}
 
 	return nil

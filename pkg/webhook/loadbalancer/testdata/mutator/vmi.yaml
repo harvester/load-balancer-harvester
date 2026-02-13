@@ -1,7 +1,7 @@
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
 metadata:
-  name: rke2-pool1-0092bbba-wdp7k
+  name: rke2-pool1-0032bbba-wdp7k
   namespace: default
   labels:
     harvesterhci.io/creator: "docker-machine-driver-harvester"
@@ -14,7 +14,7 @@ spec:
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
 metadata:
-  name: rke2-pool2-0092bbbc-wdp7k
+  name: rke2-pool2-032bbbc-wdp7k
   namespace: default
 spec:
   networks:
@@ -25,7 +25,7 @@ spec:
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
 metadata:
-  name: k3s-pool1-0092bbbc-wab7a
+  name: k3s-pool1-0032bbbd-wab7a
   namespace: default
   labels:
     harvesterhci.io/creator: "docker-machine-driver-harvester"
