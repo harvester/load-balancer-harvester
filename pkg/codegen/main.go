@@ -74,6 +74,7 @@ func nadControllerInterfaceRefactor() {
 
 	output := bytes.ReplaceAll(input, []byte("networkattachmentdefinitions"), []byte("network-attachment-definitions"))
 
+	//nolint:gosec // this is a codegen script with a hardcoded path
 	if err = os.WriteFile(absPath, output, 0600); err != nil {
 		logrus.Fatalf("failed to update the network-attachment-definition file: %v", err)
 	}

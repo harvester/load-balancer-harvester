@@ -71,7 +71,7 @@ func (i *ipPoolMutator) Resource() admission.Resource {
 }
 
 func (i *ipPoolMutator) getLabelPatch(pool *lbv1.IPPool) (admission.Patch, error) {
-	patch := admission.Patch{}
+	patch := make(admission.Patch, 0, 1)
 
 	// Note: If the net-attach-def changed, the VLAN ID may change.
 	vid, err := utils.GetVid(pool.Spec.Selector.Network, i.nadCache)
