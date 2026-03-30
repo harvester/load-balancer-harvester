@@ -4,17 +4,14 @@ ARG DAPPER_HOST_ARCH
 ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 
 RUN zypper -n rm container-suseconnect && \
-	zypper -n install git curl docker gzip tar wget awk
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.3
+	zypper -n install git curl docker docker-buildx gzip tar wget awk
 
-# The docker version in dapper is too old to have buildx. Install it manually.
-RUN curl -sSfL https://github.com/docker/buildx/releases/download/v0.17.1/buildx-v0.17.1.linux-${ARCH} -o buildx-v0.17.1.linux-${ARCH} && \
-	chmod +x buildx-v0.17.1.linux-${ARCH} && \
-	mv buildx-v0.17.1.linux-${ARCH} /usr/local/bin/buildx
+## install golangci
+RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3
 
 # tools needed for generate target
 RUN GO111MODULE=on go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.1
-RUN GO111MODULE=on go install golang.org/x/tools/cmd/goimports@latest
+RUN GO111MODULE=on go install golang.org/x/tools/cmd/goimports@v0.43.0
 
 ENV DAPPER_ENV="REPO TAG DRONE_TAG"
 ENV DAPPER_SOURCE=/go/src/github.com/harvester/harvester-load-balancer/
