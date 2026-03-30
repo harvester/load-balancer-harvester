@@ -24,10 +24,10 @@ if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE_WEBHOOK=${DOCKERFILE_WEBHOOK}.${ARCH}
 fi
 
-buildx build --load \
+docker buildx build --load \
     -f ${DOCKERFILE} -t ${IMAGE} .
 echo Built ${IMAGE}
 
-buildx build --load \
+docker buildx build --load \
     -f ${DOCKERFILE_WEBHOOK} -t ${IMAGE_WEBHOOK} .
 echo Built ${IMAGE_WEBHOOK}
