@@ -22,6 +22,8 @@ type validator struct {
 	vmiCache ctlkubevirtv1.VirtualMachineInstanceCache
 }
 
+const defaultGuestClusterName = "kubernetes"
+
 var _ admission.Validator = &validator{}
 
 func NewValidator(vmCache ctlkubevirtv1.VirtualMachineCache, vmiCache ctlkubevirtv1.VirtualMachineInstanceCache) admission.Validator {
@@ -216,30 +218,73 @@ func (v *validator) checkGuestClusterIsOnRemove(lb *lbv1.LoadBalancer) error {
 	}
 
 	gcName, ok := utils.GetGuestClusterNameFromLB(lb)
+	// The cluster name label is missing from the LoadBalancer metadata
+	// This prevents the controller from verifying if the guest cluster is being removed
+	// We allow this to maintain backward compatibility with legacy or custom clusters
 	if !ok {
-		logrus.Warnf("can't get the guest cluster name from lb %s/%s, skip checking of if guest cluster is on remove", lb.Namespace, lb.Name)
+		logrus.WithFields(logrus.Fields{
+			"namespace": lb.Namespace,
+			"name":      lb.Name,
+		}).Warnf("guest cluster name is missing from label '%s': skipping cluster removal state check for backward compatibility.",
+			utils.LabelKeyGuestClusterNameOnLB)
 		return nil
 	}
 
-	// list all the vm instance in the same namespace of the load balancer
-	// the guestcluster name is also required as multi guest cluster might coexist on a namespace
-	vms, err := v.vmCache.List(lb.Namespace, labels.Set(map[string]string{
+	// For backward compatibility, we don't check when the cluster name is empty or the default ("kubernetes")
+	// WARNING: Using the default name may prevent the LoadBalancer auto-reclaim feature
+	// from uniquely identifying this cluster, potentially leading to resource leakage or accidental deletion
+	if gcName == "" || gcName == defaultGuestClusterName {
+		logrus.WithFields(logrus.Fields{
+			"namespace": lb.Namespace,
+			"name":      lb.Name,
+			"cluster":   gcName,
+		}).Warn("Harvester LB auto-reclaim risk: ambiguous guest cluster name may cause resource leakage or accidental deletion, skipping cluster removal state check for backward compatibility")
+
+		return nil
+	}
+
+	// List all VMs within the same namespace as the LoadBalancer
+	// The guest cluster name is required because multiple guest clusters may coexist in a single namespace
+	// Note: Only Rancher Manager-managed guest clusters follow this labeling convention
+	// custom or manual guest clusters may not adhere to this requirement
+	selector := labels.Set(map[string]string{
 		utils.LabelKeyHarvesterCreator:     utils.GuestClusterHarvesterNodeDriver,
 		utils.LabelKeyGuestClusterNameOnVM: gcName,
-	}).AsSelector())
+	}).AsSelector()
+	vms, err := v.vmCache.List(lb.Namespace, selector)
 	if err != nil {
 		return fmt.Errorf("list vm from %s failed, error: %w", lb.Namespace, err)
 	}
 
+	// Return nil to accommodate two scenarios:
+	// 1. Custom Clusters: The guest cluster doesn't follow standard labeling
+	// 2. Deletion Race: The VMs were already purged during an RKE2 cluster removal
+	// To maintain backward compatibility for custom setups, we skip the LB creation check
 	if len(vms) == 0 {
-		return fmt.Errorf("it has no running vm")
+		logrus.WithFields(logrus.Fields{
+			"namespace": lb.Namespace,
+			"name":      lb.Name,
+			"cluster":   gcName,
+		}).Warnf("No VMs found with selector %s: skipping cluster removal state check for backward compatibility",
+			selector.String())
+		return nil
 	}
 
+	// For backward compatibility, we only deny LoadBalancer creation in this specific state:
+	// When Rancher Manager initiates a guest cluster deletion, it marks all constituent VMs
+	// with the 'AnnotationKeyGuestClusterOnRemove' annotation
+	// If a new LoadBalancer request arrives during this teardown phase, it is rejected
+	// to prevent orphaned resources
 	for _, vm := range vms {
 		if utils.IsVmWithGuestClusterOnRemoveAnnotation(vm) {
-			return fmt.Errorf("the vm %s/%s shows guest cluster is on remove", vm.Namespace, vm.Name)
+			logrus.WithFields(logrus.Fields{
+				"namespace": lb.Namespace,
+				"name":      lb.Name,
+			}).Debugf("the vm %s/%s shows guest cluster %s is being removed",
+				vm.Namespace, vm.Name, gcName)
+
+			return fmt.Errorf("the vm %s/%s shows guest cluster %s is being removed", vm.Namespace, vm.Name, gcName)
 		}
 	}
-
 	return nil
 }
