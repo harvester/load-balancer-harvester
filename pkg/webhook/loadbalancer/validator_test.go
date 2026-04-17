@@ -584,10 +584,10 @@ func Test_BlockNewLBWhenGuestClusterIsOnRemove(t *testing.T) {
 				},
 			},
 			wantErr:  true,
-			errorKey: "guest cluster is on remove",
+			errorKey: "is being removed",
 		},
 		{
-			name: "guest cluster has no vm, can't create new lb",
+			name: "guest cluster has no vm, create new lb for backward compatibility",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "non-existing",
@@ -601,8 +601,8 @@ func Test_BlockNewLBWhenGuestClusterIsOnRemove(t *testing.T) {
 				},
 			},
 			vm:       &kubevirtv1.VirtualMachine{},
-			wantErr:  true,
-			errorKey: "has no running vm",
+			wantErr:  false,
+			errorKey: "",
 		},
 		{
 			name: "guest cluster has normal vm, can create new lb",
@@ -626,6 +626,131 @@ func Test_BlockNewLBWhenGuestClusterIsOnRemove(t *testing.T) {
 						utils.LabelKeyHarvesterCreator:     utils.GuestClusterHarvesterNodeDriver,
 						utils.LabelKeyGuestClusterNameOnVM: "gc1",
 					},
+				},
+			},
+			wantErr:  false,
+			errorKey: "",
+		},
+		{
+			name: "lb guest cluster name missing, pass", // e.g. cloud-provider-harvester chart is not installed with a clustername
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "removing",
+					Name:      "lb1",
+					Labels:    map[string]string{},
+				},
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			vm: &kubevirtv1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "removing",
+					Name:        "vm1",
+					Labels:      map[string]string{},
+					Annotations: map[string]string{},
+				},
+			},
+			wantErr:  false,
+			errorKey: "",
+		},
+		{
+			name: "lb guest cluster name is the default kubernetes, allow pass",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "removing",
+					Name:      "lb1",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnLB: defaultGuestClusterName,
+					},
+				},
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			vm: &kubevirtv1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "removing",
+					Name:        "vm1",
+					Labels:      map[string]string{},
+					Annotations: map[string]string{},
+				},
+			},
+			wantErr:  false,
+			errorKey: "",
+		},
+		{
+			name: "lb guest cluster name is an empty string, pass for backward compatibility", // e.g. cloud-provider-harvester chart is installed with an empty clustername
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "removing",
+					Name:      "lb1",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnLB: "",
+					},
+				},
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			vm: &kubevirtv1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "removing",
+					Name:        "vm1",
+					Labels:      map[string]string{},
+					Annotations: map[string]string{},
+				},
+			},
+			wantErr:  false,
+			errorKey: "",
+		},
+		{
+			name: "vm guest cluster name missing, pass for backward compatibility", // case like the customized guest cluster, the VM does not include required label
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "customized",
+					Name:      "lb1",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnLB: "gc1",
+					},
+				},
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			vm: &kubevirtv1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "customized",
+					Name:        "vm1",
+					Labels:      map[string]string{},
+					Annotations: map[string]string{},
+				},
+			},
+			wantErr:  false,
+			errorKey: "",
+		},
+		{
+			name: "vm creator name missing, pass for backward compatibility", // case like the customized guest cluster, the VM does not include required label
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "customized",
+					Name:      "lb1",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnLB: "gc1",
+					},
+				},
+				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.Cluster,
+				},
+			},
+			vm: &kubevirtv1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "customized",
+					Name:      "vm1",
+					Labels: map[string]string{
+						utils.LabelKeyGuestClusterNameOnVM: "gc1",
+					},
+					Annotations: map[string]string{},
 				},
 			},
 			wantErr:  false,
