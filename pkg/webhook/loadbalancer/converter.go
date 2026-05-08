@@ -197,7 +197,6 @@ func (c *converter) getPoolByAddressOfV1alpha1LB(addr, lbName, lbNamespace strin
 
 	for _, pool := range pools {
 		if pool.Status.Allocated[addr] == name {
-			logrus.Infof("pool: %s, name: %s", pool.Name, name)
 			return pool.Name, nil
 		}
 	}

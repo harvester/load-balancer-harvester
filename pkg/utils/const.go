@@ -33,6 +33,25 @@ const (
 	LabelKeyHarvesterCreator        = "harvesterhci.io/creator"
 	GuestClusterHarvesterNodeDriver = "docker-machine-driver-harvester"
 
+	HarvesterCloudProvider = "cloudprovider.harvesterhci.io"
+
+	HarvesterCloudProviderPrefix = HarvesterCloudProvider + "/"
+
+	// new definitions
+	NetworkTypeManagement = "managementNetwork"
+
+	NetworkTypeLB = "loadbalancerNetwork"
+
+	// if guest cluster sets a target network, then respect it
+	// on first priority
+	AnnotationKeyGuestClusterNetworkNameOnLB = HarvesterCloudProviderPrefix + NetworkTypeLB
+
+	// when guest cluster has multi network, it can explicitly say which one is the management network, instead of guess or hardcode
+	// on second priority
+	AnnotationKeyGuestClusterManagementNetworkOnLB = HarvesterCloudProviderPrefix + NetworkTypeManagement
+
+	// fallbackmode, the network is fetched from the guest cluster's VM's first multu-network
+
 	// guest cluster used VM has such label: guestcluster.harvesterhci.io/name: gc3
 	LabelKeyGuestClusterNameOnVM = "guestcluster.harvesterhci.io/name"
 

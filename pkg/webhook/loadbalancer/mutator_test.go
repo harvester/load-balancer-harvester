@@ -17,8 +17,8 @@ import (
 
 const mutatorCaseDirectory = "./testdata/mutator/"
 
-// TestFindProject tests the function findProject
-func TestFindProject(t *testing.T) {
+// Test_findProject tests the function findProject
+func Test_findProject(t *testing.T) {
 	namespaces, err := utils.ParseFromFile(filepath.Join(mutatorCaseDirectory + "namespace.yaml"))
 	if err != nil {
 		t.Error(err)
@@ -57,6 +57,7 @@ func TestFindProject(t *testing.T) {
 					Name:      "test",
 				},
 				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
 					Listeners: []lbv1.Listener{
 						{Name: "a", BackendPort: 80, Protocol: corev1.ProtocolTCP},
 						{Name: "b", BackendPort: 32, Protocol: corev1.ProtocolUDP},
@@ -75,6 +76,7 @@ func TestFindProject(t *testing.T) {
 					Name:      "test",
 				},
 				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
 					Listeners: []lbv1.Listener{
 						{Name: "a", BackendPort: 80, Protocol: corev1.ProtocolTCP},
 						{Name: "b", BackendPort: 32, Protocol: corev1.ProtocolUDP},
@@ -93,6 +95,7 @@ func TestFindProject(t *testing.T) {
 					Name:      "test",
 				},
 				Spec: lbv1.LoadBalancerSpec{
+					WorkloadType: lbv1.VM,
 					Listeners: []lbv1.Listener{
 						{Name: "a", BackendPort: 80, Protocol: corev1.ProtocolTCP},
 						{Name: "b", BackendPort: 32, Protocol: corev1.ProtocolUDP},
@@ -130,11 +133,11 @@ func TestFindProject(t *testing.T) {
 	}
 }
 
-// TestFindNetwork tests the function findNetwork
-func TestFindNetwork(t *testing.T) {
-	vmis, err := utils.ParseFromFile(filepath.Join(mutatorCaseDirectory + "vmi.yaml"))
+// Test_findNetwork tests the function findNetwork
+func Test_findNetwork(t *testing.T) {
+	vmis, err := utils.ParseFromFile(filepath.Join(mutatorCaseDirectory, "vmi.yaml"))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	clientset := fake.NewSimpleClientset(vmis...)
@@ -144,23 +147,90 @@ func TestFindNetwork(t *testing.T) {
 	}
 
 	tests := []struct {
-		namespace       string
+		name            string
+		lb              *lbv1.LoadBalancer
 		clusterName     string
 		wantNetworkName string
 	}{
 		{
-			namespace:       "default",
-			clusterName:     "rke2",
+			name: "Priority 1: Explicit Network exists",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Annotations: map[string]string{
+						utils.AnnotationKeyGuestClusterNetworkNameOnLB: "custom/explicit-net",
+					},
+				},
+			},
+			clusterName:     "any-cluster",
+			wantNetworkName: "custom/explicit-net",
+		},
+		{
+			name: "Priority 2: Fallthrough when Priority 1 is empty string",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Annotations: map[string]string{
+						utils.AnnotationKeyGuestClusterNetworkNameOnLB:       "",
+						utils.AnnotationKeyGuestClusterManagementNetworkOnLB: "mgmt/mgmt-net",
+					},
+				},
+			},
+			clusterName:     "any-cluster",
+			wantNetworkName: "mgmt/mgmt-net",
+		},
+		{
+			name: "Step 3: Modern Discovery (Label-based)",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+				},
+			},
+			clusterName:     "modern-cluster", // Matches guestcluster.harvesterhci.io/name label
+			wantNetworkName: "default/modern-net",
+		},
+		{
+			name: "Step 4: Legacy Discovery (Prefix-based fallback)",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+				},
+			},
+			clusterName:     "rke2-pool1", // Matches name prefix of legacy VMI
 			wantNetworkName: "default/mgmt-untagged",
+		},
+		{
+			name: "Namespace Mismatch: Valid clusterName but wrong namespace returns empty",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "wrong-namespace",
+				},
+			},
+			clusterName:     "modern-cluster",
+			wantNetworkName: "",
+		},
+		{
+			name: "No Match: Correct namespace but wrong clusterName returns empty",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+				},
+			},
+			clusterName:     "non-existent-cluster",
+			wantNetworkName: "",
 		},
 	}
 
-	for _, test := range tests {
-		if network, err := m.findNetwork(test.namespace, test.clusterName); err != nil {
-			t.Error(err)
-		} else if network != test.wantNetworkName {
-			t.Errorf("want network %s through namespace %s and cluster %s, got %s",
-				test.wantNetworkName, test.namespace, test.clusterName, network)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			network, err := m.findNetwork(tt.lb, tt.clusterName)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+			if network != tt.wantNetworkName {
+				t.Errorf("findNetwork() got = %q, want %q", network, tt.wantNetworkName)
+			}
+		})
 	}
 }
