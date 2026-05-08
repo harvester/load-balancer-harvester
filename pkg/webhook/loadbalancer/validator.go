@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
@@ -247,10 +246,7 @@ func (v *validator) checkGuestClusterIsOnRemove(lb *lbv1.LoadBalancer) error {
 	// The guest cluster name is required because multiple guest clusters may coexist in a single namespace
 	// Note: Only Rancher Manager-managed guest clusters follow this labeling convention
 	// custom or manual guest clusters may not adhere to this requirement
-	selector := labels.Set(map[string]string{
-		utils.LabelKeyHarvesterCreator:     utils.GuestClusterHarvesterNodeDriver,
-		utils.LabelKeyGuestClusterNameOnVM: gcName,
-	}).AsSelector()
+	selector := utils.NewGuestClusterNameAndCreatorNameSelecotr(gcName)
 	vms, err := v.vmCache.List(lb.Namespace, selector)
 	if err != nil {
 		return fmt.Errorf("list vm from %s failed, error: %w", lb.Namespace, err)

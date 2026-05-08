@@ -1,3 +1,4 @@
+# Legacy VMI: No cluster label, matches only via Step 4 (Name Prefix)
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
 metadata:
@@ -10,6 +11,21 @@ spec:
     - multus:
         networkName: default/mgmt-untagged
       name: nic-0
+---
+# Modern VMI: Matches via Step 3 (Creator + ClusterName Labels)
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+    name: any-vmi-name
+    namespace: default
+    labels:
+        harvesterhci.io/creator: "docker-machine-driver-harvester"
+        guestcluster.harvesterhci.io/name: "modern-cluster"
+spec:
+    networks:
+        - multus:
+                networkName: default/modern-net
+          name: nic-0
 ---
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
