@@ -18,21 +18,22 @@ func NewSelector(selector map[string][]string) (labels.Selector, error) {
 	return s.Add(requirements...), nil
 }
 
-// the selecotr to match creator
-func NewGuestClusterCreatorSelecotr() labels.Selector {
+// the selector to match creator
+func NewGuestClusterCreatorSelector() labels.Selector {
 	return labels.Set(map[string]string{
 		LabelKeyHarvesterCreator: GuestClusterHarvesterNodeDriver,
 	}).AsSelector()
 }
 
-// the selecotr to match clustername
-func NewGuestClusterNameSelecotr(gcName string) labels.Selector {
+// the selector to match clustername
+func NewGuestClusterNameSelector(gcName string) labels.Selector {
 	return labels.Set(map[string]string{
 		LabelKeyGuestClusterNameOnVM: gcName,
 	}).AsSelector()
 }
 
-func NewGuestClusterNameAndCreatorNameSelecotr(gcName string) labels.Selector {
+// the selector to match both creator and clustername
+func NewGuestClusterNameAndCreatorNameSelector(gcName string) labels.Selector {
 	return labels.Set(map[string]string{
 		LabelKeyHarvesterCreator:     GuestClusterHarvesterNodeDriver,
 		LabelKeyGuestClusterNameOnVM: gcName,

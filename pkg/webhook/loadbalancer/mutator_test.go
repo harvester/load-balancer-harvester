@@ -15,10 +15,12 @@ import (
 	"github.com/harvester/harvester-load-balancer/pkg/utils/fakeclients"
 )
 
-const mutatorCaseDirectory = "./testdata/mutator/"
+const (
+	mutatorCaseDirectory = "./testdata/mutator/"
+)
 
-// Test_findProject tests the function findProject
-func Test_findProject(t *testing.T) {
+// TestFindProject tests the function findProject
+func TestFindProject(t *testing.T) {
 	namespaces, err := utils.ParseFromFile(filepath.Join(mutatorCaseDirectory + "namespace.yaml"))
 	if err != nil {
 		t.Error(err)
@@ -133,8 +135,9 @@ func Test_findProject(t *testing.T) {
 	}
 }
 
-// Test_findNetwork tests the function findNetwork
-func Test_findNetwork(t *testing.T) {
+// TestFindNetwork tests the function findNetwork
+func TestFindNetwork(t *testing.T) {
+
 	vmis, err := utils.ParseFromFile(filepath.Join(mutatorCaseDirectory, "vmi.yaml"))
 	if err != nil {
 		t.Fatal(err)
@@ -149,7 +152,6 @@ func Test_findNetwork(t *testing.T) {
 	tests := []struct {
 		name            string
 		lb              *lbv1.LoadBalancer
-		clusterName     string
 		wantNetworkName string
 	}{
 		{
@@ -158,12 +160,26 @@ func Test_findNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Annotations: map[string]string{
-						utils.AnnotationKeyGuestClusterNetworkNameOnLB: "custom/explicit-net",
+						utils.AnnotationKeyCluster: "any-cluster",
+						utils.AnnotationKeyNetwork: "custom/explicit-net",
 					},
 				},
 			},
-			clusterName:     "any-cluster",
 			wantNetworkName: "custom/explicit-net",
+		},
+		{
+			name: "Priority 1: Explicit Network exists but no cluster-name, returns empty",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "empty-cluster-name",
+					Annotations: map[string]string{
+						utils.AnnotationKeyCluster: "",
+						utils.AnnotationKeyNetwork: "custom/explicit-net",
+					},
+				},
+			},
+			wantNetworkName: "", // cluster-name is the precondition
 		},
 		{
 			name: "Priority 2: Fallthrough when Priority 1 is empty string",
@@ -171,12 +187,12 @@ func Test_findNetwork(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Annotations: map[string]string{
-						utils.AnnotationKeyGuestClusterNetworkNameOnLB:       "",
+						utils.AnnotationKeyCluster:                           "any-cluster",
+						utils.AnnotationKeyNetwork:                           "",
 						utils.AnnotationKeyGuestClusterManagementNetworkOnLB: "mgmt/mgmt-net",
 					},
 				},
 			},
-			clusterName:     "any-cluster",
 			wantNetworkName: "mgmt/mgmt-net",
 		},
 		{
@@ -184,9 +200,11 @@ func Test_findNetwork(t *testing.T) {
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
+					Annotations: map[string]string{
+						utils.AnnotationKeyCluster: "modern-cluster",
+					},
 				},
 			},
-			clusterName:     "modern-cluster", // Matches guestcluster.harvesterhci.io/name label
 			wantNetworkName: "default/modern-net",
 		},
 		{
@@ -194,36 +212,55 @@ func Test_findNetwork(t *testing.T) {
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
+					Annotations: map[string]string{
+						utils.AnnotationKeyCluster: "rke2-pool1",
+					},
 				},
 			},
-			clusterName:     "rke2-pool1", // Matches name prefix of legacy VMI
 			wantNetworkName: "default/mgmt-untagged",
 		},
 		{
-			name: "Namespace Mismatch: Valid clusterName but wrong namespace returns empty",
+			name: "Namespace Mismatch: Valid cluster-name but wrong namespace returns empty",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "wrong-namespace",
+					Annotations: map[string]string{
+						utils.AnnotationKeyCluster: "modern-cluster",
+					},
 				},
 			},
-			clusterName:     "modern-cluster",
 			wantNetworkName: "",
 		},
 		{
-			name: "No Match: Correct namespace but wrong clusterName returns empty",
+			name: "No Match: Correct namespace but wrong cluster-name returns empty",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
+					Annotations: map[string]string{
+						utils.AnnotationKeyCluster: "non-existent-cluster",
+					},
 				},
 			},
-			clusterName:     "non-existent-cluster",
+			wantNetworkName: "",
+		},
+		{
+			name: "No Match: cluster-name is missing then returns empty",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "lb-without-cluster-name-annotation",
+					Annotations: map[string]string{
+						utils.AnnotationKeyCluster: "",
+					},
+				},
+			},
 			wantNetworkName: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			network, err := m.findNetwork(tt.lb, tt.clusterName)
+			network, err := m.findNetwork(tt.lb)
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 				return
