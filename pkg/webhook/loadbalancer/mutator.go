@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/harvester/webhook/pkg/server/admission"
 	rancherproject "github.com/rancher/rancher/pkg/project"
 	ctlcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
@@ -149,13 +151,13 @@ func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.P
 		return nil, err
 	}
 
-	network, err := m.findNetwork(lb, lb.Annotations[utils.AnnotationKeyCluster])
+	network, err := m.findNetwork(lb)
 	if err != nil {
 		return nil, err
 	}
 
 	// per the carried annotation like `loadbalancer.harvesterhci.io/cluster: gc1`
-	// additional annotations are mutated
+	// additional annotations are mutated or kept
 	//
 	//   loadbalancer.harvesterhci.io/namespace: default
 	//   loadbalancer.harvesterhci.io/network: default/vm-untag
@@ -179,7 +181,7 @@ func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.P
 }
 
 func (m *mutator) getAnnotationsPatch(lb *lbv1.LoadBalancer) (admission.Patch, error) {
-	if lb.Spec.WorkloadType == lbv1.VM {
+	if lb.Spec.WorkloadType == lbv1.VM || lb.Spec.WorkloadType == "" {
 		return m.getAnnotationsPatchVM(lb)
 	}
 	return m.getAnnotationsPatchCluster(lb)
@@ -210,41 +212,66 @@ func (m *mutator) findProject(namespace string) (string, error) {
 	return strings.Replace(ns.Annotations[rancherproject.ProjectIDAnn], ":", "/", 1), nil
 }
 
-// findNetwork identifies the target network for the guest cluster using a priority-based approach:
-// 1. Explicit Network: AnnotationKeyGuestClusterNetworkNameOnLB
-// 2. Management Network: AnnotationKeyGuestClusterManagementNetworkOnLB
-// 3. Discovery (New): Use both creator and cluster-name to match, it ensures the vm is belonging to this cluster.
-// 4. Discovery (Legacy): It selects vm by creator label, and then match by vm name prefix.
+// findNetwork identifies the target network for the guest cluster.
+//
+// Precondition:
+// The LoadBalancer must contain the cluster-name annotation (utils.AnnotationKeyCluster).
+// If missing, the function exits early with an empty result as discovery is impossible.
+//
+// Priority-based Resolution:
+//  1. Explicit Network: Uses the value from AnnotationKeyNetwork if present.
+//  2. Management Network: Uses the value from AnnotationKeyGuestClusterManagementNetworkOnLB if present.
+//  3. Discovery (Modern): Matches VMIs by creator cluster-name labels to ensure
+//     strict cluster membership.
+//  4. Discovery (Legacy Fallback): Selects VMIs by creator label and filters by VM name prefix
+//     matching the clusterName.
 //
 // Note: This assumes all VMs in the guest cluster share the same namespace and network configuration.
 // The remote application is responsible for the correctness of the appointed network name;
 // if it's wrong, it could lead to a failure to allocate IPs from the target pool.
-func (m *mutator) findNetwork(lb *lbv1.LoadBalancer, clusterName string) (string, error) {
-	// 1 & 2: Check annotations first
-	if net := lb.Annotations[utils.AnnotationKeyGuestClusterNetworkNameOnLB]; net != "" {
+func (m *mutator) findNetwork(lb *lbv1.LoadBalancer) (string, error) {
+	// The cluster-name is a mandatory precondition for all discovery and resolution tiers.
+	// Proceeding without it risks misidentifying the guest cluster or leaking IP resources.
+	clusterName := lb.Annotations[utils.AnnotationKeyCluster]
+	if clusterName == "" {
+		// We avoid returning an error here to prevent "brutally" breaking the remote
+		// side's creation request. This ensures the LoadBalancer object is admitted
+		// so that the downstream IPAM controller can process it and guest cluster could emit a
+		// descriptive Kubernetes Event.
+		logrus.WithFields(logrus.Fields{
+			"namespace": lb.Namespace,
+			"name":      lb.Name,
+		}).Warnf("findNetwork early exit: missing essential cluster-name annotation %s; return empty network name", utils.AnnotationKeyCluster)
+		return "", nil
+	}
+
+	// when cloud-provider-harvester has already patched the network, respect it
+	if net := lb.Annotations[utils.AnnotationKeyNetwork]; net != "" {
 		return net, nil
 	}
+
+	// when cloud-provider-harvester has already patched the management network, respect it
 	if net := lb.Annotations[utils.AnnotationKeyGuestClusterManagementNetworkOnLB]; net != "" {
 		return net, nil
 	}
 
-	// 3: Modern Discovery (Label-based)
-	// Use both creator and cluster-name to match, it ensures the vm is belonging to this cluster
-	modernSelector := utils.NewGuestClusterNameAndCreatorNameSelecotr(clusterName)
-	modernVMIs, err := m.vmiCache.List(lb.Namespace, modernSelector)
+	// use cluster-name to match
+	clusterNameSelector := utils.NewGuestClusterNameSelector(clusterName)
+	modernVMIs, err := m.vmiCache.List(lb.Namespace, clusterNameSelector)
 	if err != nil {
-		return "", fmt.Errorf("list vmis with modern selector failed: %w", err)
+		return "", fmt.Errorf("list vmis with guest cluster name %s selector failed: %w", clusterName, err)
 	}
 	if name, found := getFirstMultusNetworkName(modernVMIs); found {
 		return name, nil
 	}
 
-	// 4: Legacy Fallback (label + name prefix)
-	// It selects vm by creator label, and then match by vm name prefix
-	legacySelector := utils.NewGuestClusterCreatorSelecotr()
-	legacyVMIs, err := m.vmiCache.List(lb.Namespace, legacySelector)
+	// use creator to match
+	// might get a wrong network when there are multi guest clusters on a same namesapce
+	// keep it for backward compatibility
+	creatorSelector := utils.NewGuestClusterCreatorSelector()
+	legacyVMIs, err := m.vmiCache.List(lb.Namespace, creatorSelector)
 	if err != nil {
-		return "", fmt.Errorf("list vmis with legacy selector failed: %w", err)
+		return "", fmt.Errorf("list vmis with creator selector failed: %w", err)
 	}
 	if name, found := findNetworkByLegacyNameMatch(legacyVMIs, clusterName); found {
 		return name, nil
@@ -256,10 +283,21 @@ func (m *mutator) findNetwork(lb *lbv1.LoadBalancer, clusterName string) (string
 // getFirstMultusNetworkName searches a list of VMIs and returns the first Multus network name found.
 func getFirstMultusNetworkName(vmis []*kubevirtv1.VirtualMachineInstance) (string, bool) {
 	for _, vmi := range vmis {
-		for _, network := range vmi.Spec.Networks {
-			if network.Multus != nil {
-				return network.Multus.NetworkName, true
-			}
+		if name, found := getFirstMultusNetworkNameFromVMI(vmi); found {
+			return name, true
+		}
+	}
+	return "", false
+}
+
+func getFirstMultusNetworkNameFromVMI(vmi *kubevirtv1.VirtualMachineInstance) (string, bool) {
+	if vmi == nil {
+		return "", false
+	}
+	for _, network := range vmi.Spec.Networks {
+		// Ensure Multus is configured and the NetworkName is actually populated
+		if network.Multus != nil && network.Multus.NetworkName != "" {
+			return network.Multus.NetworkName, true
 		}
 	}
 	return "", false
@@ -268,9 +306,9 @@ func getFirstMultusNetworkName(vmis []*kubevirtv1.VirtualMachineInstance) (strin
 // findNetworkByLegacyNameMatch filters VMIs by name prefix and returns the first Multus network name found.
 func findNetworkByLegacyNameMatch(vmis []*kubevirtv1.VirtualMachineInstance, clusterName string) (string, bool) {
 	for _, vmi := range vmis {
+		// return the first multus network of the first vmi whose name starts with the cluster name
 		if strings.HasPrefix(vmi.Name, clusterName) {
-			// Reuse the spec-traversal helper for consistency
-			if name, found := getFirstMultusNetworkName([]*kubevirtv1.VirtualMachineInstance{vmi}); found {
+			if name, found := getFirstMultusNetworkNameFromVMI(vmi); found {
 				return name, true
 			}
 		}

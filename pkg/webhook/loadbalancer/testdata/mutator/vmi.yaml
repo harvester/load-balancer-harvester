@@ -16,16 +16,16 @@ spec:
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
 metadata:
-    name: any-vmi-name
-    namespace: default
-    labels:
-        harvesterhci.io/creator: "docker-machine-driver-harvester"
-        guestcluster.harvesterhci.io/name: "modern-cluster"
+  name: any-vmi-name
+  namespace: default
+  labels:
+    harvesterhci.io/creator: "docker-machine-driver-harvester"
+    guestcluster.harvesterhci.io/name: "modern-cluster"
 spec:
-    networks:
-        - multus:
-                networkName: default/modern-net
-          name: nic-0
+  networks:
+    - multus:
+        networkName: default/modern-net
+      name: nic-0
 ---
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance

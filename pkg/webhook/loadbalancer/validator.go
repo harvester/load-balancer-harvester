@@ -246,7 +246,7 @@ func (v *validator) checkGuestClusterIsOnRemove(lb *lbv1.LoadBalancer) error {
 	// The guest cluster name is required because multiple guest clusters may coexist in a single namespace
 	// Note: Only Rancher Manager-managed guest clusters follow this labeling convention
 	// custom or manual guest clusters may not adhere to this requirement
-	selector := utils.NewGuestClusterNameAndCreatorNameSelecotr(gcName)
+	selector := utils.NewGuestClusterNameAndCreatorNameSelector(gcName)
 	vms, err := v.vmCache.List(lb.Namespace, selector)
 	if err != nil {
 		return fmt.Errorf("list vm from %s failed, error: %w", lb.Namespace, err)

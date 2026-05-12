@@ -15,6 +15,7 @@ const (
 
 	Address4AskDHCP = "0.0.0.0"
 
+	// guest cluster could set this for a specific target network
 	AnnotationKeyNetwork   = lb.GroupName + "/network"
 	AnnotationKeyProject   = lb.GroupName + "/project"
 	AnnotationKeyNamespace = lb.GroupName + "/namespace"
@@ -42,15 +43,8 @@ const (
 
 	NetworkTypeLB = "loadbalancerNetwork"
 
-	// if guest cluster sets a target network, then respect it
-	// on first priority
-	AnnotationKeyGuestClusterNetworkNameOnLB = HarvesterCloudProviderPrefix + NetworkTypeLB
-
 	// when guest cluster has multi network, it can explicitly say which one is the management network, instead of guess or hardcode
-	// on second priority
 	AnnotationKeyGuestClusterManagementNetworkOnLB = HarvesterCloudProviderPrefix + NetworkTypeManagement
-
-	// fallbackmode, the network is fetched from the guest cluster's VM's first multu-network
 
 	// guest cluster used VM has such label: guestcluster.harvesterhci.io/name: gc3
 	LabelKeyGuestClusterNameOnVM = "guestcluster.harvesterhci.io/name"
