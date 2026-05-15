@@ -1,14 +1,12 @@
 apiVersion: loadbalancer.harvesterhci.io/v1beta1
 kind: IPPool
 metadata:
-  name: global
-  labels:
-    loadbalancer.harvesterhci.io/global-ip-pool: "true"
+  name: input
 spec:
   ranges:
-    - subnet: 192.168.10.0/24
+    - subnet: 192.168.20.0/24
   selector:
-    network: "default/network168"
+    network: "default/vlan20"
     scope:
       - namespace: "*"
         project: "*"

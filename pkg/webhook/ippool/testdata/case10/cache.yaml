@@ -1,13 +1,10 @@
 apiVersion: loadbalancer.harvesterhci.io/v1beta1
 kind: IPPool
 metadata:
-  name: default
+  name: pool1
 spec:
   ranges:
     - subnet: 192.168.10.0/24
   selector:
-    network: "default/network168"
-    scope:
-      - namespace: "*"
-        project: pj1
-        guestCluster: "*"
+    network: "default/vlan10"
+    priority: 1

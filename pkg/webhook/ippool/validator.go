@@ -13,7 +13,6 @@ import (
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	ctllbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester-load-balancer/pkg/ipam"
-	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
 
 type ipPoolValidator struct {
@@ -177,10 +176,10 @@ func checkAllocated(rs allocator.RangeSet, allocated map[string]string) error {
 }
 
 // checkSelector checks if the selector is valid.
-// It's allowed to create a global IP pool only when there is no global IP pool.
+// It's allowed to create a global IP pool for each network only when there is no global IP pool for that network.
 // When a pool checking scope overlaps with other pools, ignore the global IP pool.
 func (i *ipPoolValidator) checkSelector(pool *lbv1.IPPool) error {
-	if isGlobalIPPool(pool) {
+	if ipam.IsGlobalIPPool(pool) {
 		return i.checkGlobalIPPool(pool)
 	}
 
@@ -192,9 +191,10 @@ func (i *ipPoolValidator) checkSelector(pool *lbv1.IPPool) error {
 }
 
 func (i *ipPoolValidator) checkGlobalIPPool(pool *lbv1.IPPool) error {
-	pools, err := i.ipPoolCache.List(labels.Set(map[string]string{
-		utils.KeyGlobalIPPool: utils.ValueTrue,
-	}).AsSelector())
+	// As a global IP pool is based on its network instead of the whole system now,
+	// some legacy global IP pools might not have the label.
+	// Just list all pools and iterate through them.
+	pools, err := i.ipPoolCache.List(labels.Everything())
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,9 @@ func (i *ipPoolValidator) checkGlobalIPPool(pool *lbv1.IPPool) error {
 		if p.Name == pool.Name {
 			continue
 		}
-		return fmt.Errorf("there is already a global IP pool: %s", p.Name)
+		if ipam.IsGlobalIPPoolOfNetwork(p, pool.Spec.Selector.Network) {
+			return fmt.Errorf("there is already a global IP pool: %s for network %s", p.Name, pool.Spec.Selector.Network)
+		}
 	}
 
 	return nil
@@ -240,8 +242,12 @@ func (i *ipPoolValidator) checkSelectorWithOthers(pool *lbv1.IPPool) error {
 	}
 
 	for _, p := range pools {
+		// not for same network
+		if p.Spec.Selector.Network != pool.Spec.Selector.Network {
+			continue
+		}
 		// skip itself and global IP pool
-		if p.Name == pool.Name || isGlobalIPPool(p) {
+		if p.Name == pool.Name || ipam.IsGlobalIPPool(p) {
 			continue
 		}
 		// priority could not be same if it's not zero

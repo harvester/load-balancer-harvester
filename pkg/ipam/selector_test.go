@@ -22,7 +22,8 @@ const (
 	globalIpPoolKey = "loadbalancer.harvesterhci.io/global-ip-pool"
 	vidKey          = "loadbalancer.harvesterhci.io/vid"
 
-	vlan10Network = "default/vlan10"
+	vlan10Network  = "default/vlan10"
+	vlan100Network = "default/vlan100"
 
 	vlan100NoScope   = "vlan-100-no-scope"
 	vlan100WithScope = "vlan-100-with-scope"
@@ -91,8 +92,8 @@ var (
 		ObjectMeta: metav1.ObjectMeta{
 			Name: globalPoolName,
 			Labels: map[string]string{
-				globalIpPoolKey: "true",
-				vidKey:          "0",
+				// globalIpPoolKey: "true", // does not rely on it
+				vidKey: "0",
 			},
 		},
 		Spec: lbv1.IPPoolSpec{
@@ -102,6 +103,7 @@ var (
 				},
 			},
 			Selector: lbv1.Selector{
+				Network: vlan10Network,
 				Scope: []lbv1.Tuple{
 					{
 						GuestCluster: All,
@@ -128,7 +130,7 @@ var (
 				},
 			},
 			Selector: lbv1.Selector{
-				Network: vlan10Network,
+				Network: vlan100Network,
 				Scope: []lbv1.Tuple{ // When creating the pool, user does not set `GuestCluster` and `Project``
 					{
 						Namespace: defaultNamespace,
@@ -153,7 +155,7 @@ var (
 				},
 			},
 			Selector: lbv1.Selector{
-				Network: vlan10Network,
+				Network: vlan100Network,
 				Scope: []lbv1.Tuple{
 					{
 						GuestCluster: cluster1,
@@ -219,6 +221,15 @@ func TestSelectorWithGlobalPool_Select(t *testing.T) {
 				Namespace: "test",
 			},
 			ExpectedPool: globalPoolName,
+		},
+		{
+			name: "namespace does not match, network does not match, can't get global pool",
+			Requirement: &Requirement{
+				Network:   "not-match",
+				Namespace: "test",
+			},
+			ExpectedPool: "",
+			wantErr:      false,
 		},
 		{
 			name: "can't match a pool for guest cluster but still get global pool",
@@ -294,7 +305,7 @@ func TestSelectorGuestClusterCaseLooseMatchWithoutGlobalPool_Select(t *testing.T
 		{
 			name: "exact match a pool for guest cluster",
 			Requirement: &Requirement{
-				Network:   vlan10Network,
+				Network:   vlan100Network,
 				Project:   project1,
 				Namespace: defaultNamespace,
 				Cluster:   cluster1,
@@ -304,7 +315,7 @@ func TestSelectorGuestClusterCaseLooseMatchWithoutGlobalPool_Select(t *testing.T
 		{
 			name: "can't match a pool for guest cluster, but get the no scope pool, case 1",
 			Requirement: &Requirement{
-				Network:   vlan10Network,
+				Network:   vlan100Network,
 				Project:   "unknow", // allow any value
 				Namespace: defaultNamespace,
 				Cluster:   cluster1,
@@ -316,7 +327,7 @@ func TestSelectorGuestClusterCaseLooseMatchWithoutGlobalPool_Select(t *testing.T
 		{
 			name: "can't match a pool for guest cluster, but get the no scope pool, case 2",
 			Requirement: &Requirement{
-				Network:   vlan10Network,
+				Network:   vlan100Network,
 				Project:   "", // allow any value
 				Namespace: defaultNamespace,
 				Cluster:   "", // allow any value
