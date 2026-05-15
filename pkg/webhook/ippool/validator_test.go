@@ -119,23 +119,51 @@ func TestCheckSelector(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expected := map[string]bool{
-		// case1: It's only allowed one global IP pool
-		"case1": false,
-		// case2: Add global IP pool if there is no global IP pool
-		"case2": true,
-		// case3: There is no scope overlaps of the input IP pool itself
-		"case3": true,
-		// case4: There are scope overlaps of the input IP pool itself
-		"case4": false,
-		// case5: The input IP pool has different priority with the existing IP pools
-		"case5": true,
-		// case6: The input IP pool has the same priority with the existing IP pools
-		"case6": false,
-		// case7: There is no scope overlap of the input IP pool with the existing IP pools
-		"case7": true,
-		// case8: There are scope overlaps of the input IP pool with the existing IP pools
-		"case8": false,
+	type expectedResult struct {
+		description string
+		pass        bool
+	}
+	expected := map[string]expectedResult{
+		"case1": {
+			description: "It's only allowed to have one global IP pool for one network, new global IP pool is denied",
+			pass:        false,
+		},
+		"case2": {
+			description: "New global IP pool is allowed to add when there is no global IP pool",
+			pass:        true,
+		},
+		"case3": {
+			description: "There is no scope overlaps of the input IP pool itself",
+			pass:        true,
+		},
+		"case4": {
+			description: "There are scope overlaps of the input IP pool itself",
+			pass:        false,
+		},
+		"case5": {
+			description: "The input IP pool has different priority with the existing IP pools",
+			pass:        true,
+		},
+		"case6": {
+			description: "The input IP pool has the same priority with the existing IP pools",
+			pass:        false,
+		},
+		"case7": {
+			description: "There is no scope overlap of the input IP pool with the existing IP pools",
+			pass:        true,
+		},
+		"case8": {
+			description: "There are scope overlaps of the input IP pool with the existing IP pools",
+			pass:        false,
+		},
+		"case9": {
+			description: "Each of the two networks has one global IP pool",
+			pass:        true,
+		},
+		"case10": {
+			description: "The input IP pool has the same priority with the existing IP pools, but they are from different networks",
+			pass:        true,
+		},
 	}
 
 	for _, c := range cases {
@@ -157,8 +185,8 @@ func TestCheckSelector(t *testing.T) {
 			ipPoolCache: fakeclients.IPPoolCache(clientSet.LoadbalancerV1beta1().IPPools),
 		}
 		pool := input[0].(*lbv1.IPPool)
-		if err := validator.checkSelector(pool); (err == nil) != expected[c] {
-			t.Errorf("test %s failed, input: %+v, error: %v", c, pool, err)
+		if err := validator.checkSelector(pool); (err == nil) != expected[c].pass {
+			t.Errorf("test %s %s failed, input: %+v, error: %v", c, expected[c].description, pool, err)
 		}
 	}
 }

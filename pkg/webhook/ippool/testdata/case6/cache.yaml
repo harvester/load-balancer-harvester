@@ -6,4 +6,5 @@ spec:
   ranges:
     - subnet: 192.168.10.0/24
   selector:
+    network: "default/network168"
     priority: 1

@@ -3,11 +3,13 @@ kind: IPPool
 metadata:
   name: global
   labels:
-    loadbalancer.harvesterhci.io/global-ip-pool: "true"
+    # loadbalancer.harvesterhci.io/global-ip-pool: "true" // does not rely on this label
+    loadbalancer.harvesterhci.io/test: test
 spec:
   ranges:
     - subnet: 192.168.10.0/24
   selector:
+    network: "default/vlan10"
     scope:
       - namespace: "*"
         project: "*"
