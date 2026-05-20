@@ -1,0 +1,8 @@
+./.dapper
+./.cache
+./dist
+.idea
+.DS_Store
+/Dockerfile*
+/Makefile
+.git
