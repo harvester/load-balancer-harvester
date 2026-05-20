@@ -1,7 +1,11 @@
 #!/bin/bash
 set -e
 
-source $(dirname $0)/version
+TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
+SCRIPTS_DIR="${TOP_DIR}/scripts"
+PACKAGE_DIR="${TOP_DIR}/package"
+
+source "${SCRIPTS_DIR}"/version
 
 ARCH=${ARCH:-"amd64"}
 SUFFIX="-${ARCH}"
@@ -17,17 +21,17 @@ fi
 
 IMAGE=${REPO}/harvester-load-balancer:${TAG}
 IMAGE_WEBHOOK=${REPO}/harvester-load-balancer-webhook:${TAG}
-DOCKERFILE=package/Dockerfile
-DOCKERFILE_WEBHOOK=package/Dockerfile.webhook
+DOCKERFILE=${PACKAGE_DIR}/Dockerfile
+DOCKERFILE_WEBHOOK=${PACKAGE_DIR}/Dockerfile.webhook
 if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE=${DOCKERFILE}.${ARCH}
     DOCKERFILE_WEBHOOK=${DOCKERFILE_WEBHOOK}.${ARCH}
 fi
 
-docker buildx build --load \
-    -f ${DOCKERFILE} -t ${IMAGE} .
-echo Built ${IMAGE}
+echo "Building image ${IMAGE}"
 
-docker buildx build --load \
-    -f ${DOCKERFILE_WEBHOOK} -t ${IMAGE_WEBHOOK} .
-echo Built ${IMAGE_WEBHOOK}
+docker build -f ${DOCKERFILE} -t ${IMAGE} .
+
+echo "Building image ${IMAGE_WEBHOOK}"
+
+docker build -f ${DOCKERFILE_WEBHOOK} -t ${IMAGE_WEBHOOK} .

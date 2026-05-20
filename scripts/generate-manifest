@@ -2,9 +2,11 @@
 set -e
 
 # The root of the harvester-load-balancer directory
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
+SCRIPTS_DIR="${TOP_DIR}/scripts"
+PACKAGE_DIR="${TOP_DIR}/package"
 
-out_dir="${ROOT_DIR}/crds"
+out_dir="${TOP_DIR}/crds"
 mkdir -p "${out_dir}"
 
 # Clean up stable CRD manifest YAMLs
@@ -12,7 +14,7 @@ rm -rf "${out_dir}/*.yaml"
 
 # Generate CRD manifest YAMLs
 controller-gen crd \
-	paths="${ROOT_DIR}/pkg/apis/..." \
+	paths="${TOP_DIR}/pkg/apis/..." \
 	output:crd:dir="${out_dir}"
 
 # Remove controller-gen version info

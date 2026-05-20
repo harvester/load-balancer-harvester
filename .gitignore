@@ -2,3 +2,4 @@
 /.dapper
 /.idea
 /bin
+/scripts/.version_env
