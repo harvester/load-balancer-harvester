@@ -52,7 +52,7 @@ CODECOV_TOKEN             ?=
 REPO                      ?=
 PUSH                      ?=
 
-export MK_DOCKER_PROGRESS MK_REPO_ID MK_ADDONS_IMAGE MK_ISO_BUILDER_IMAGE
+export MK_DOCKER_PROGRESS MK_REPO_ID
 export CODECOV_TOKEN
 
 MK_HOST_ARCH := $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
