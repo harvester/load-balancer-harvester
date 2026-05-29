@@ -146,10 +146,14 @@ func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.P
 	}
 
 	var network string
-	if lb.Spec.WorkloadType == lbv1.Cluster && lb.Annotations != nil && lb.Annotations[utils.AnnotationKeyCluster] != "" {
-		network, err = m.findNetwork(lb.Namespace, lb.Annotations[utils.AnnotationKeyCluster])
-		if err != nil {
-			return nil, err
+	if _, ok := lb.Annotations[utils.AnnotationKeyNetwork]; ok {
+		network = lb.Annotations[utils.AnnotationKeyNetwork]
+	} else {
+		if lb.Annotations != nil && lb.Annotations[utils.AnnotationKeyCluster] != "" {
+			network, err = m.findNetwork(lb.Namespace, lb.Annotations[utils.AnnotationKeyCluster])
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
