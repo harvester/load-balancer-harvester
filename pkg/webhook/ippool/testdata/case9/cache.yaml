@@ -3,7 +3,11 @@ kind: IPPool
 metadata:
   name: global
   #labels:
-    #loadbalancer.harvesterhci.io/global-ip-pool: "true" // does not rely on this label
+    # The validator does not rely on this label to enforce global pool validity
+    # or uniqueness; it uses ipam.IsGlobalIPPool(pool) as the source of truth.
+    # Consequently, the presence or absence of this label does not impact
+    # validation results.
+    # loadbalancer.harvesterhci.io/global-ip-pool: "true"
 spec:
   ranges:
     - subnet: 192.168.10.0/24

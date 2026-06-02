@@ -3,6 +3,13 @@ package utils
 import lb "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io"
 
 const (
+	// KeyGlobalIPPool is the label key used to represent a global IPPool.
+	//
+	// Note: This constant is maintained for backward compatibility. The validator
+	// and controller do not rely on this label for internal logic; they use
+	// ipam.IsGlobalIPPool(pool) as the definitive source of truth.
+	//
+	// Each network can have at most one global IPPool.
 	KeyGlobalIPPool = lb.GroupName + "/global-ip-pool"
 	ValueTrue       = "true"
 
