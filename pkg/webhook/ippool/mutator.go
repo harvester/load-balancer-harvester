@@ -91,8 +91,16 @@ func (i *ipPoolMutator) getLabelPatch(pool *lbv1.IPPool) (admission.Patch, error
 	}
 
 	labels[utils.KeyVid] = vidStr
-	// Label the pool with its global status
-	// Each network can have at most one global IPPool, which is ensured by the validator
+	// Label the pool with its global status.
+	//
+	// Note: The validator and controller do not use this label for logic checks;
+	// instead, they rely on ipam.IsGlobalIPPool(pool) as the single source of truth
+	// for pool validation and duplication checks.
+	//
+	// This label is retained primarily for backward compatibility with existing
+	// user workflows and UI integrations.
+	//
+	// Label key: loadbalancer.harvesterhci.io/global-ip-pool: "true"
 	labels[utils.KeyGlobalIPPool] = isGlobalStr
 
 	return append(patch, admission.PatchOp{
