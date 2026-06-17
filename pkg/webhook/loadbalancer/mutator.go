@@ -214,27 +214,36 @@ func (m *mutator) findProject(namespace string) (string, error) {
 
 // findNetwork identifies the target network for the guest cluster.
 //
-// Precondition:
-// The LoadBalancer must contain the cluster-name annotation (utils.AnnotationKeyCluster).
-// If missing, the function exits early with an empty result as discovery is impossible.
-//
 // Priority-based Resolution:
 //  1. Explicit Network: Uses the value from AnnotationKeyNetwork if present.
 //  2. Management Network: Uses the value from AnnotationKeyGuestClusterManagementNetworkOnLB if present.
-//  3. Discovery (Modern): Matches VMIs by creator cluster-name labels to ensure
+//
+// The following two approaches depend on the cluster-name annotation (utils.AnnotationKeyCluster).
+// If it's missing, the function exits early with an empty result as discovery is impossible.
+//
+//  3. Discovery via cluster-name: Matches VMIs by cluster-name labels to ensure
 //     strict cluster membership.
-//  4. Discovery (Legacy Fallback): Selects VMIs by creator label and filters by VM name prefix
+//  4. Discovery via creator (fallback): Selects VMIs by creator label and filters by VM name prefix
 //     matching the clusterName.
 //
 // Note: This assumes all VMs in the guest cluster share the same namespace and network configuration.
 // The remote application is responsible for the correctness of the appointed network name;
 // if it's wrong, it could lead to a failure to allocate IPs from the target pool.
 func (m *mutator) findNetwork(lb *lbv1.LoadBalancer) (string, error) {
-	// The cluster-name is a mandatory precondition for all discovery and resolution tiers.
-	// Proceeding without it risks misidentifying the guest cluster or leaking IP resources.
+	// when cloud-provider-harvester has already patched lb with network annotation, respect it
+	if net := lb.Annotations[utils.AnnotationKeyNetwork]; net != "" {
+		return net, nil
+	}
+
+	// when cloud-provider-harvester has already patched the management network, respect it
+	if net := lb.Annotations[utils.AnnotationKeyGuestClusterManagementNetworkOnLB]; net != "" {
+		return net, nil
+	}
+
+	// The cluster-name is a mandatory precondition for cluster-name & creator type discovery
 	clusterName := lb.Annotations[utils.AnnotationKeyCluster]
 	if clusterName == "" {
-		// We avoid returning an error here to prevent "brutally" breaking the remote
+		// Avoid returning an error here to prevent "brutally" breaking the remote
 		// side's creation request. This ensures the LoadBalancer object is admitted
 		// so that the downstream IPAM controller can process it and guest cluster could emit a
 		// descriptive Kubernetes Event.
@@ -245,35 +254,25 @@ func (m *mutator) findNetwork(lb *lbv1.LoadBalancer) (string, error) {
 		return "", nil
 	}
 
-	// when cloud-provider-harvester has already patched the network, respect it
-	if net := lb.Annotations[utils.AnnotationKeyNetwork]; net != "" {
-		return net, nil
-	}
-
-	// when cloud-provider-harvester has already patched the management network, respect it
-	if net := lb.Annotations[utils.AnnotationKeyGuestClusterManagementNetworkOnLB]; net != "" {
-		return net, nil
-	}
-
 	// use cluster-name to match
 	clusterNameSelector := utils.NewGuestClusterNameSelector(clusterName)
-	modernVMIs, err := m.vmiCache.List(lb.Namespace, clusterNameSelector)
+	cnVMIs, err := m.vmiCache.List(lb.Namespace, clusterNameSelector)
 	if err != nil {
 		return "", fmt.Errorf("list vmis with guest cluster name %s selector failed: %w", clusterName, err)
 	}
-	if name, found := getFirstMultusNetworkName(modernVMIs); found {
+	if name, found := getFirstMultusNetworkName(cnVMIs); found {
 		return name, nil
 	}
 
 	// use creator to match
-	// might get a wrong network when there are multi guest clusters on a same namesapce
+	// might get a wrong network when there are multi guest clusters on a same namespace
 	// keep it for backward compatibility
 	creatorSelector := utils.NewGuestClusterCreatorSelector()
-	legacyVMIs, err := m.vmiCache.List(lb.Namespace, creatorSelector)
+	creatorVMIs, err := m.vmiCache.List(lb.Namespace, creatorSelector)
 	if err != nil {
 		return "", fmt.Errorf("list vmis with creator selector failed: %w", err)
 	}
-	if name, found := findNetworkByLegacyNameMatch(legacyVMIs, clusterName); found {
+	if name, found := findNetworkByLegacyNameMatch(creatorVMIs, clusterName); found {
 		return name, nil
 	}
 
