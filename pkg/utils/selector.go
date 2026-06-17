@@ -25,14 +25,14 @@ func NewGuestClusterCreatorSelector() labels.Selector {
 	}).AsSelector()
 }
 
-// the selector to match clustername
+// the selector to match cluster name
 func NewGuestClusterNameSelector(gcName string) labels.Selector {
 	return labels.Set(map[string]string{
 		LabelKeyGuestClusterNameOnVM: gcName,
 	}).AsSelector()
 }
 
-// the selector to match both creator and clustername
+// the selector to match both creator and cluster name
 func NewGuestClusterNameAndCreatorNameSelector(gcName string) labels.Selector {
 	return labels.Set(map[string]string{
 		LabelKeyHarvesterCreator:     GuestClusterHarvesterNodeDriver,

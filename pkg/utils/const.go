@@ -38,12 +38,9 @@ const (
 
 	HarvesterCloudProviderPrefix = HarvesterCloudProvider + "/"
 
-	// new definitions
 	NetworkTypeManagement = "managementNetwork"
 
-	NetworkTypeLB = "loadbalancerNetwork"
-
-	// when guest cluster has multi network, it can explicitly say which one is the management network, instead of guess or hardcode
+	// When the guest cluster has multiple networks, it can explicitly specify which one is the management network, instead of guessing or hardcoding.
 	AnnotationKeyGuestClusterManagementNetworkOnLB = HarvesterCloudProviderPrefix + NetworkTypeManagement
 
 	// guest cluster used VM has such label: guestcluster.harvesterhci.io/name: gc3

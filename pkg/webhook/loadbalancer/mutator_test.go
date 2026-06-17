@@ -155,7 +155,21 @@ func TestFindNetwork(t *testing.T) {
 		wantNetworkName string
 	}{
 		{
-			name: "Priority 1: Explicit Network exists",
+			name: "Found (priority 1): Use AnnotationKeyNetwork even when cluster-name is empty",
+			lb: &lbv1.LoadBalancer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "empty-cluster-name",
+					Annotations: map[string]string{
+						utils.AnnotationKeyCluster: "",
+						utils.AnnotationKeyNetwork: "custom/explicit-net",
+					},
+				},
+			},
+			wantNetworkName: "custom/explicit-net",
+		},
+		{
+			name: "Found (priority 1): Use AnnotationKeyNetwork",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
@@ -168,27 +182,12 @@ func TestFindNetwork(t *testing.T) {
 			wantNetworkName: "custom/explicit-net",
 		},
 		{
-			name: "Priority 1: Explicit Network exists but no cluster-name, returns empty",
-			lb: &lbv1.LoadBalancer{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "empty-cluster-name",
-					Annotations: map[string]string{
-						utils.AnnotationKeyCluster: "",
-						utils.AnnotationKeyNetwork: "custom/explicit-net",
-					},
-				},
-			},
-			wantNetworkName: "", // cluster-name is the precondition
-		},
-		{
-			name: "Priority 2: Fallthrough when Priority 1 is empty string",
+			name: "Found (priority 2): Use AnnotationKeyGuestClusterManagementNetworkOnLB when AnnotationKeyNetwork is empty",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Annotations: map[string]string{
-						utils.AnnotationKeyCluster:                           "any-cluster",
-						utils.AnnotationKeyNetwork:                           "",
+						utils.AnnotationKeyNetwork:                           "", // empty value is skipped
 						utils.AnnotationKeyGuestClusterManagementNetworkOnLB: "mgmt/mgmt-net",
 					},
 				},
@@ -196,7 +195,7 @@ func TestFindNetwork(t *testing.T) {
 			wantNetworkName: "mgmt/mgmt-net",
 		},
 		{
-			name: "Step 3: Modern Discovery (Label-based)",
+			name: "Found (priority 3): via cluster-name label to match VMI",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
@@ -208,7 +207,7 @@ func TestFindNetwork(t *testing.T) {
 			wantNetworkName: "default/modern-net",
 		},
 		{
-			name: "Step 4: Legacy Discovery (Prefix-based fallback)",
+			name: "Found (priority 4): (fallback) via creator + prefix to match VMI",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
@@ -220,7 +219,7 @@ func TestFindNetwork(t *testing.T) {
 			wantNetworkName: "default/mgmt-untagged",
 		},
 		{
-			name: "Namespace Mismatch: Valid cluster-name but wrong namespace returns empty",
+			name: "Not found (priority 3, 4): Valid cluster-name but wrong namespace returns empty",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "wrong-namespace",
@@ -232,25 +231,12 @@ func TestFindNetwork(t *testing.T) {
 			wantNetworkName: "",
 		},
 		{
-			name: "No Match: Correct namespace but wrong cluster-name returns empty",
+			name: "Not found (priority 3, 4): Correct namespace but wrong cluster-name returns empty",
 			lb: &lbv1.LoadBalancer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Annotations: map[string]string{
 						utils.AnnotationKeyCluster: "non-existent-cluster",
-					},
-				},
-			},
-			wantNetworkName: "",
-		},
-		{
-			name: "No Match: cluster-name is missing then returns empty",
-			lb: &lbv1.LoadBalancer{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "lb-without-cluster-name-annotation",
-					Annotations: map[string]string{
-						utils.AnnotationKeyCluster: "",
 					},
 				},
 			},

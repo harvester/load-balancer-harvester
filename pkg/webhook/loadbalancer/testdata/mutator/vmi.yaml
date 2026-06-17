@@ -1,4 +1,4 @@
-# Legacy VMI: No cluster label, matches only via Step 4 (Name Prefix)
+# matched via creator and name prefix
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
 metadata:
@@ -12,7 +12,7 @@ spec:
         networkName: default/mgmt-untagged
       name: nic-0
 ---
-# Modern VMI: Matches via Step 3 (Creator + ClusterName Labels)
+# matched via cluster-name
 apiVersion: kubevirt.io/v1
 kind: VirtualMachineInstance
 metadata:
