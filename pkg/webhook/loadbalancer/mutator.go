@@ -254,7 +254,7 @@ func (m *mutator) findNetwork(lb *lbv1.LoadBalancer) (string, error) {
 		return "", nil
 	}
 
-	// use cluster-name to match
+	// Use cluster-name to match
 	clusterNameSelector := utils.NewGuestClusterNameSelector(clusterName)
 	cnVMIs, err := m.vmiCache.List(lb.Namespace, clusterNameSelector)
 	if err != nil {
@@ -264,9 +264,11 @@ func (m *mutator) findNetwork(lb *lbv1.LoadBalancer) (string, error) {
 		return name, nil
 	}
 
-	// use creator to match
-	// might get a wrong network when there are multi guest clusters on a same namespace
-	// keep it for backward compatibility
+	// Use creator to match.
+	// Note:
+	// This is the legacy behavior, used as a last resort for backward compatibility.
+	// It may resolve to the wrong network if multiple guest clusters share the same namespace;
+	// therefore, the guest cluster must adapt to the first two strategies.
 	creatorSelector := utils.NewGuestClusterCreatorSelector()
 	creatorVMIs, err := m.vmiCache.List(lb.Namespace, creatorSelector)
 	if err != nil {
