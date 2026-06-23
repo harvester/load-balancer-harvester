@@ -856,7 +856,7 @@ github.com/stoewer/go-strcase
 # github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
 ## explicit; go 1.13
 github.com/tevino/tcp-shaker
-# github.com/urfave/cli v1.22.16
+# github.com/urfave/cli v1.22.17
 ## explicit; go 1.11
 github.com/urfave/cli
 # github.com/vishvananda/netlink v1.3.1-0.20250206174618-62fb240731fa
