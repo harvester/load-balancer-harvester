@@ -1,6 +1,6 @@
 module github.com/harvester/harvester-load-balancer
 
-go 1.26
+go 1.26.4
 
 replace (
 	github.com/google/cel-go => github.com/google/cel-go v0.22.0
