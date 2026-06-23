@@ -62,7 +62,7 @@ require (
 	github.com/rancher/wrangler/v3 v3.2.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
-	github.com/urfave/cli v1.22.16
+	github.com/urfave/cli v1.22.17
 	k8s.io/api v0.33.2
 	k8s.io/apimachinery v0.33.2
 	k8s.io/client-go v12.0.0+incompatible
