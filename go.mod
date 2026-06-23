@@ -3,7 +3,7 @@ module github.com/harvester/harvester-load-balancer
 go 1.26.4
 
 replace (
-	github.com/google/cel-go => github.com/google/cel-go v0.22.0
+	github.com/google/cel-go => github.com/google/cel-go v0.28.1
 	github.com/google/gnostic-models => github.com/google/gnostic-models v0.6.9
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20250106182855-361e35fd82e5
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20250106104058-89709a455e2a
