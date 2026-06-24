@@ -9,40 +9,40 @@ replace (
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20250106104058-89709a455e2a
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring => github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.92.0
 	github.com/rancher/lasso => github.com/rancher/lasso v0.0.0-20241202185148-04649f379358
-	github.com/rancher/rancher => github.com/rancher/rancher v0.0.0-20250827213702-1daa918b630b
+	github.com/rancher/rancher => github.com/rancher/rancher v0.63.1
 	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20250827213702-1daa918b630b
-	github.com/rancher/steve => github.com/rancher/steve v0.6.17
+	github.com/rancher/steve => github.com/rancher/steve v0.9.17
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0
 
-	k8s.io/api => k8s.io/api v0.33.7
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.7
-	k8s.io/apimachinery => k8s.io/apimachinery v0.33.7
-	k8s.io/apiserver => k8s.io/apiserver v0.33.7
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.33.7
-	k8s.io/client-go => k8s.io/client-go v0.33.7
-	k8s.io/cloud-provider => k8s.io/cloud-provider v0.33.7
-	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.33.7
-	k8s.io/code-generator => k8s.io/code-generator v0.33.7
-	k8s.io/component-base => k8s.io/component-base v0.33.7
-	k8s.io/component-helpers => k8s.io/component-helpers v0.33.7
-	k8s.io/controller-manager => k8s.io/controller-manager v0.33.7
-	k8s.io/cri-api => k8s.io/cri-api v0.33.7
-	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.33.7
-	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.33.7
-	k8s.io/endpointslice => k8s.io/endpointslice v0.33.7
-	k8s.io/kms => k8s.io/kms v0.33.7
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.33.7
-	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.33.7
-	k8s.io/kube-proxy => k8s.io/kube-proxy v0.33.7
-	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.33.7
+	k8s.io/api => k8s.io/api v0.36.2
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.36.2
+	k8s.io/apimachinery => k8s.io/apimachinery v0.36.2
+	k8s.io/apiserver => k8s.io/apiserver v0.36.2
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.36.2
+	k8s.io/client-go => k8s.io/client-go v0.36.2
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.36.2
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.36.2
+	k8s.io/code-generator => k8s.io/code-generator v0.36.2
+	k8s.io/component-base => k8s.io/component-base v0.36.2
+	k8s.io/component-helpers => k8s.io/component-helpers v0.36.2
+	k8s.io/controller-manager => k8s.io/controller-manager v0.36.2
+	k8s.io/cri-api => k8s.io/cri-api v0.36.2
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.36.2
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.36.2
+	k8s.io/endpointslice => k8s.io/endpointslice v0.36.2
+	k8s.io/kms => k8s.io/kms v0.36.2
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.36.2
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.36.2
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.36.2
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.36.2
 	k8s.io/kubectl => k8s.io/kubectl v0.33.7
-	k8s.io/kubelet => k8s.io/kubelet v0.33.7
-	k8s.io/kubernetes => k8s.io/kubernetes v1.33.7
+	k8s.io/kubelet => k8s.io/kubelet v0.36.2
+	k8s.io/kubernetes => k8s.io/kubernetes v1.36.2
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.33.7
-	k8s.io/metrics => k8s.io/metrics v0.33.7
-	k8s.io/mount-utils => k8s.io/mount-utils v0.33.7
-	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.33.7
-	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.33.7
+	k8s.io/metrics => k8s.io/metrics v0.36.2
+	k8s.io/mount-utils => k8s.io/mount-utils v0.36.2
+	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.36.2
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.36.2
 )
 
 require (
@@ -51,14 +51,14 @@ require (
 	github.com/harvester/webhook v0.1.5
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/rancher/lasso v0.2.3
-	github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d
+	github.com/rancher/rancher v0.63.1
 	github.com/rancher/rancher/pkg/apis v0.0.0
-	github.com/rancher/wrangler/v3 v3.2.2
+	github.com/rancher/wrangler/v3 v3.7.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
 	github.com/urfave/cli v1.22.17
-	k8s.io/api v0.33.7
-	k8s.io/apimachinery v0.33.7
+	k8s.io/api v0.36.2
+	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v12.0.0+incompatible
 	kubevirt.io/api v1.7.0
 )
