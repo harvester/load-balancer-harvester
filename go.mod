@@ -8,47 +8,47 @@ replace (
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20250106182855-361e35fd82e5
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20250106104058-89709a455e2a
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring => github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.68.0
-	github.com/rancher/lasso => github.com/rancher/lasso v0.0.0-20241202185148-04649f379358
+	github.com/rancher/lasso => github.com/rancher/lasso v0.2.9
 	github.com/rancher/rancher => github.com/rancher/rancher v0.0.0-20250827213702-1daa918b630b
-	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20250827213702-1daa918b630b
-	github.com/rancher/steve => github.com/rancher/steve v0.6.17
+	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20260624083124-ece6c3f66990
+	github.com/rancher/steve => github.com/rancher/steve v0.9.17
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0
 
-	k8s.io/api => k8s.io/api v0.32.5
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.32.5
-	k8s.io/apimachinery => k8s.io/apimachinery v0.32.5
-	k8s.io/apiserver => k8s.io/apiserver v0.32.5
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.32.5
-	k8s.io/client-go => k8s.io/client-go v0.32.5
-	k8s.io/cloud-provider => k8s.io/cloud-provider v0.32.5
-	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.32.5
+	k8s.io/api => k8s.io/api v0.36.2
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.36.2
+	k8s.io/apimachinery => k8s.io/apimachinery v0.36.2
+	k8s.io/apiserver => k8s.io/apiserver v0.36.2
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.36.2
+	k8s.io/client-go => k8s.io/client-go v0.36.2
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.36.2
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.36.2
 	// k8s.io/code-generator still remains v0.31.5 due to kubevirt v1.6.0.
 	// kubevirt v1.6.0 is still using v0.31.1 code generator, but v0.32.5 code generator has a big change about fake clientset.
 	// Check more details in https://github.com/harvester/harvester/issues/8719#issue-3251235542.
-	k8s.io/code-generator => k8s.io/code-generator v0.31.5
-	k8s.io/component-base => k8s.io/component-base v0.32.5
-	k8s.io/component-helpers => k8s.io/component-helpers v0.32.5
-	k8s.io/controller-manager => k8s.io/controller-manager v0.32.5
-	k8s.io/cri-api => k8s.io/cri-api v0.32.5
-	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.32.5
-	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.32.5
-	k8s.io/endpointslice => k8s.io/endpointslice v0.32.5
-	k8s.io/gengo/v2 => k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70
-	k8s.io/kms => k8s.io/kms v0.32.5
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.32.5
-	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.32.5
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340
-	k8s.io/kube-proxy => k8s.io/kube-proxy v0.32.5
-	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.32.5
-	k8s.io/kubectl => k8s.io/kubectl v0.32.5
-	k8s.io/kubelet => k8s.io/kubelet v0.32.5
-	k8s.io/kubernetes => k8s.io/kubernetes v1.32.10
+	k8s.io/code-generator => k8s.io/code-generator v0.36.2
+	k8s.io/component-base => k8s.io/component-base v0.36.2
+	k8s.io/component-helpers => k8s.io/component-helpers v0.36.2
+	k8s.io/controller-manager => k8s.io/controller-manager v0.36.2
+	k8s.io/cri-api => k8s.io/cri-api v0.36.2
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.36.2
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.36.2
+	k8s.io/endpointslice => k8s.io/endpointslice v0.36.2
+	k8s.io/gengo/v2 => k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3
+	k8s.io/kms => k8s.io/kms v0.36.2
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.36.2
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.36.2
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20260624041617-8f3fa4921821
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.36.2
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.36.2
+	k8s.io/kubectl => k8s.io/kubectl v0.36.2
+	k8s.io/kubelet => k8s.io/kubelet v0.36.2
+	k8s.io/kubernetes => k8s.io/kubernetes v1.36.2
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.32.5
-	k8s.io/metrics => k8s.io/metrics v0.32.5
-	k8s.io/mount-utils => k8s.io/mount-utils v0.32.5
-	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.32.5
-	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.32.5
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.20.4
+	k8s.io/metrics => k8s.io/metrics v0.36.2
+	k8s.io/mount-utils => k8s.io/mount-utils v0.36.2
+	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.36.2
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.36.2
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.24.1
 )
 
 require (
@@ -56,15 +56,15 @@ require (
 	github.com/containernetworking/plugins v1.5.1
 	github.com/harvester/harvester v1.6.0
 	github.com/harvester/webhook v0.1.5
-	github.com/rancher/lasso v0.2.3
+	github.com/rancher/lasso v0.2.9
 	github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d
 	github.com/rancher/rancher/pkg/apis v0.0.0
-	github.com/rancher/wrangler/v3 v3.2.2
+	github.com/rancher/wrangler/v3 v3.7.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/tevino/tcp-shaker v0.0.0-20191112104505-00eab0aefc80
 	github.com/urfave/cli v1.22.17
-	k8s.io/api v0.33.2
-	k8s.io/apimachinery v0.33.2
+	k8s.io/api v0.36.2
+	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v12.0.0+incompatible
 	kubevirt.io/api v1.6.0
 )
@@ -128,7 +128,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/k3s-io/helm-controller v0.16.1 // indirect
+	github.com/k3s-io/helm-controller v0.17.2 // indirect
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.5 // indirect
 	github.com/k8snetworkplumbingwg/whereabouts v0.8.0 // indirect
 	github.com/kube-logging/logging-operator/pkg/sdk v0.11.1-0.20240314152935-421fefebc813 // indirect
@@ -163,18 +163,18 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/rancher/aks-operator v1.12.0 // indirect
-	github.com/rancher/apiserver v0.6.3 // indirect
-	github.com/rancher/dynamiclistener v0.7.0 // indirect
-	github.com/rancher/eks-operator v1.12.0 // indirect
-	github.com/rancher/fleet/pkg/apis v0.13.0 // indirect
-	github.com/rancher/gke-operator v1.12.0 // indirect
+	github.com/rancher/aks-operator v1.14.3 // indirect
+	github.com/rancher/apiserver v0.9.7 // indirect
+	github.com/rancher/dynamiclistener v0.8.2 // indirect
+	github.com/rancher/eks-operator v1.14.3 // indirect
+	github.com/rancher/fleet/pkg/apis v0.15.2 // indirect
+	github.com/rancher/gke-operator v1.14.3 // indirect
 	github.com/rancher/kubernetes-provider-detector v0.1.5 // indirect
-	github.com/rancher/norman v0.7.0 // indirect
-	github.com/rancher/remotedialer v0.5.0 // indirect
-	github.com/rancher/rke v1.8.0-rc.4 // indirect
-	github.com/rancher/steve v0.6.29 // indirect
-	github.com/rancher/system-upgrade-controller/pkg/apis v0.0.0-20250710162344-185ff9f785cd // indirect
+	github.com/rancher/norman v0.9.7 // indirect
+	github.com/rancher/remotedialer v0.6.1 // indirect
+	github.com/rancher/rke v1.8.14 // indirect
+	github.com/rancher/steve v0.9.17 // indirect
+	github.com/rancher/system-upgrade-controller/pkg/apis v0.0.0-20260623211655-532fabb38cc4 // indirect
 	github.com/rancher/wrangler v1.1.2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/robfig/cron v1.2.0 // indirect
@@ -229,20 +229,20 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.33.1 // indirect
-	k8s.io/apiserver v0.33.2 // indirect
-	k8s.io/code-generator v0.33.2 // indirect
-	k8s.io/component-base v0.33.2 // indirect
-	k8s.io/gengo v0.0.0-20250130153323-76c5745d3511 // indirect
-	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
+	k8s.io/apiextensions-apiserver v0.36.2 // indirect
+	k8s.io/apiserver v0.36.2 // indirect
+	k8s.io/code-generator v0.36.2 // indirect
+	k8s.io/component-base v0.36.2 // indirect
+	k8s.io/gengo v0.0.0-20260408192533-25e2208e0dc3 // indirect
+	k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3 // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kms v0.32.5 // indirect
-	k8s.io/kube-aggregator v0.33.1 // indirect
+	k8s.io/klog/v2 v2.140.0 // indirect
+	k8s.io/kms v0.36.2 // indirect
+	k8s.io/kube-aggregator v0.36.2 // indirect
 	k8s.io/kube-openapi v0.31.9 // indirect
-	k8s.io/kubernetes v1.33.6 // indirect
-	k8s.io/mount-utils v0.32.2 // indirect
-	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
+	k8s.io/kubernetes v1.36.2 // indirect
+	k8s.io/mount-utils v0.36.2 // indirect
+	k8s.io/utils v0.0.0-20260617174310-a95e086a2553 // indirect
 	kubevirt.io/client-go v1.6.0 // indirect
 	kubevirt.io/containerized-data-importer-api v1.61.0 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.0.0-20220329064328-f3cc58c6ed90 // indirect
@@ -251,11 +251,11 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.38.0 // indirect
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.32.1 // indirect
+	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.36.0 // indirect
 	sigs.k8s.io/cli-utils v0.37.2 // indirect
-	sigs.k8s.io/cluster-api v1.10.2 // indirect
-	sigs.k8s.io/controller-runtime v0.21.0 // indirect
-	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
+	sigs.k8s.io/cluster-api v1.13.3 // indirect
+	sigs.k8s.io/controller-runtime v0.24.1 // indirect
+	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
-	sigs.k8s.io/yaml v1.5.0 // indirect
+	sigs.k8s.io/yaml v1.6.0 // indirect
 )
