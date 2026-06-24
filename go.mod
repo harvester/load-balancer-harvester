@@ -240,7 +240,7 @@ require (
 	k8s.io/kms v0.32.5 // indirect
 	k8s.io/kube-aggregator v0.33.1 // indirect
 	k8s.io/kube-openapi v0.31.9 // indirect
-	k8s.io/kubernetes v1.33.1 // indirect
+	k8s.io/kubernetes v1.33.6 // indirect
 	k8s.io/mount-utils v0.32.2 // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
 	kubevirt.io/client-go v1.6.0 // indirect
