@@ -356,6 +356,28 @@ func (h *Handler) requestIP(lb *lbv1.LoadBalancer, pool string) (*lbv1.Allocated
 	}, nil
 }
 
+func updateVMTypeSelector(lb *lbv1.LoadBalancer, r *ipam.Requirement) {
+	// empty WorkloadType defaults to VM type
+	if lb.Spec.WorkloadType != lbv1.VM && lb.Spec.WorkloadType != "" {
+		return
+	}
+	// VM type lb does not have concept of Project, Cluster, set them to AllSelector if empty
+	// this does not rely on the webhook to update them to AllSelector
+	if r.Project == "" {
+		r.Project = ipam.AllSelector
+	}
+	if r.Cluster == "" {
+		r.Cluster = ipam.AllSelector
+	}
+	// if user does not explicitly set a network annotation
+	// then it equals to any network
+	// note that, on UI, for VM type LB, it can manually select any IPPool
+	// this will be enforced in the future
+	if r.Network == "" {
+		r.Network = ipam.AllSelector
+	}
+}
+
 func (h *Handler) selectIPPool(lb *lbv1.LoadBalancer) (string, error) {
 	r := &ipam.Requirement{
 		Network:   lb.Annotations[utils.AnnotationKeyNetwork],
@@ -366,6 +388,9 @@ func (h *Handler) selectIPPool(lb *lbv1.LoadBalancer) (string, error) {
 	if r.Namespace == "" {
 		r.Namespace = lb.Namespace
 	}
+
+	updateVMTypeSelector(lb, r)
+
 	pool, err := ipam.NewSelector(h.ipPoolCache).Select(r, false)
 	if err != nil {
 		return "", fmt.Errorf("%w with selector, error: %w", errNoMatchedIPPool, err)
