@@ -43,6 +43,9 @@ const (
 	// When the guest cluster has multiple networks, it can explicitly specify which one is the management network, instead of guessing or hardcoding.
 	AnnotationKeyGuestClusterManagementNetworkOnLB = HarvesterCloudProviderPrefix + NetworkTypeManagement
 
+	// When HCP requests a specific network for the guest cluster, this annotation is used to save the original input
+	AnnotationKeyGuestClusterRequestedNetworkOnLB = HarvesterCloudProviderPrefix + "network"
+
 	// guest cluster used VM has such label: guestcluster.harvesterhci.io/name: gc3
 	LabelKeyGuestClusterNameOnVM = "guestcluster.harvesterhci.io/name"
 

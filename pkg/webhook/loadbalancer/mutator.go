@@ -38,7 +38,7 @@ func NewMutator(namespaceCache ctlcorev1.NamespaceCache,
 func (m *mutator) Create(_ *admission.Request, newObj runtime.Object) (admission.Patch, error) {
 	lb := newObj.(*lbv1.LoadBalancer)
 
-	ap, err := m.getAnnotationsPatch(lb)
+	ap, err := m.getAnnotationsPatch(lb, true)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (m *mutator) Update(_ *admission.Request, _, newObj runtime.Object) (admiss
 		return nil, nil
 	}
 
-	ap, err := m.getAnnotationsPatch(lb)
+	ap, err := m.getAnnotationsPatch(lb, false)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (m *mutator) getHealthyCheckPatch(lb *lbv1.LoadBalancer) (admission.Patch, 
 }
 
 // for VM type LB, it does not expose the concept of Project, Network
-func (m *mutator) getAnnotationsPatchVM(lb *lbv1.LoadBalancer) (admission.Patch, error) {
+func (m *mutator) getAnnotationsPatchVM(lb *lbv1.LoadBalancer, _ bool) (admission.Patch, error) {
 	// already patched
 	if lb.Annotations[utils.AnnotationKeyNamespace] == lb.Namespace {
 		return nil, nil
@@ -141,7 +141,7 @@ func (m *mutator) getAnnotationsPatchVM(lb *lbv1.LoadBalancer) (admission.Patch,
 }
 
 // for Cluster type LB
-func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.Patch, error) {
+func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer, create bool) (admission.Patch, error) {
 	if lb.Spec.WorkloadType != lbv1.Cluster {
 		return nil, nil
 	}
@@ -167,6 +167,15 @@ func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.P
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
+
+	// keep original network annotation on create case
+	// if user does not specify network, the annotation will be empty, it indicates the network is not specified
+	// it will be used by the HCP to determine if network is changed, if changed, it will return error to CCM framework
+	// as change network directly is not allowed, user should delete the LB and create a new one with new network
+	if create {
+		annotations[utils.AnnotationKeyGuestClusterRequestedNetworkOnLB] = lb.Annotations[utils.AnnotationKeyNetwork]
+	}
+
 	annotations[utils.AnnotationKeyNamespace] = lb.Namespace
 	annotations[utils.AnnotationKeyProject] = project
 	annotations[utils.AnnotationKeyNetwork] = network
@@ -180,11 +189,11 @@ func (m *mutator) getAnnotationsPatchCluster(lb *lbv1.LoadBalancer) (admission.P
 	}, nil
 }
 
-func (m *mutator) getAnnotationsPatch(lb *lbv1.LoadBalancer) (admission.Patch, error) {
+func (m *mutator) getAnnotationsPatch(lb *lbv1.LoadBalancer, create bool) (admission.Patch, error) {
 	if lb.Spec.WorkloadType == lbv1.VM || lb.Spec.WorkloadType == "" {
-		return m.getAnnotationsPatchVM(lb)
+		return m.getAnnotationsPatchVM(lb, create)
 	}
-	return m.getAnnotationsPatchCluster(lb)
+	return m.getAnnotationsPatchCluster(lb, create)
 }
 
 func (m *mutator) Resource() admission.Resource {
