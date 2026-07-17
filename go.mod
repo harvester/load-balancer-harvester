@@ -54,7 +54,7 @@ replace (
 require (
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.5.1
-	github.com/harvester/harvester v1.6.0
+	github.com/harvester/harvester v1.6.1
 	github.com/harvester/webhook v0.1.5
 	github.com/rancher/lasso v0.2.3
 	github.com/rancher/rancher v0.0.0-20241119020906-df45e368c82d

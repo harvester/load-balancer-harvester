@@ -262,7 +262,7 @@ github.com/grpc-ecosystem/grpc-gateway/v2/utilities
 # github.com/harvester/go-common v0.0.0-20250109132713-e748ce72a7ba
 ## explicit; go 1.23
 github.com/harvester/go-common/ds
-# github.com/harvester/harvester v1.6.0
+# github.com/harvester/harvester v1.6.1
 ## explicit; go 1.24.2
 github.com/harvester/harvester/pkg/apis/harvesterhci.io
 github.com/harvester/harvester/pkg/apis/harvesterhci.io/v1beta1
