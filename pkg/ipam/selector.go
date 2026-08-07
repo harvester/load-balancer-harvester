@@ -11,7 +11,6 @@ import (
 
 const All = "*"
 const EmptySelector = ""
-const AllSelector = All // use AllSelector instead of All
 
 type Selector struct {
 	ctllbv1.IPPoolCache
@@ -50,9 +49,7 @@ func NewMatcherWithMode(poolSelector lbv1.Selector, looseMode bool) *Matcher {
 }
 
 func (m *Matcher) Matches(r *Requirement) bool {
-	// VM type LB does not expose network to user, hence the network is set to All by controller
-	// guest type LB must specify a network, it can't be All
-	if r.Network != All && m.selector.Network != r.Network {
+	if m.selector.Network != r.Network {
 		return false
 	}
 
@@ -82,10 +79,7 @@ func (s *Selector) Select(r *Requirement, looseMode bool) (*lbv1.IPPool, error) 
 	var priority uint32
 	for _, pool := range pools {
 		if IsGlobalIPPoolOfNetwork(pool, r.Network) {
-			// take the first one
-			if globalPool == nil {
-				globalPool = pool
-			}
+			globalPool = pool
 			continue
 		}
 		// If the priority is not zero, every pool has different priority value.
