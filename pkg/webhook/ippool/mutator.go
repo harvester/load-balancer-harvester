@@ -85,14 +85,12 @@ func (i *ipPoolMutator) getLabelPatch(pool *lbv1.IPPool) (admission.Patch, error
 	}
 
 	vidStr := strconv.Itoa(vid)
-	isGlobalStr := strconv.FormatBool(ipam.IsGlobalIPPool(pool))
+	isGlobalStr := strconv.FormatBool(isGlobalIPPool(pool))
 	if labels[utils.KeyVid] == vidStr && labels[utils.KeyGlobalIPPool] == isGlobalStr {
 		return patch, nil
 	}
 
 	labels[utils.KeyVid] = vidStr
-	// Label the pool with its global status
-	// Each network can have at most one global IPPool, which is ensured by the validator
 	labels[utils.KeyGlobalIPPool] = isGlobalStr
 
 	return append(patch, admission.PatchOp{
@@ -100,4 +98,9 @@ func (i *ipPoolMutator) getLabelPatch(pool *lbv1.IPPool) (admission.Patch, error
 		Path:  "/metadata/labels",
 		Value: labels,
 	}), nil
+}
+
+func isGlobalIPPool(pool *lbv1.IPPool) bool {
+	return len(pool.Spec.Selector.Scope) == 1 && pool.Spec.Selector.Scope[0].Namespace == ipam.All &&
+		pool.Spec.Selector.Scope[0].Project == ipam.All && pool.Spec.Selector.Scope[0].GuestCluster == ipam.All
 }
