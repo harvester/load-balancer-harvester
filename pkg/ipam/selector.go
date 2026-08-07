@@ -7,6 +7,7 @@ import (
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	ctllbv1 "github.com/harvester/harvester-load-balancer/pkg/generated/controllers/loadbalancer.harvesterhci.io/v1beta1"
+	"github.com/harvester/harvester-load-balancer/pkg/utils"
 )
 
 const All = "*"
@@ -78,7 +79,7 @@ func (s *Selector) Select(r *Requirement, looseMode bool) (*lbv1.IPPool, error) 
 	var selectedPool, globalPool *lbv1.IPPool
 	var priority uint32
 	for _, pool := range pools {
-		if IsGlobalIPPoolOfNetwork(pool, r.Network) {
+		if pool.Labels != nil && pool.Labels[utils.KeyGlobalIPPool] == utils.ValueTrue {
 			globalPool = pool
 			continue
 		}
