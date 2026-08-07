@@ -10,7 +10,6 @@ func IsGlobalIPPool(pool *lbv1.IPPool) bool {
 }
 
 // a global pool of a specific network
-// if the network is All (could only be passed for VM type LB), then it just checks the IsGlobalIPPool
 func IsGlobalIPPoolOfNetwork(pool *lbv1.IPPool, network string) bool {
-	return (network == All || pool.Spec.Selector.Network == network) && IsGlobalIPPool(pool)
+	return pool.Spec.Selector.Network == network && IsGlobalIPPool(pool)
 }
