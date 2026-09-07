@@ -526,7 +526,10 @@ func (m *Manager) ensureService(lb *lbv1.LoadBalancer) error {
 		}
 	}
 
-	return nil
+	// Ensure an EndpointSlice to unblock kube-vip.
+	// kube-vip requires non-empty EndpointSlices before writing the VIP back to the Service status,
+	// which would otherwise cause a deadlock.
+	return m.ensureDummyEndpointSliceIfNotExist(lb)
 }
 
 func constructService(cur *corev1.Service, lb *lbv1.LoadBalancer) *corev1.Service {
@@ -675,4 +678,61 @@ func (m *Manager) constructEndpointSliceFromBackendServers(cur *discoveryv1.Endp
 	logrus.Debugln("constructEndpointSliceFromBackendServers: ", eps)
 
 	return eps, nil
+}
+
+func (m *Manager) ensureDummyEndpointSliceIfNotExist(lb *lbv1.LoadBalancer) error {
+	eps, err := m.endpointSliceCache.Get(lb.Namespace, lb.Name)
+	if err == nil {
+		if len(eps.Endpoints) == 0 {
+			return m.ensureDummyEndpoint(lb, eps)
+		}
+		return nil
+	}
+
+	if !errors.IsNotFound(err) {
+		return fmt.Errorf("fail to get endpointslice %s/%s, error: %w", lb.Namespace, lb.Name, err)
+	}
+
+	// create a dummy one when it is not found
+	eps = m.constructDummyEndpointSlice(lb)
+	logrus.Debugf("createDummyEndpointslice: %+v", eps)
+
+	_, err = m.endpointSliceClient.Create(eps)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("fail to create dummy endpointslice %s/%s, error: %w", eps.Namespace, eps.Name, err)
+	}
+	return nil
+}
+
+// construct a dummy endpointslice to ensure kube-vip will apply vip first
+func (m *Manager) constructDummyEndpointSlice(lb *lbv1.LoadBalancer) *discoveryv1.EndpointSlice {
+	eps := &discoveryv1.EndpointSlice{}
+	eps.Namespace = lb.Namespace
+	eps.Name = lb.Name
+	eps.OwnerReferences = []metav1.OwnerReference{
+		{
+			APIVersion: lb.APIVersion,
+			Kind:       lb.Kind,
+			Name:       lb.Name,
+			UID:        lb.UID,
+		}}
+	eps.Labels = map[string]string{
+		KeyLabel:       utils.ValueTrue,
+		KeyServiceName: lb.Name,
+	}
+	eps.AddressType = discoveryv1.AddressTypeIPv4
+
+	ports := make([]discoveryv1.EndpointPort, 0, len(lb.Spec.Listeners))
+	for i := range lb.Spec.Listeners {
+		port := discoveryv1.EndpointPort{
+			Name:     &(lb.Spec.Listeners[i].Name),
+			Protocol: &(lb.Spec.Listeners[i].Protocol),
+			Port:     &(lb.Spec.Listeners[i].BackendPort),
+		}
+		ports = append(ports, port)
+	}
+	eps.Ports = ports
+	eps.Endpoints = appendDummyEndpoint(eps.Endpoints, lb)
+
+	return eps
 }
