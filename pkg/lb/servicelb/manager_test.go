@@ -3,13 +3,17 @@ package servicelb
 import (
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	kubevirtv1 "kubevirt.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clientgotesting "k8s.io/client-go/testing"
 
 	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	"github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/fake"
+	discoveryv1type "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1"
 	"github.com/harvester/harvester-load-balancer/pkg/utils/fakeclients"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 )
 
 const (
@@ -179,6 +183,179 @@ func TestGetBackendServer(t *testing.T) {
 			}
 			if ret.GetWithIPAddressBackendServerCount() != tt.withAddressBackendServerCount {
 				t.Errorf("withAddressBackendServerCount, real %v != expected %v", ret.GetWithIPAddressBackendServerCount(), tt.withAddressBackendServerCount)
+			}
+		})
+	}
+}
+
+func TestConstructDummyEndpointSlice(t *testing.T) {
+	portName := "http"
+	proto := corev1.ProtocolTCP
+	var backendPort int32 = 8080
+
+	lb := &lbv1.LoadBalancer{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "loadbalancer.harvesterhci.io/v1beta1",
+			Kind:       "LoadBalancer",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-lb",
+			Namespace: "default",
+			UID:       "uid-1234",
+		},
+		Spec: lbv1.LoadBalancerSpec{
+			Listeners: []lbv1.Listener{
+				{
+					Name:        portName,
+					Protocol:    proto,
+					BackendPort: backendPort,
+				},
+			},
+		},
+	}
+
+	// lb controller name is unknown
+	m := &Manager{}
+
+	eps := m.constructDummyEndpointSlice(lb)
+
+	if eps.Namespace != "default" {
+		t.Errorf("expected namespace 'default', got '%s'", eps.Namespace)
+	}
+	if eps.Name != "test-lb" {
+		t.Errorf("expected name 'test-lb', got '%s'", eps.Name)
+	}
+	if eps.AddressType != discoveryv1.AddressTypeIPv4 {
+		t.Errorf("expected addressType IPv4, got '%s'", eps.AddressType)
+	}
+
+	// Verify OwnerReference
+	if len(eps.OwnerReferences) != 1 {
+		t.Fatalf("expected 1 OwnerReference, got %d", len(eps.OwnerReferences))
+	}
+	if eps.OwnerReferences[0].Name != lb.Name {
+		t.Errorf("expected OwnerReference name '%s', got '%s'", lb.Name, eps.OwnerReferences[0].Name)
+	}
+	if eps.OwnerReferences[0].UID != lb.UID {
+		t.Errorf("expected OwnerReference UID '%s', got '%s'", lb.UID, eps.OwnerReferences[0].UID)
+	}
+
+	// Verify Labels
+	if svcName := eps.Labels[KeyServiceName]; svcName != lb.Name {
+		t.Errorf("expected service name label '%s', got '%s'", lb.Name, svcName)
+	}
+
+	// Verify Ports
+	if len(eps.Ports) != 1 {
+		t.Fatalf("expected 1 port, got %d", len(eps.Ports))
+	}
+	if eps.Ports[0].Name == nil || *eps.Ports[0].Name != portName {
+		t.Errorf("expected port name '%s', got '%v'", portName, eps.Ports[0].Name)
+	}
+	if eps.Ports[0].Protocol == nil || *eps.Ports[0].Protocol != proto {
+		t.Errorf("expected protocol '%s', got '%v'", proto, eps.Ports[0].Protocol)
+	}
+	if eps.Ports[0].Port == nil || *eps.Ports[0].Port != backendPort {
+		t.Errorf("expected port '%d', got '%v'", backendPort, eps.Ports[0].Port)
+	}
+}
+
+func TestEnsureDummyEndpointsliceIfNotExist(t *testing.T) {
+	lb := &lbv1.LoadBalancer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-lb",
+			Namespace: "default",
+		},
+	}
+
+	existingEPS := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-lb",
+			Namespace: "default",
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses: []string{"test"},
+			},
+		},
+	}
+
+	existingEmptyEPS := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-lb",
+			Namespace: "default",
+		},
+	}
+
+	tests := []struct {
+		name          string
+		existingObjs  []runtime.Object
+		expectCreated bool
+		expectUpdated bool
+		expectErr     bool
+	}{
+		{
+			name:          "EndpointSlice already exists in cache",
+			existingObjs:  []runtime.Object{existingEPS},
+			expectCreated: false,
+			expectErr:     false,
+		},
+		{
+			name:          "EndpointSlice does not exist, create successfully",
+			existingObjs:  []runtime.Object{},
+			expectCreated: true,
+			expectErr:     false,
+		},
+		{
+			name:          "EndpointSlice exists but with empty endpoints, update successfully",
+			existingObjs:  []runtime.Object{existingEmptyEPS},
+			expectUpdated: true,
+			expectErr:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient := fake.NewSimpleClientset(tt.existingObjs...)
+
+			epsClient := fakeclients.EndpointSliceClient(func(namespace string) discoveryv1type.EndpointSliceInterface {
+				return fakeClient.DiscoveryV1().EndpointSlices(namespace)
+			})
+
+			epsCache := fakeclients.EndpointSliceCache(func(namespace string) discoveryv1type.EndpointSliceInterface {
+				return fakeClient.DiscoveryV1().EndpointSlices(namespace)
+			})
+
+			m := &Manager{
+				endpointSliceClient: epsClient,
+				endpointSliceCache:  epsCache,
+			}
+
+			err := m.ensureDummyEndpointSliceIfNotExist(lb)
+
+			if tt.expectErr && err == nil {
+				t.Errorf("expected error but got nil")
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			// Filter actions for 'create', 'update' verb specifically
+			var createActions []clientgotesting.Action
+			var updateActions []clientgotesting.Action
+			for _, action := range fakeClient.Actions() {
+				if action.GetVerb() == "create" {
+					createActions = append(createActions, action)
+				} else if action.GetVerb() == "update" {
+					updateActions = append(updateActions, action)
+				}
+			}
+
+			if tt.expectCreated && len(createActions) != 1 {
+				t.Fatalf("expected 1 'create' API action, got %d", len(createActions))
+			}
+			if tt.expectUpdated && len(updateActions) != 1 {
+				t.Fatalf("expected 1 'update' API action, got %d", len(updateActions))
 			}
 		})
 	}
