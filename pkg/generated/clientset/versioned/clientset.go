@@ -19,8 +19,8 @@ limitations under the License.
 package versioned
 
 import (
-	"fmt"
-	"net/http"
+	fmt "fmt"
+	http "net/http"
 
 	discoveryv1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/discovery.k8s.io/v1"
 	k8scnicncfiov1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/k8s.cni.cncf.io/v1"
@@ -37,8 +37,8 @@ type Interface interface {
 	DiscoveryV1() discoveryv1.DiscoveryV1Interface
 	K8sCniCncfIoV1() k8scnicncfiov1.K8sCniCncfIoV1Interface
 	KubevirtV1() kubevirtv1.KubevirtV1Interface
-	LoadbalancerV1beta1() loadbalancerv1beta1.LoadbalancerV1beta1Interface
 	LoadbalancerV1alpha1() loadbalancerv1alpha1.LoadbalancerV1alpha1Interface
+	LoadbalancerV1beta1() loadbalancerv1beta1.LoadbalancerV1beta1Interface
 }
 
 // Clientset contains the clients for groups.
@@ -47,8 +47,8 @@ type Clientset struct {
 	discoveryV1          *discoveryv1.DiscoveryV1Client
 	k8sCniCncfIoV1       *k8scnicncfiov1.K8sCniCncfIoV1Client
 	kubevirtV1           *kubevirtv1.KubevirtV1Client
-	loadbalancerV1beta1  *loadbalancerv1beta1.LoadbalancerV1beta1Client
 	loadbalancerV1alpha1 *loadbalancerv1alpha1.LoadbalancerV1alpha1Client
+	loadbalancerV1beta1  *loadbalancerv1beta1.LoadbalancerV1beta1Client
 }
 
 // DiscoveryV1 retrieves the DiscoveryV1Client
@@ -66,14 +66,14 @@ func (c *Clientset) KubevirtV1() kubevirtv1.KubevirtV1Interface {
 	return c.kubevirtV1
 }
 
-// LoadbalancerV1beta1 retrieves the LoadbalancerV1beta1Client
-func (c *Clientset) LoadbalancerV1beta1() loadbalancerv1beta1.LoadbalancerV1beta1Interface {
-	return c.loadbalancerV1beta1
-}
-
 // LoadbalancerV1alpha1 retrieves the LoadbalancerV1alpha1Client
 func (c *Clientset) LoadbalancerV1alpha1() loadbalancerv1alpha1.LoadbalancerV1alpha1Interface {
 	return c.loadbalancerV1alpha1
+}
+
+// LoadbalancerV1beta1 retrieves the LoadbalancerV1beta1Client
+func (c *Clientset) LoadbalancerV1beta1() loadbalancerv1beta1.LoadbalancerV1beta1Interface {
+	return c.loadbalancerV1beta1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -132,11 +132,11 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
-	cs.loadbalancerV1beta1, err = loadbalancerv1beta1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.loadbalancerV1alpha1, err = loadbalancerv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
-	cs.loadbalancerV1alpha1, err = loadbalancerv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.loadbalancerV1beta1, err = loadbalancerv1beta1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -164,8 +164,8 @@ func New(c rest.Interface) *Clientset {
 	cs.discoveryV1 = discoveryv1.New(c)
 	cs.k8sCniCncfIoV1 = k8scnicncfiov1.New(c)
 	cs.kubevirtV1 = kubevirtv1.New(c)
-	cs.loadbalancerV1beta1 = loadbalancerv1beta1.New(c)
 	cs.loadbalancerV1alpha1 = loadbalancerv1alpha1.New(c)
+	cs.loadbalancerV1beta1 = loadbalancerv1beta1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

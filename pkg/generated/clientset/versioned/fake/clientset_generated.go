@@ -30,6 +30,7 @@ import (
 	fakeloadbalancerv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1alpha1/fake"
 	loadbalancerv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1beta1"
 	fakeloadbalancerv1beta1 "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/typed/loadbalancer.harvesterhci.io/v1beta1/fake"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -57,9 +58,13 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 	cs.discovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
 	cs.AddReactor("*", "*", testing.ObjectReaction(o))
 	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
+		var opts metav1.ListOptions
+		if watchActcion, ok := action.(testing.WatchActionImpl); ok {
+			opts = watchActcion.ListOptions
+		}
 		gvr := action.GetResource()
 		ns := action.GetNamespace()
-		watch, err := o.Watch(gvr, ns)
+		watch, err := o.Watch(gvr, ns, opts)
 		if err != nil {
 			return false, nil, err
 		}
@@ -106,12 +111,12 @@ func (c *Clientset) KubevirtV1() kubevirtv1.KubevirtV1Interface {
 	return &fakekubevirtv1.FakeKubevirtV1{Fake: &c.Fake}
 }
 
-// LoadbalancerV1beta1 retrieves the LoadbalancerV1beta1Client
-func (c *Clientset) LoadbalancerV1beta1() loadbalancerv1beta1.LoadbalancerV1beta1Interface {
-	return &fakeloadbalancerv1beta1.FakeLoadbalancerV1beta1{Fake: &c.Fake}
-}
-
 // LoadbalancerV1alpha1 retrieves the LoadbalancerV1alpha1Client
 func (c *Clientset) LoadbalancerV1alpha1() loadbalancerv1alpha1.LoadbalancerV1alpha1Interface {
 	return &fakeloadbalancerv1alpha1.FakeLoadbalancerV1alpha1{Fake: &c.Fake}
+}
+
+// LoadbalancerV1beta1 retrieves the LoadbalancerV1beta1Client
+func (c *Clientset) LoadbalancerV1beta1() loadbalancerv1beta1.LoadbalancerV1beta1Interface {
+	return &fakeloadbalancerv1beta1.FakeLoadbalancerV1beta1{Fake: &c.Fake}
 }

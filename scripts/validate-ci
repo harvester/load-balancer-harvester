@@ -1,0 +1,45 @@
+#!/bin/bash
+set -e
+
+cd $(dirname $0)/..
+
+# load-balancer-harvester has a small set of types to run `make generate`.
+# Use content hashing across pkg/apis, pkg/generated, and crds to verify if `make generate` introduces changes.
+# Avoid `git init` here to prevent workspace pollution, cleanup risks, and nested repository conflicts.
+
+# NOTE: We intentionally exclude 'pkg/generated' from strict hash checks.
+# Non-deterministic Go map iteration inside wrangler/controller-gen occurs specifically
+# when a single package contains multiple API versions (e.g., v1alpha1 and v1beta1),
+# causing generated interface methods and struct fields to fluctuate in sequence.
+# This flakiness will be permanently resolved once v1alpha1 is fully deprecated and removed.
+#
+# Trade-off: While checking 'pkg/apis' and 'crds' catches schema/type drift, it won't
+# catch cases where a developer updates APIs but forgets to commit updated 'pkg/generated'
+# code (which can cause compilation errors downstream). We accept this temporarily to avoid
+# CI flakiness, relying on downstream build/test CI stages to catch compilation gaps.
+
+# Capture combined hash before generation
+HASH_BEFORE=$(find pkg/apis crds -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum)
+
+# Clean up existing CRDs to ensure removed types/schemas are purged
+rm -f crds/*.yaml
+
+# Run full generation pipeline (cleanup -> wrangler codegen -> manifest generation)
+go generate
+
+# Format generated code
+goimports -w pkg/generated/
+goimports -w pkg/apis/
+
+# Capture combined hash after generation
+HASH_AFTER=$(find pkg/apis crds -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum)
+
+echo "The sha256sum of generated assets (before: $HASH_BEFORE, after: $HASH_AFTER)" >&2
+
+if [ "$HASH_BEFORE" != "$HASH_AFTER" ]; then
+    echo "Error: Changes detected in generated assets!" >&2
+    echo "Hint: Run 'make generate' locally and commit the updated files." >&2
+    exit 1
+fi
+
+echo "No changes detected in generated assets." >&2
