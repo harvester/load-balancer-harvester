@@ -19,9 +19,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
-	v1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
+	loadbalancerharvesterhciiov1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
 	scheme "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -37,33 +37,38 @@ type LoadBalancersGetter interface {
 
 // LoadBalancerInterface has methods to work with LoadBalancer resources.
 type LoadBalancerInterface interface {
-	Create(ctx context.Context, loadBalancer *v1alpha1.LoadBalancer, opts v1.CreateOptions) (*v1alpha1.LoadBalancer, error)
-	Update(ctx context.Context, loadBalancer *v1alpha1.LoadBalancer, opts v1.UpdateOptions) (*v1alpha1.LoadBalancer, error)
+	Create(ctx context.Context, loadBalancer *loadbalancerharvesterhciiov1alpha1.LoadBalancer, opts v1.CreateOptions) (*loadbalancerharvesterhciiov1alpha1.LoadBalancer, error)
+	Update(ctx context.Context, loadBalancer *loadbalancerharvesterhciiov1alpha1.LoadBalancer, opts v1.UpdateOptions) (*loadbalancerharvesterhciiov1alpha1.LoadBalancer, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, loadBalancer *v1alpha1.LoadBalancer, opts v1.UpdateOptions) (*v1alpha1.LoadBalancer, error)
+	UpdateStatus(ctx context.Context, loadBalancer *loadbalancerharvesterhciiov1alpha1.LoadBalancer, opts v1.UpdateOptions) (*loadbalancerharvesterhciiov1alpha1.LoadBalancer, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.LoadBalancer, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.LoadBalancerList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*loadbalancerharvesterhciiov1alpha1.LoadBalancer, error)
+	List(ctx context.Context, opts v1.ListOptions) (*loadbalancerharvesterhciiov1alpha1.LoadBalancerList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.LoadBalancer, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *loadbalancerharvesterhciiov1alpha1.LoadBalancer, err error)
 	LoadBalancerExpansion
 }
 
 // loadBalancers implements LoadBalancerInterface
 type loadBalancers struct {
-	*gentype.ClientWithList[*v1alpha1.LoadBalancer, *v1alpha1.LoadBalancerList]
+	*gentype.ClientWithList[*loadbalancerharvesterhciiov1alpha1.LoadBalancer, *loadbalancerharvesterhciiov1alpha1.LoadBalancerList]
 }
 
 // newLoadBalancers returns a LoadBalancers
 func newLoadBalancers(c *LoadbalancerV1alpha1Client, namespace string) *loadBalancers {
 	return &loadBalancers{
-		gentype.NewClientWithList[*v1alpha1.LoadBalancer, *v1alpha1.LoadBalancerList](
+		gentype.NewClientWithList[*loadbalancerharvesterhciiov1alpha1.LoadBalancer, *loadbalancerharvesterhciiov1alpha1.LoadBalancerList](
 			"loadbalancers",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.LoadBalancer { return &v1alpha1.LoadBalancer{} },
-			func() *v1alpha1.LoadBalancerList { return &v1alpha1.LoadBalancerList{} }),
+			func() *loadbalancerharvesterhciiov1alpha1.LoadBalancer {
+				return &loadbalancerharvesterhciiov1alpha1.LoadBalancer{}
+			},
+			func() *loadbalancerharvesterhciiov1alpha1.LoadBalancerList {
+				return &loadbalancerharvesterhciiov1alpha1.LoadBalancerList{}
+			},
+		),
 	}
 }

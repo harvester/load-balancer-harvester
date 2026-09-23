@@ -12,7 +12,8 @@ RUN zypper -n rm container-suseconnect 2>/dev/null || true && \
 COPY --from=golangci/golangci-lint:v2.12.2-alpine@sha256:91b27804074a0bacea298707f016911e60cf0cdbc6c7bf5ccacb5f0606d18d60 /usr/bin/golangci-lint /usr/local/bin/golangci-lint
 
 ## install controller-gen
-RUN GO111MODULE=on go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.1
+RUN GO111MODULE=on go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.18.0 && \
+    GO111MODULE=on go install golang.org/x/tools/cmd/goimports@v0.43.0
 
 ENV HOME=/go/src/github.com/harvester/harvester-load-balancer
 
@@ -65,3 +66,22 @@ RUN ./scripts/generate-manifest
 
 FROM scratch AS generate-manifest-output
 COPY --from=generate-manifest /go/src/github.com/harvester/harvester-load-balancer/crds/ /
+
+# ---- generate ----
+FROM base AS generate
+ARG MK_REPO_ID
+RUN --mount=type=cache,target=/go/pkg/mod,id=harvester-go-mod-${MK_REPO_ID} \
+    --mount=type=cache,target=/go/src/github.com/harvester/harvester-load-balancer/.cache/go-build,id=harvester-go-build-${MK_REPO_ID} \
+    ./scripts/generate
+
+# ---- generate-output ----
+FROM scratch AS generate-output
+COPY --from=generate /go/src/github.com/harvester/harvester-load-balancer/pkg/ /pkg/
+COPY --from=generate /go/src/github.com/harvester/harvester-load-balancer/crds/ /crds/
+
+# ---- validate-ci ----
+FROM base AS validate-ci
+ARG MK_REPO_ID
+RUN --mount=type=cache,target=/go/pkg/mod,id=harvester-go-mod-${MK_REPO_ID} \
+    --mount=type=cache,target=/go/src/github.com/harvester/harvester-load-balancer/.cache/go-build,id=harvester-go-build-${MK_REPO_ID} \
+    ./scripts/validate-ci

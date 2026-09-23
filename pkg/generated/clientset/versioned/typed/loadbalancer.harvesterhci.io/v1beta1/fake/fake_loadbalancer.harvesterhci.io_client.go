@@ -29,11 +29,11 @@ type FakeLoadbalancerV1beta1 struct {
 }
 
 func (c *FakeLoadbalancerV1beta1) IPPools() v1beta1.IPPoolInterface {
-	return &FakeIPPools{c}
+	return newFakeIPPools(c)
 }
 
 func (c *FakeLoadbalancerV1beta1) LoadBalancers(namespace string) v1beta1.LoadBalancerInterface {
-	return &FakeLoadBalancers{c, namespace}
+	return newFakeLoadBalancers(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

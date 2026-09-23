@@ -38,8 +38,8 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	discoveryv1.AddToScheme,
 	k8scnicncfiov1.AddToScheme,
 	kubevirtv1.AddToScheme,
-	loadbalancerv1beta1.AddToScheme,
 	loadbalancerv1alpha1.AddToScheme,
+	loadbalancerv1beta1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

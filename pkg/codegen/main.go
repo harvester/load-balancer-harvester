@@ -9,12 +9,11 @@ import (
 	v1 "k8s.io/api/discovery/v1"
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
+	lbv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
+	lbv1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	controllergen "github.com/rancher/wrangler/v3/pkg/controller-gen"
 	"github.com/rancher/wrangler/v3/pkg/controller-gen/args"
 	"github.com/sirupsen/logrus"
-
-	lbv1alpha1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1alpha1"
-	lbv1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 )
 
 func main() {
@@ -25,9 +24,9 @@ func main() {
 		Groups: map[string]args.Group{
 			"loadbalancer.harvesterhci.io": {
 				Types: []interface{}{
-					lbv1.LoadBalancer{},
-					lbv1.IPPool{},
 					lbv1alpha1.LoadBalancer{},
+					lbv1beta1.LoadBalancer{},
+					lbv1beta1.IPPool{},
 				},
 				GenerateTypes:   true,
 				GenerateClients: true,

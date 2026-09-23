@@ -29,7 +29,7 @@ type FakeLoadbalancerV1alpha1 struct {
 }
 
 func (c *FakeLoadbalancerV1alpha1) LoadBalancers(namespace string) v1alpha1.LoadBalancerInterface {
-	return &FakeLoadBalancers{c, namespace}
+	return newFakeLoadBalancers(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

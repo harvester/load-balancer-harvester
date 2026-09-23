@@ -64,7 +64,7 @@ DOCKER_BUILD = docker build \
 	--build-arg MK_HOST_ARCH \
 	-f $(ROOT)/Dockerfile $(ROOT)
 
-.PHONY: build ci default generate-manifest package release test validate arm gen-version-env gen-version-env-debug clean-all
+.PHONY: build ci default generate-manifest package release test validate arm gen-version-env gen-version-env-debug clean-all generate validate-ci
 
 
 # ---- Directories ----
@@ -109,11 +109,21 @@ package: build
 	$(ROOT)/scripts/package
 
 
+# ---- generate ----
+generate: gen-version-env
+	$(BANNER)
+	$(DOCKER_BUILD) --target generate-output --output type=local,dest=$(ROOT)
+
+
 # ---- Generate CRD manifests ----
 generate-manifest: gen-version-env
 	$(BANNER)
 	$(DOCKER_BUILD) --target generate-manifest-output --output type=local,dest=$(ROOT)/crds
 
+# ---- validate-ci ----
+validate-ci: gen-version-env
+	$(BANNER)
+	$(DOCKER_BUILD) --target validate-ci
 
 clean-all:
 	$(BANNER)
@@ -122,7 +132,7 @@ clean-all:
 
 .DEFAULT_GOAL := default
 
-ci: build package validate test
+ci: build package validate validate-ci test
 
 default: build package
 

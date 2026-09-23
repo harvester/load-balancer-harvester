@@ -19,9 +19,9 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 
-	v1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
+	loadbalancerharvesterhciiov1beta1 "github.com/harvester/harvester-load-balancer/pkg/apis/loadbalancer.harvesterhci.io/v1beta1"
 	scheme "github.com/harvester/harvester-load-balancer/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -37,33 +37,36 @@ type IPPoolsGetter interface {
 
 // IPPoolInterface has methods to work with IPPool resources.
 type IPPoolInterface interface {
-	Create(ctx context.Context, iPPool *v1beta1.IPPool, opts v1.CreateOptions) (*v1beta1.IPPool, error)
-	Update(ctx context.Context, iPPool *v1beta1.IPPool, opts v1.UpdateOptions) (*v1beta1.IPPool, error)
+	Create(ctx context.Context, iPPool *loadbalancerharvesterhciiov1beta1.IPPool, opts v1.CreateOptions) (*loadbalancerharvesterhciiov1beta1.IPPool, error)
+	Update(ctx context.Context, iPPool *loadbalancerharvesterhciiov1beta1.IPPool, opts v1.UpdateOptions) (*loadbalancerharvesterhciiov1beta1.IPPool, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, iPPool *v1beta1.IPPool, opts v1.UpdateOptions) (*v1beta1.IPPool, error)
+	UpdateStatus(ctx context.Context, iPPool *loadbalancerharvesterhciiov1beta1.IPPool, opts v1.UpdateOptions) (*loadbalancerharvesterhciiov1beta1.IPPool, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.IPPool, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.IPPoolList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*loadbalancerharvesterhciiov1beta1.IPPool, error)
+	List(ctx context.Context, opts v1.ListOptions) (*loadbalancerharvesterhciiov1beta1.IPPoolList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.IPPool, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *loadbalancerharvesterhciiov1beta1.IPPool, err error)
 	IPPoolExpansion
 }
 
 // iPPools implements IPPoolInterface
 type iPPools struct {
-	*gentype.ClientWithList[*v1beta1.IPPool, *v1beta1.IPPoolList]
+	*gentype.ClientWithList[*loadbalancerharvesterhciiov1beta1.IPPool, *loadbalancerharvesterhciiov1beta1.IPPoolList]
 }
 
 // newIPPools returns a IPPools
 func newIPPools(c *LoadbalancerV1beta1Client) *iPPools {
 	return &iPPools{
-		gentype.NewClientWithList[*v1beta1.IPPool, *v1beta1.IPPoolList](
+		gentype.NewClientWithList[*loadbalancerharvesterhciiov1beta1.IPPool, *loadbalancerharvesterhciiov1beta1.IPPoolList](
 			"ippools",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			"",
-			func() *v1beta1.IPPool { return &v1beta1.IPPool{} },
-			func() *v1beta1.IPPoolList { return &v1beta1.IPPoolList{} }),
+			func() *loadbalancerharvesterhciiov1beta1.IPPool { return &loadbalancerharvesterhciiov1beta1.IPPool{} },
+			func() *loadbalancerharvesterhciiov1beta1.IPPoolList {
+				return &loadbalancerharvesterhciiov1beta1.IPPoolList{}
+			},
+		),
 	}
 }

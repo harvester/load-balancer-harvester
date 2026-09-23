@@ -4,3 +4,8 @@ set -e
 cd $(dirname $0)/..
 
 go generate
+
+# Normalize imports and fix non-deterministic interface ordering across generated files
+# Resolves unstable code ordering in pkg/generated/controllers/loadbalancer.harvesterhci.io/interface.go
+goimports -w pkg/generated/
+goimports -w pkg/apis/
